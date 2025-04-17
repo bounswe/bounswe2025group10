@@ -7,8 +7,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
+# Environment variables
+*.env
+*.env.local
+
+.vite/
+node_modules/
+dist/
+__pycache__/
 dist-ssr
 *.local
 
