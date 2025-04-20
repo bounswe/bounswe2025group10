@@ -1,0 +1,85 @@
+# ===============================
+# GLOBAL
+# ===============================
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+android/app/build/
+ios/Pods/
+ios/DerivedData/
+*.apk
+*.ipa
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.pyo
+db.sqlite3
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+*.iml
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.dart_tool/
+build/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+
+# React Native
+.expo/
+web-build/
+
+# Misc
+*.swp
+*.tmp
+*.bak
+
+# Yarn / pnpm lock
+yarn.lock
+pnpm-lock.yaml
+
+# ===============================
+/application/front-end/node_modules/
+/application/front-end/dist/
+/application/front-end/build/
+/application/front-end/.env
+/Images/
