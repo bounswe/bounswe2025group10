@@ -15,7 +15,7 @@ CREATE TABLE Posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     creator_id INT NOT NULL,
     date DATETIME DEFAULT CURRENT_TIMESTAMP, # automatically sets to current date/time when post is created
-    text TEXT, # post's text content
+    text TEXT,
     image VARCHAR(255), # image URL or path
     FOREIGN KEY (creator_id) REFERENCES Users(id)
         ON DELETE CASCADE
