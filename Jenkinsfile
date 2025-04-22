@@ -1,6 +1,6 @@
 pipeline {
-  // run on any agent with the "docker" label
-  agent { label 'docker' }
+  // run on any available agent (or { label 'linux' } if that’s what yours is called)
+  agent any
 
   environment {
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
@@ -8,16 +8,13 @@ pipeline {
 
   stages {
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Prepare') {
       steps {
         dir('application/backend') {
           sh '''
-            git checkout backend
             git pull
             if [ -f "${VENV_DIR}/bin/activate" ]; then
               source "${VENV_DIR}/bin/activate"
@@ -52,8 +49,6 @@ pipeline {
   }
 
   post {
-    always {
-      echo "Job finished at ${new Date().format("yyyy‑MM‑dd HH:mm:ss")}"
-    }
+    always { echo "Job finished at ${new Date().format("yyyy‑MM‑dd HH:mm:ss")}" }
   }
 }
