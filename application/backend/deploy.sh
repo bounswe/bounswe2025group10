@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ─── Configuration ───────────────────────────────────────────
-PROJECT_DIR="$HOME/bounswe2025group10"
-BACKEND_DIR="$PROJECT_DIR/application/backend"
+# ─── Determine Project Root ───────────────────────────────────
+if [[ -n "${WORKSPACE-}" ]]; then
+  # Running under Jenkins
+  ROOT_DIR="$WORKSPACE"
+else
+  # Running locally: assume this script lives in application/backend
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
+BACKEND_DIR="$ROOT_DIR/application/backend"
 VENV_ACTIVATE="$BACKEND_DIR/venv/bin/activate"
 
 # ─── Step 1: Update Git branch ───────────────────────────────
 echo "🔄 Updating backend branch..."
-cd "$PROJECT_DIR"
+cd "$ROOT_DIR"
 git fetch origin
 git checkout backend
 git pull origin backend
@@ -26,11 +34,9 @@ fi
 echo "🔧 Setting permissions on SQL files..."
 chmod 644 "$BACKEND_DIR/sql/"*.sql
 
-# ─── Move into backend dir for Docker steps ─────────────────
-cd "$BACKEND_DIR"
-
 # ─── Step 4: Rebuild Docker services ─────────────────────────
 echo "🐳 Shutting down existing containers and removing volumes..."
+cd "$BACKEND_DIR"
 docker compose down -v
 
 echo "🛠️  Building Docker images..."
