@@ -34,6 +34,8 @@ class CustomUserManager(BaseUserManager):
         
 # Custom user model
 class User(AbstractUser):
+    class Meta:
+        db_table = 'Users'
     # Custom fields
     email = models.EmailField(max_length=80, unique=True)
     username = models.CharField(max_length=50, unique=True)
