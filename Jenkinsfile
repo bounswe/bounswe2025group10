@@ -1,30 +1,25 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'docker:24.0.2-dind'               // official Docker‐in‐Docker image
+      args  '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+    }
+  }
 
   environment {
-    // adjust if your venv lives elsewhere
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
   }
 
   stages {
     stage('Checkout') {
       steps {
-        // clone your repo; Jenkins will also pull on each run
-        checkout([
-          $class: 'GitSCM',
-          branches: [[name: '*/main']],
-          userRemoteConfigs: [[
-            url: 'https://github.com/bounswe/bounswe2025group10.git',
-            credentialsId: 'github‑ssh‑creds'
-          ]]
-        ])
+        checkout scm
       }
     }
 
     stage('Prepare') {
       steps {
         dir('application/backend') {
-          // if you need a Python venv for any host‑side scripts
           sh '''
             git checkout backend
             git pull
@@ -43,7 +38,6 @@ pipeline {
           sh '''
             docker compose down -v
             docker compose build
-            # free up ports if something’s stuck
             lsof -ti:8000 | xargs -r kill -9 || true
             lsof -ti:3306 | xargs -r kill -9 || true
             docker compose up -d
@@ -55,7 +49,6 @@ pipeline {
     stage('Migrate') {
       steps {
         dir('application/backend') {
-          // run Django migrations inside the web container
           sh 'docker compose exec web python manage.py migrate'
         }
       }
