@@ -1,13 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      // This image includes Docker cli & daemon
-      image 'docker:24.0.5-dind'
-      // Mount the host’s Docker socket so “docker compose” can talk to it
-      args '-v /var/run/docker.sock:/var/run/docker.sock --privileged'
-    }
-  }
-
+  agent { label 'docker' }             // ← run on a node with Docker installed
   environment {
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
   }
@@ -56,6 +48,8 @@ pipeline {
   }
 
   post {
-    always { echo "Job finished at ${new Date().format("yyyy‑MM‑dd HH:mm:ss")}" }
+    always {
+      echo "Job finished at ${new Date().format('yyyy‑MM‑dd HH:mm:ss')}"
+    }
   }
 }
