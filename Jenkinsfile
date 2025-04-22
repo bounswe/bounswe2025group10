@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'docker' }             // ← run on a node with Docker installed
+  agent { label 'build-agent' }             // ← run on a node with Docker installed
   environment {
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
   }
