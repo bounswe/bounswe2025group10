@@ -51,7 +51,7 @@ class LoginView(APIView):
             }
             return Response(data=response, status=status.HTTP_200_OK)
         
-        return Response(data={"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(data={"error": "Invalid credentials!"}, status=status.HTTP_401_UNAUTHORIZED)
 
     # Get user info
     def get(self, request: Request):
