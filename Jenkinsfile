@@ -15,6 +15,7 @@ pipeline {
       steps {
         dir('application/backend') {
           sh '''
+            git checkout backend
             git pull
             if [ -f "${VENV_DIR}/bin/activate" ]; then
               source "${VENV_DIR}/bin/activate"
