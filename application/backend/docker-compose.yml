@@ -7,7 +7,7 @@ services:
       - "3306:3306"
     environment:
       - MYSQL_DATABASE=main_db
-      - MYSQL_USER=root
+      - MYSQL_USER=admin
       - MYSQL_PASSWORD=123456789
       - MYSQL_ROOT_PASSWORD=123456789
     volumes:
