@@ -1,10 +1,6 @@
 pipeline {
-  agent {
-    docker {
-      image 'docker:24.0.2-dind'               // official Docker‐in‐Docker image
-      args  '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
-    }
-  }
+  // run on any agent with the "docker" label
+  agent { label 'docker' }
 
   environment {
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
