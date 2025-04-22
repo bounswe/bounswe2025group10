@@ -1,50 +1,52 @@
-# Import necessary Django modules
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 
-
-# Custom user manager for handling user creation
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
-        # Normalize email address
+        if not email:
+            raise ValueError("The Email field must be set")
         email = self.normalize_email(email)
-
-        # Create new user instance
         user = self.model(email=email, **extra_fields)
-
-        # Set password and save user
         user.set_password(password)
-        user.save()
-
+        user.save(using=self._db)
         return user
-    
+
     def create_superuser(self, email, password, **extra_fields):
-        # Set superuser privileges
+        extra_fields.setdefault('isAdmin', True)
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
-        # Validate superuser privileges
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
+        if extra_fields.get('isAdmin') is not True:
+            raise ValueError('Superuser must have isAdmin=True.')
+        return self.create_user(email, password, **extra_fields)
 
-        return self.create_user(email=email, password=password, **extra_fields)
-        
-# Custom user model
+
 class User(AbstractUser):
     class Meta:
         db_table = 'Users'
         managed = False
-    # Custom fields
-    email = models.EmailField(max_length=80, unique=True)
-    username = models.CharField(max_length=50, unique=True)
 
-    # Set custom manager
+    # Primary key
+    id = models.AutoField(primary_key=True)
+
+    # Override fields to match table
+    email = models.EmailField(max_length=100, unique=True)
+    username = models.CharField(max_length=50, unique=True)
+    password = models.CharField(max_length=100)
+
+    # Additional columns
+    isAdmin = models.BooleanField(default=False, db_column='isAdmin')
+    profile_id = models.IntegerField(unique=True, null=True, blank=True)
+    profile_image = models.CharField(max_length=255, null=True, blank=True)
+    bio = models.TextField(null=True, blank=True)
+
+    # Keep Django’s staff/superuser flags in sync if you need them
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
     objects = CustomUserManager()
-    
-    # Use email as the unique identifier
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
