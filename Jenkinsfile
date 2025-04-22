@@ -14,7 +14,7 @@ pipeline {
           $class: 'GitSCM',
           branches: [[name: '*/main']],
           userRemoteConfigs: [[
-            url: 'git@github.com:your‑org/bounswe2025group10.git',
+            url: 'https://github.com/bounswe/bounswe2025group10.git',
             credentialsId: 'github‑ssh‑creds'
           ]]
         ])
