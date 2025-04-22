@@ -36,7 +36,13 @@ CREATE TABLE Comments (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
-
+-- ACHIEVEMENTS TABLE
+CREATE TABLE Achievements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    description TEXT,
+    icon VARCHAR(255) # image URL or path for the achievement icon
+);
 -- CHALLENGES TABLE
 CREATE TABLE Challenges (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -66,13 +72,7 @@ CREATE TABLE UserChallenges (
         ON UPDATE CASCADE
 );
 
--- ACHIEVEMENTS TABLE
-CREATE TABLE Achievements (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-    icon VARCHAR(255) # image URL or path for the achievement icon
-);
+
 
 -- USER-ACHIEVEMENT RELATIONSHIP TABLE
 CREATE TABLE UserAchievements (
