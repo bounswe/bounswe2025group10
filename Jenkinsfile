@@ -21,7 +21,6 @@ pipeline {
           ).trim()
 
           // 3) Define the grep pattern (adjust as needed)
-          //    Here we look for any of your emoji-markers or the word Done
           def pat = ~/🔄|🐳|✅|🚀|📦|Done/
 
           // 4) Split into lines, filter, and echo each
