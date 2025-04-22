@@ -17,6 +17,7 @@ VENV_ACTIVATE="$BACKEND_DIR/venv/bin/activate"
 # ─── Step 1: Update Git branch ───────────────────────────────
 echo "🔄 Updating backend branch..."
 cd "$ROOT_DIR"
+git stash
 git fetch origin
 git checkout backend
 git pull origin backend
