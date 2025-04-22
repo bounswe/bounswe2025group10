@@ -1,6 +1,12 @@
 pipeline {
-  // run on any available agent (or { label 'linux' } if that’s what yours is called)
-  agent any
+  agent {
+    docker {
+      // This image includes Docker cli & daemon
+      image 'docker:24.0.5-dind'
+      // Mount the host’s Docker socket so “docker compose” can talk to it
+      args '-v /var/run/docker.sock:/var/run/docker.sock --privileged'
+    }
+  }
 
   environment {
     VENV_DIR = "${WORKSPACE}/application/backend/venv"
