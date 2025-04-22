@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
 from .serializers import SignUpSerializer
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -61,8 +60,9 @@ class LoginView(APIView):
         }
         return Response(data = content, status = status.HTTP_200_OK)
     
-    def server_status(request):
-        data = {
-            "status": "Server is running",
-        }
-        return Response(data = data, status = status.HTTP_200_OK)
+@api_view(['GET'])
+def server_status(request):
+    data = {
+        "status": "Server is running",
+    }
+    return Response(data = data, status = status.HTTP_200_OK)
