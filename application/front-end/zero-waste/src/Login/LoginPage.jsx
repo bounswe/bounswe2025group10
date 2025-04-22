@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "./AuthContent";
 
-const LoginPage: React.FC = () => {
+const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+  const handleSubmit= (e) => {
     e.preventDefault();
     login(email, password);
     navigate("/");
@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
           className="form-control mb-3"
           placeholder="Email"
           value={email}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
@@ -35,7 +35,8 @@ const LoginPage: React.FC = () => {
           className="form-control mb-4"
           placeholder="Password"
           value={password}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+          onChange={(e
+          ) => setPassword(e.target.value)}
           required
         />
         <button type="submit" className="btn btn-success w-100 mb-3">

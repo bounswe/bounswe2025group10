@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import LoginPage from "../../Login/LoginPage";          
-import type * as ReactRouterDom from "react-router-dom";    // adjust if your path differs
+import  * as ReactRouterDom from "react-router-dom";    // adjust if your path differs
 
 /* ------------------------------------------------------------------ */
 /* 1.  Create reusable mocks for `login` and `navigate` -------------- */

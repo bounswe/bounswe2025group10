@@ -14,7 +14,7 @@ vi.mock("../../Login/AuthContent", () => ({
   useAuth: () => ({
     signup: signupMock,
   }),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AuthProvider: ({ children }) => <>{children}</>,
 }));
 
 /* ---------------- RENDER UTILITY ------------------- */
