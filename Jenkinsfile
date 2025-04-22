@@ -1,55 +1,40 @@
 pipeline {
-  agent { label 'build-agent' }             // ← run on a node with Docker installed
-  environment {
-    VENV_DIR = "${WORKSPACE}/application/backend/venv"
-  }
+  agent any
 
   stages {
     stage('Checkout') {
-      steps { checkout scm }
-    }
-
-    stage('Prepare') {
       steps {
-        dir('application/backend') {
-          sh '''
-            git checkout backend
-            git pull
-            if [ -f "${VENV_DIR}/bin/activate" ]; then
-              source "${VENV_DIR}/bin/activate"
-            fi
-            chmod 644 ./sql/*.sql
-          '''
-        }
+        checkout scm
       }
     }
 
-    stage('Build & Deploy') {
+    stage('Run Deploy Script') {
       steps {
-        dir('application/backend') {
-          sh '''
-            docker compose down -v
-            docker compose build
-            lsof -ti:8000 | xargs -r kill -9 || true
-            lsof -ti:3306 | xargs -r kill -9 || true
-            docker compose up -d
-          '''
-        }
-      }
-    }
+        // 1) Ensure executable bit
+        sh 'chmod +x application/backend/deploy.sh'
 
-    stage('Migrate') {
-      steps {
-        dir('application/backend') {
-          sh 'docker compose exec web python manage.py migrate'
+        // 2) Run it, capture output
+        script {
+          def raw = sh(
+            script: './application/backend/deploy.sh',
+            returnStdout: true
+          ).trim()
+
+          // 3) Define the grep pattern (adjust as needed)
+          //    Here we look for any of your emoji-markers or the word Done
+          def pat = ~/🔄|🐳|✅|🚀|📦|Done/
+
+          // 4) Split into lines, filter, and echo each
+          raw.readLines()
+             .findAll { line -> line =~ pat }
+             .each     { matched -> echo matched }
         }
       }
     }
   }
 
   post {
-    always {
-      echo "Job finished at ${new Date().format('yyyy‑MM‑dd HH:mm:ss')}"
-    }
+    success { echo '✅ Pipeline finished successfully.' }
+    failure { echo '❌ Pipeline failed – check above logs!'  }
   }
 }
