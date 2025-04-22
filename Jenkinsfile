@@ -26,6 +26,7 @@ pipeline {
         dir('application/backend') {
           // if you need a Python venv for any host‑side scripts
           sh '''
+            git checkout backend
             git pull
             if [ -f "${VENV_DIR}/bin/activate" ]; then
               source "${VENV_DIR}/bin/activate"
