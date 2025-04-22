@@ -6,7 +6,7 @@ PROJECT_DIR="$HOME/bounswe2025group10"
 BACKEND_DIR="$PROJECT_DIR/application/backend"
 VENV_ACTIVATE="$BACKEND_DIR/venv/bin/activate"
 
-# ─── Step 1: Update Git branch ────────────────────────────────
+# ─── Step 1: Update Git branch ───────────────────────────────
 echo "🔄 Updating backend branch..."
 cd "$PROJECT_DIR"
 git fetch origin
@@ -25,6 +25,9 @@ fi
 # ─── Step 3: Fix SQL file permissions ────────────────────────
 echo "🔧 Setting permissions on SQL files..."
 chmod 644 "$BACKEND_DIR/sql/"*.sql
+
+# ─── Move into backend dir for Docker steps ─────────────────
+cd "$BACKEND_DIR"
 
 # ─── Step 4: Rebuild Docker services ─────────────────────────
 echo "🐳 Shutting down existing containers and removing volumes..."
