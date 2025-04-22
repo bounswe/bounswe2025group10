@@ -1,14 +1,22 @@
 -- USERS TABLE
-CREATE TABLE Users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(100) NOT NULL,
-    isAdmin BOOLEAN DEFAULT FALSE,
-    profile_id INT UNIQUE,
-    profile_image VARCHAR(255), # image URL or path
-    bio TEXT
-);
+CREATE TABLE `Users` (
+  `id`             INT AUTO_INCREMENT PRIMARY KEY,
+  `password`       VARCHAR(128)            NOT NULL,
+  `last_login`     DATETIME                NULL,
+  `is_superuser`   BOOLEAN    NOT NULL DEFAULT FALSE,
+  `email`          VARCHAR(254) UNIQUE     NOT NULL,
+  `username`       VARCHAR(150) UNIQUE     NOT NULL,
+  `first_name`     VARCHAR(150)            NOT NULL DEFAULT '',
+  `last_name`      VARCHAR(150)            NOT NULL DEFAULT '',
+  `is_active`      BOOLEAN    NOT NULL DEFAULT TRUE,
+  `date_joined`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `isAdmin`        BOOLEAN    NOT NULL DEFAULT FALSE,
+  `is_staff`       BOOLEAN    NOT NULL DEFAULT FALSE,
+  `profile_id`     INT        UNIQUE,
+  `profile_image`  VARCHAR(255),
+  `bio`            TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- POSTS TABLE
 CREATE TABLE Posts (
