@@ -18,4 +18,6 @@ urlpatterns = [
     path("jwt/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # Server status endpoint
     path("status/", views.server_status, name="server_status"),
+    # User info endpoint
+    path("me/", views.get_user_info, name="user-info"),
 ]

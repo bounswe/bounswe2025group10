@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .tokens import create_jwt_pair_for_user
 
 # User registration view
@@ -67,3 +68,16 @@ def server_status(request):
         "status": "Server is running",
     }
     return Response(data = data, status = status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_info(request):
+    """
+    Protected view that returns user info
+    Requires valid JWT token in Authorization header
+    """
+    data = {
+        "username": request.user.username,
+        "is_authenticated": True
+    }
+    return Response(data=data, status=status.HTTP_200_OK)
