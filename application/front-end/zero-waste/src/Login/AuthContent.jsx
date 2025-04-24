@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch("https://yourapi.com/auth/login", {
+      const response = await fetch("http://134.209.253.215:8000/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -30,23 +30,41 @@ export const AuthProvider = ({ children }) => {
       if (response.ok && data.token) {
         localStorage.setItem("token", data.token); // ✅ Save to localStorage
         setToken(data.token);
-        setUser(data.user || null);
+        setUser(email);
+        return true
       } else {
-        throw new Error(data.message || "Login failed");
+        
+        return false
+        
+        
       }
     } catch (err) {
       console.error("Login error:", err.message);
+      return false
     }
   };
-  const signup = (email, _password) => {
-    // TODO: Replace with real API call
-    setUser({ email });
+  const signup= async (email,username, _password) => {
+    try {
+      const response = await fetch("http://134.209.253.215:8000/signup", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email,username, _password }),
+      });
+  
+      const data = await response.json();
+  
+      
+    } catch (err) {
+      console.error("Signup error:", err.message);
+    }
     navigate("/");
   };
 
   const logout = () => setUser(null);
 
-  const value = { user, login, signup, logout };
+  const value = { token, login, signup, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

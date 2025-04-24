@@ -6,6 +6,8 @@ import { useAuth } from "../Login/AuthContent";
 function AdminPanel({ children }) {
   const { token } = useAuth();
 
+  //TO DO fetch posts with the token given
+  //then render it 
   return (
     <Container fluid>
       <Row>

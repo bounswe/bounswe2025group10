@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { Nav } from "react-bootstrap";
 import { useAuth } from "../Login/AuthContent";
 
-function AdminPanel() {
+function ChallengePanel() {
   const { token } = useAuth();
 
   function Sidebar() {
@@ -34,4 +34,4 @@ function AdminPanel() {
     </div>
   );
 }
-export default AdminPanel;
+export default ChallengePanel;
