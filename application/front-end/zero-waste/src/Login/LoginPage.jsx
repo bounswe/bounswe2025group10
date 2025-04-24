@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContent";
 
-export default function SignupPage() {
-  const { signup } = useAuth();
+const LoginPage = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    signup(email, password);
+    login(email, password);
+    navigate("/");
   };
 
   return (
@@ -17,9 +19,9 @@ export default function SignupPage() {
       <form
         onSubmit={handleSubmit}
         className="card shadow border-0 p-4 w-100"
-        style={{ maxWidth: "400px" }}
+        style={{ maxWidth: 400 }}
       >
-        <h1 className="h3 mb-3 text-center fw-bold">Create account</h1>
+        <h1 className="h3 mb-3 text-center fw-bold">Sign in</h1>
         <input
           type="email"
           className="form-control mb-3"
@@ -37,15 +39,16 @@ export default function SignupPage() {
           required
         />
         <button type="submit" className="btn btn-success w-100 mb-3">
-          Sign up
+          Login
         </button>
         <p className="text-center small">
-          Have an account?{" "}
-          <Link to="/login" className="link-primary">
-            Sign in
+          Don’t have an account?{" "}
+          <Link to="/signup" className="link-primary">
+            Sign up
           </Link>
         </p>
       </form>
     </div>
   );
-}
+};
+export default LoginPage;

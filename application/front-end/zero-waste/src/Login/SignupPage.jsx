@@ -1,17 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "./AuthContent";
 
-const LoginPage = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+export default function SignupPage() {
+  const { signup } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit= (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    login(email, password);
-    navigate("/");
+    signup(email, password);
   };
 
   return (
@@ -19,9 +17,9 @@ const LoginPage = () => {
       <form
         onSubmit={handleSubmit}
         className="card shadow border-0 p-4 w-100"
-        style={{ maxWidth: 400 }}
+        style={{ maxWidth: "400px" }}
       >
-        <h1 className="h3 mb-3 text-center fw-bold">Sign in</h1>
+        <h1 className="h3 mb-3 text-center fw-bold">Create account</h1>
         <input
           type="email"
           className="form-control mb-3"
@@ -35,18 +33,19 @@ const LoginPage = () => {
           className="form-control mb-4"
           placeholder="Password"
           value={password}
-          onChange={(e
-          ) => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
         <button type="submit" className="btn btn-success w-100 mb-3">
-          Login
+          Sign up
         </button>
         <p className="text-center small">
-          Don’t have an account? <Link to="/signup" className="link-primary">Sign up</Link>
+          Have an account?{" "}
+          <Link to="/login" className="link-primary">
+            Sign in
+          </Link>
         </p>
       </form>
     </div>
   );
-};
-export default LoginPage;
+}

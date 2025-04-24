@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
@@ -14,8 +13,7 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   const [user, setUser] = useState("");
-  const [token,setToken]=useState(() => localStorage.getItem("token"))
-
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
 
   const login = async (email, password) => {
     try {
@@ -26,9 +24,9 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok && data.token) {
         localStorage.setItem("token", data.token); // ✅ Save to localStorage
         setToken(data.token);
@@ -40,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Login error:", err.message);
     }
   };
-  const signup= (email, _password) => {
+  const signup = (email, _password) => {
     // TODO: Replace with real API call
     setUser({ email });
     navigate("/");
