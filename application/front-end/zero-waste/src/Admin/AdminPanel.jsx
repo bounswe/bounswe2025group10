@@ -1,7 +1,7 @@
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { useAuth } from "../pages/Login/AuthContent";
+import { useAuth } from "../Login/AuthContent";
 
 function AdminPanel({ children }) {
   const { token } = useAuth();
@@ -10,11 +10,7 @@ function AdminPanel({ children }) {
     <Container fluid>
       <Row>
         {/* Sidebar */}
-        <Col
-          xs={12}
-          md={3}
-          className="bg-light vh-100 p-4 border-end"
-        >
+        <Col xs={12} md={3} className="bg-light vh-100 p-4 border-end">
           <h5 className="mb-4">Admin Dashboard</h5>
           <Nav variant="pills" className="flex-column">
             <Nav.Link as={Link} to="/adminPage">
