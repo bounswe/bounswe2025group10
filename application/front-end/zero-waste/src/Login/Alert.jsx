@@ -1,5 +1,5 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from "react";
+import PropTypes from "prop-types";
 
 /**
  * Bootstrap-based Alert component to display messages.
@@ -9,8 +9,11 @@ import PropTypes from 'prop-types';
  * - type: "info" | "success" | "warning" | "danger" (default: "info").
  * - onClose: Optional callback to dismiss the alert.
  */
-const Alert = ({ message, type = 'info', onClose }) => (
-  <div className={`alert alert-${type} alert-dismissible fade show`} role="alert">
+const Alert = ({ message, type = "info", onClose }) => (
+  <div
+    className={`alert alert-${type} alert-dismissible fade show`}
+    role="alert"
+  >
     {message}
     {onClose && (
       <button
@@ -25,7 +28,7 @@ const Alert = ({ message, type = 'info', onClose }) => (
 
 Alert.propTypes = {
   message: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['info', 'success', 'warning', 'danger']),
+  type: PropTypes.oneOf(["info", "success", "warning", "danger"]),
   onClose: PropTypes.func,
 };
 

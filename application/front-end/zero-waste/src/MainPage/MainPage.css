@@ -3,6 +3,10 @@
   background-size: cover;
   background-position: center;
   background-repeat: repeat;
+  background-attachment: fixed;
+  background-blend-mode: multiply;
+  width: 100%;
+  min-height: 100vh;
 }
 
 .header-highlight {
@@ -86,6 +90,7 @@
   border-radius: 0.5rem;
   display: inline-block;
 }
+
 
 .bar-plastic {
   fill: #ffadad; /* pastel kırmızımsı */

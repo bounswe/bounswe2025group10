@@ -18,10 +18,11 @@ export default function App() {
         <Route path="/commentPage" element={<CommentPanel />} />
         <Route path="/userPage" element={<UserPanel />} />
       </Route>
-      
+
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="*" element={<LoginPage />} />
     </Routes>
   );
+  // return <MainPage />;
 }

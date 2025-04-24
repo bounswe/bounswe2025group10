@@ -31,31 +31,26 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", data.token); // ✅ Save to localStorage
         setToken(data.token);
         setUser(email);
-        return true
+        return true;
       } else {
-        
-        return false
-        
-        
+        return false;
       }
     } catch (err) {
       console.error("Login error:", err.message);
-      return false
+      return false;
     }
   };
-  const signup= async (email,username, _password) => {
+  const signup = async (email, username, _password) => {
     try {
       const response = await fetch("http://134.209.253.215:8000/signup", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email,username, _password }),
+        body: JSON.stringify({ email, username, _password }),
       });
-  
+
       const data = await response.json();
-  
-      
     } catch (err) {
       console.error("Signup error:", err.message);
     }

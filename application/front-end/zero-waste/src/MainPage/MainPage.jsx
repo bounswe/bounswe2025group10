@@ -90,7 +90,7 @@ export default function MainPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container flex-grow-1 py-5">
+      <main className="container-fluid flex-grow-1 py-5">
         {/* Input Row */}
         <div className="row mb-5">
           <div className="col-md-4 mb-3">
