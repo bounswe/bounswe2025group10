@@ -11,7 +11,7 @@ import { useAuth } from "../Login/AuthContent";
 
 
 
-function AdminPanel(){
+function CommentPanel(){
 
   const {token} =useAuth()
 
@@ -39,4 +39,4 @@ function AdminPanel(){
 
 
 }
-export default AdminPanel
+export default CommentPanel
