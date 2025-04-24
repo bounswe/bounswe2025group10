@@ -1,13 +1,7 @@
 import React from "react";
 import { useContext } from "react";
 import { Nav } from "react-bootstrap";
-import { useAuth } from "../Login/AuthContent";
-
-
-
-
-
-
+import { useAuth } from "../pages/Login/AuthContent";
 
 
 

@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./Login/LoginPage";
-import SignupPage from "./Login/SignupPage";
-import ProtectedRoute from "./Login/ProtectedRoute";
-import MainPage from "./MainPage/MainPage";
+import LoginPage from "./pages/Login/LoginPage";
+import SignupPage from "./pages/Login/SignupPage";
+import ProtectedRoute from "./pages/Login/ProtectedRoute";
+import MainPage from './pages/MainPage/MainPage';
 import AdminPanel from  "./Admin/AdminPanel";
 import ChallengePanel from  "./Admin/ChallengePanel";
 import CommentPanel from  "./Admin/CommentPanel";
