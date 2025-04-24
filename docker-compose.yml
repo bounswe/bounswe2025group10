@@ -1,0 +1,12 @@
+version: '3'
+services:
+  react-native:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8081:8081"  # Metro Bundler
+    environment:
+      - NODE_ENV=development
+    stdin_open: true
+    tty: true
