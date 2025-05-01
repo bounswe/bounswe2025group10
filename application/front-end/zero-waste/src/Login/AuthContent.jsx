@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(undefined);
@@ -40,10 +41,15 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
-  const signup = async (email, username, _password) => {
+
+ 
+
+  const signup= async (email,username, _password) => {
+    
+
     try {
       const response = await fetch("http://134.209.253.215:8000/signup", {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -51,10 +57,25 @@ export const AuthProvider = ({ children }) => {
       });
 
       const data = await response.json();
+
+      
+      return data
+
     } catch (err) {
       console.error("Signup error:", err.message);
+      return false
     }
-    navigate("/");
+    //return true if sign up is succesful
+    if(data && data.response==="ok"){
+      console.log("true")
+      return true
+      
+    }
+    //else return false
+    console.log("false")
+    return false
+    
+    
   };
 
   const logout = () => setUser(null);
@@ -63,3 +84,4 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+export default AuthProvider

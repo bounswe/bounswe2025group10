@@ -1,59 +1,81 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+
+
+const signupMock = vi.fn(async () => true);
+
+vi.mock("../../Login/AuthContent", () => ({
+  useAuth: () => ({ signup: signupMock }),
+  default: ({ children }) => <>{children}</>, // stub AuthProvider
+}));
+
+
+import React from "react";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SignupPage from "../../Login/SignupPage";
 import { MemoryRouter } from "react-router-dom";
 
-/* ---------------- MOCKS ------------------- */
-const signupMock = vi.fn();
 
-vi.mock("../../Login/AuthContent", () => ({
-  useAuth: () => ({
-    signup: signupMock,
-  }),
-  AuthProvider: ({ children }) => <>{children}</>,
-}));
 
-/* ---------------- RENDER UTILITY ------------------- */
-import { AuthProvider } from "../../Login/AuthContent"; // 👈 make sure this matches your path
+describe("Signup Page",()=>{
 
-const renderWithRouter = () =>
-  render(
-    <MemoryRouter>
-      <AuthProvider>
+  it("renders UI components",()=>{
+
+    //render the sign up page component
+    render(
+      <MemoryRouter>
         <SignupPage />
-      </AuthProvider>
-    </MemoryRouter>
-  );
-/* ---------------- TEST CASES ------------------- */
-describe("SignupPage", () => {
-  beforeEach(() => {
-    signupMock.mockClear();
-  });
+      </MemoryRouter>
+    );
+  
 
-  it("renders form elements correctly", () => {
-    renderWithRouter();
+    const username=screen.getByLabelText(/username/i)
+    const password=screen.getByLabelText(/password/i)
+    const email=screen.getByLabelText(/email/i)
+    const button=screen.getByRole("button", { name: /sign up/i })
+    
 
-    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign up/i })).toBeInTheDocument();
+    expect(username).toBeInTheDocument()
+    expect(password).toBeInTheDocument()
+    expect(email).toBeInTheDocument()
+    expect(button).toBeInTheDocument()
 
-    const loginLink = screen.getByRole("link", { name: /sign in/i });
-    expect(loginLink).toHaveAttribute("href", "/login");
-  });
+  })
 
-  it("calls signup with email and password on form submit", async () => {
-    renderWithRouter();
-    const user = userEvent.setup();
 
-    await user.type(screen.getByPlaceholderText(/email/i), "newuser@example.com");
-    await user.type(screen.getByPlaceholderText(/password/i), "secret123");
-    await user.click(screen.getByRole("button", { name: /sign up/i }));
+  it("when clicked to the button, it must send email,username,password ",async ()=>{
 
-    expect(signupMock).toHaveBeenCalledTimes(1);
-    expect(signupMock).toHaveBeenCalledWith("newuser@example.com", "secret123");
-  });
-});
+
+
+    
+
+    //render the sign up page component
+    render(
+      <MemoryRouter>
+        <SignupPage />
+      </MemoryRouter>
+    );
+  
+
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await userEvent.type(screen.getByLabelText(/username/i), 'tester');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret123');
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /sign up/i })
+    );
+
+    expect(signupMock).toHaveBeenCalledOnce()
+    expect(signupMock).toHaveBeenCalledWith(
+      "test@example.com",
+      "tester",
+      "secret123"
+    );
+
+  })
+
+
+}) 

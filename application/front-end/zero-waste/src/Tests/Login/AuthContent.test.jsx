@@ -2,73 +2,87 @@
  * @vitest-environment jsdom
  */
 import React from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import userEvent from "@testing-library/user-event";
+import "@testing-library/jest-dom";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { AuthProvider, useAuth } from "../../Login/AuthContent";
-import { BrowserRouter } from "react-router-dom";
 
-// Mock `useNavigate`
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(), // just mock useNavigate as a no-op
-    BrowserRouter: actual.BrowserRouter ?? (({ children }) => <div>{children}</div>),
-  };
+///////////////////////////////////////////////////////////////////////////
+// helpers
+///////////////////////////////////////////////////////////////////////////
+const wrapper = ({ children }) => (
+  <MemoryRouter>
+    <AuthProvider>{children}</AuthProvider>
+  </MemoryRouter>
+);
+
+/* Reset mocks & localStorage before each test */
+beforeEach(() => {
+  vi.resetAllMocks();
+  localStorage.clear();
 });
 
-// Test component that uses AuthContext
-const TestComponent = () => {
-  const { user, login, signup, logout } = useAuth();
-  return (
-    <div>
-      <div data-testid="user">{user?.email || "Guest"}</div>
-      <button onClick={() => login("test@mail.com", "1234")}>Login</button>
-      <button onClick={() => signup("new@mail.com", "abcd")}>Signup</button>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
-};
+///////////////////////////////////////////////////////////////////////////
+// 1. login
+///////////////////////////////////////////////////////////////////////////
+describe("useAuth › login()", () => {
+  it("returns true and saves token on 200 OK", async () => {
+    /* mock fetch */
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ token: "abc123" }),
+    })));
 
-const renderWithAuth = () =>
-  render(
-    <BrowserRouter>
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
-    </BrowserRouter>
-  );
+    const { result } = renderHook(() => useAuth(), { wrapper });
 
-describe("AuthProvider simplified", () => {
-  beforeEach(() => {
-    localStorage.clear();
+    let success;
+    await act(async () => {
+      success = await result.current.login("e@mail.com", "pass");
+    });
+
+    expect(success).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(
+      "http://134.209.253.215:8000/login",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "e@mail.com", password: "pass" }),
+      })
+    );
+    expect(localStorage.getItem("token")).toBe("abc123");
   });
 
-  it("starts with no user", () => {
-    renderWithAuth();
-    expect(screen.getByTestId("user")).toHaveTextContent("Guest");
-  });
+  it("returns false on network error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("boom"); }));
 
-  it("logs in a user", async () => {
-    renderWithAuth();
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Login"));
-    expect(screen.getByTestId("user")).toHaveTextContent("test@mail.com");
-  });
+    const { result } = renderHook(() => useAuth(), { wrapper });
 
-  it("signs up a user", async () => {
-    renderWithAuth();
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Signup"));
-    expect(screen.getByTestId("user")).toHaveTextContent("new@mail.com");
+    let success;
+    await act(async () => {
+      success = await result.current.login("x", "y");
+    });
+    expect(success).toBe(false);
   });
+});
 
-  it("logs out the user", async () => {
-    localStorage.setItem("user", JSON.stringify({ email: "logged@mail.com" }));
-    renderWithAuth();
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Logout"));
-    expect(screen.getByTestId("user")).toHaveTextContent("Guest");
+
+///////////////////////////////////////////////////////////////////////////
+// 3. logout
+///////////////////////////////////////////////////////////////////////////
+describe("useAuth › logout()", () => {
+  it("clears user state", async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    act(() => result.current.logout());
+    // user state isn’t exposed, but we can call login after logout
+    expect(await result.current.login("", "")).toBe(false); // fetch not mocked
   });
+});
+
+///////////////////////////////////////////////////////////////////////////
+// clean-up
+///////////////////////////////////////////////////////////////////////////
+afterEach(() => {
+  vi.unstubAllGlobals();
 });

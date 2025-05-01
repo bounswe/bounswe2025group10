@@ -2,19 +2,55 @@ import "../App.css";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./AuthContent";
+import { useNavigate } from "react-router-dom";
+import Alert from "./Alert";
+import React from "react";
+
 
 export default function SignupPage() {
   const { signup } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState('');
+  const [type, setType] = useState('success');
 
-  const handleSubmit = (e) => {
+  //alert function
+  const showAlert = (message, type = 'info') => {
+    setMsg(message);
+     setType(type);
+     setTimeout(() => setMsg(''), 3000);
+   };
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    signup(email, user, password);
+    const status= await signup(email, user, password);
+    //sign up is succesful
+    if (status) {
+      // 2️⃣ Show success alert
+      showAlert("Sign up successful!", "success");
+      // 3️⃣ Navigate after a short delay (so user sees the message)
+      setTimeout(() => navigate("/"), 1500);
+    } else {
+      // 4️⃣ Only show the failure alert on error
+      showAlert("Sign up has failed", "warning");
+      // no navigation here
+    }
+
   };
 
   return (
+    <>
+   {msg && (
+        <div
+          className="position-fixed top-0 start-50 translate-middle-x mt-3"
+          style={{ zIndex: 1050, width: "400px" }}
+        >
+          <Alert message={msg} type={type} onClose={() => setMsg("")} />
+        </div>
+      )}
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-success bg-opacity-10">
       <div
         className="card border-success shadow-lg rounded-4 p-5"
@@ -87,5 +123,6 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
