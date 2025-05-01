@@ -22,13 +22,7 @@ services:
 
   web:
     build: .
-
-    # THIS LINE IS FOR DEPLOYMENT, USES GUNICORN
-#    command: gunicorn project.wsgi:application --bind 0.0.0.0:8000
-
-    # WARNING: THIS LINE IS FOR DEVELOPMENT, USES DJANGO RUNSERVER SO THAT WE CAN SEE THE CHANGES IMMEDIATELY
     command: python manage.py runserver 0.0.0.0:8000
-
     develop:
       watch:
         - action: sync
