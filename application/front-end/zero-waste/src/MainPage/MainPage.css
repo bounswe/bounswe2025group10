@@ -1,0 +1,103 @@
+.main-bg {
+  background-image: url('/zero-waste-bg.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  background-blend-mode: multiply;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.header-highlight {
+  background-color: #1e5631; /* koyu yeşil */
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: white;
+}
+
+.nav-highlight {
+  background-color: #1e5631;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  margin-left: 0.3rem;
+}
+
+.input-card {
+  background-color: #1e5631;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  color: white;
+}
+
+.bg-light-green {
+  background-color: #e6f4ea;
+  border-radius: 0.5rem;
+}
+
+.bg-pale-green {
+  background-color: #d8f3dc;
+  border-radius: 0.5rem;
+}
+
+.bg-light-success {
+  background-color: #cce5cc;
+  border-radius: 0.5rem;
+}
+
+.tip-card {
+  background-color: #f5fff9;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  border: 1px solid #cde4cc;
+}
+
+.progress-card {
+  background-color: #f1f9f1;
+  border-radius: 0.5rem;
+}
+
+.add-button-wrapper {
+  background-color: #1e5631;
+  padding: 0;
+  border-radius: 0.5rem;
+  height: 100px;
+  width: 100px;
+  margin-left: 0;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-button-wrapper .btn {
+  width: 100%;
+  height: 100%;
+  font-weight: 500;
+  border-radius: 0.5rem;
+}
+
+.tip-and-progress-box {
+  background-color: #b3dbc2; /* biraz daha koyu ama yumuşak yeşil */
+  border-radius: 0.5rem;
+}
+
+.footer-box {
+  background-color: white;
+  color: black;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: inline-block;
+}
+
+
+.bar-plastic {
+  fill: #ffadad; /* pastel kırmızımsı */
+}
+.bar-glass {
+  fill: #ffd6a5; /* pastel turuncu */
+}
+.bar-paper {
+  fill: #a0c4ff; /* pastel mavi */
+}
