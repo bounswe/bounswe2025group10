@@ -58,10 +58,13 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://zero-waste-jyr8r0680-basars-projects-58c905f6.vercel.app"
+    "https://zero-waste-jyr8r0680-basars-projects-58c905f6.vercel.app",
+    "http://134.209.253.215:8000",
 ]
 
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_CREDENTIALS = True
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 
 AUTH_USER_MODEL = 'api.Users'
 
