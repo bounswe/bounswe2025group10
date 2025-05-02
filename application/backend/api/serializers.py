@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
-from .models import User
+from .models import Users
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -13,14 +13,14 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         # Specify model and fields to be serialized
-        model = User
+        model = Users
         fields = ['email', 'username', 'password']
 
     def validate(self, attrs):
         # Check if email already exists in database
-        email_exists = User.objects.filter(email=attrs['email']).exists()
+        email_exists = Users.objects.filter(email=attrs['email']).exists()
         # Check if username already exists in database
-        username_exists = User.objects.filter(username=attrs['username']).exists()
+        username_exists = Users.objects.filter(username=attrs['username']).exists()
 
         # Raise validation errors if email or username exists
         if email_exists:
