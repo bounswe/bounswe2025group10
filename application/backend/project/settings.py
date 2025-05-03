@@ -57,10 +57,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
+# This is for only development purposes, remove it in production
+"""CORS_ALLOWED_ORIGINS = [
     "https://zero-waste-jyr8r0680-basars-projects-58c905f6.vercel.app",
     "http://134.209.253.215:8000",
 ]
+"""
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_CREDENTIALS = True
@@ -156,9 +159,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-MIGRATION_MODULES = {
-    'api': None,    # or whatever your app label is
-}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
