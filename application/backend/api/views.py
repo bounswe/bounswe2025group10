@@ -29,6 +29,7 @@ class SignUpView(generics.GenericAPIView):
             }
             return Response(data = response, status=status.HTTP_201_CREATED)
         
+        print("SIGNUP VALIDATION ERRORS:", serializer.errors)
         return Response(data = serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # User authentication view
