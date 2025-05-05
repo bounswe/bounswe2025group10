@@ -11,8 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from .tokens import create_jwt_pair_for_user
 
 # User registration view
+@permission_classes([AllowAny])
 class SignUpView(generics.GenericAPIView):
-    permission_classes = [AllowAny]
     serializer_class = SignUpSerializer
 
     def post(self, request: Request):
@@ -33,9 +33,9 @@ class SignUpView(generics.GenericAPIView):
         return Response(data = serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # User authentication view
+@permission_classes([AllowAny])
 class LoginView(APIView):
-    permission_classes = [AllowAny]
-    
+
     def post(self, request: Request):
         # Extract credentials from request
         email = request.data.get('email')

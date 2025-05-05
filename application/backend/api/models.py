@@ -107,8 +107,7 @@ class Tips(models.Model):
         db_table = 'Tips'
 
 
-class Userachievements(models.Model):
-    pk = models.CompositePrimaryKey('user_id', 'achievement_id')
+class UserAchievements(models.Model):
     user = models.ForeignKey('Users', models.DO_NOTHING)
     achievement = models.ForeignKey(Achievements, models.DO_NOTHING)
     earned_at = models.DateTimeField(blank=True, null=True)
@@ -116,11 +115,10 @@ class Userachievements(models.Model):
     class Meta:
         managed = False
         db_table = 'UserAchievements'
-        unique_together = (('user', 'achievement'),)
+        unique_together = (('user', 'achievement'),) # these two together becomes primary key
 
 
-class Userchallenges(models.Model):
-    pk = models.CompositePrimaryKey('user_id', 'challenge_id')
+class UserChallenges(models.Model):
     user = models.ForeignKey('Users', models.DO_NOTHING)
     challenge = models.ForeignKey(Challenges, models.DO_NOTHING)
     joined_date = models.DateTimeField(blank=True, null=True)
@@ -128,7 +126,7 @@ class Userchallenges(models.Model):
     class Meta:
         managed = False
         db_table = 'UserChallenges'
-        unique_together = (('user', 'challenge'),)
+        unique_together = (('user', 'challenge'),) # these two together becomes primary key
 
 class AuthGroup(models.Model):
     name = models.CharField(unique=True, max_length=150)
@@ -160,7 +158,7 @@ class AuthPermission(models.Model):
         unique_together = (('content_type', 'codename'),)
 
 
-class AuthtokenToken(models.Model):
+class AuthToken(models.Model):
     key = models.CharField(primary_key=True, max_length=40)
     created = models.DateTimeField()
     user = models.OneToOneField(Users, models.DO_NOTHING)
