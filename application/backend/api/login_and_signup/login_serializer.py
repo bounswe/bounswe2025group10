@@ -2,10 +2,10 @@
 from rest_framework import serializers
 from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
-from .models import Users
+from ..models import Users
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class LoginSerializer(serializers.ModelSerializer):
     # Define serializer fields with validation rules
     email = serializers.EmailField(max_length=80)
     username = serializers.CharField(max_length=50)

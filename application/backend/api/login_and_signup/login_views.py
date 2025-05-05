@@ -1,6 +1,5 @@
-from django.shortcuts import render
 from django.contrib.auth import authenticate
-from .serializers import SignUpSerializer
+from .login_serializer import LoginSerializer
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -13,7 +12,7 @@ from .tokens import create_jwt_pair_for_user
 # User registration view
 @permission_classes([AllowAny])
 class SignUpView(generics.GenericAPIView):
-    serializer_class = SignUpSerializer
+    serializer_class = LoginSerializer
 
     def post(self, request: Request):
         data = request.data
