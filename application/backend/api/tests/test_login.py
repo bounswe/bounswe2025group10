@@ -5,11 +5,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from application.backend.api.login_and_signup.login_serializer import LoginSerializer
-from application.backend.api.login_and_signup.login_views import (
+from api.login_and_signup.login_serializer import LoginSerializer
+from api.login_and_signup.login_views import (
     SignUpView, LoginView, server_status, get_user_info
 )
-from application.backend.api.login_and_signup.tokens import create_jwt_pair_for_user
+from api.login_and_signup.tokens import create_jwt_pair_for_user
 
 User = get_user_model()
 
