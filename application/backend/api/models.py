@@ -23,30 +23,23 @@ class CustomUserManager(BaseUserManager):
 
 
 class Users(AbstractUser):
-    class Meta:
-        db_table = 'Users'
-
-    # Primary key
-    id = models.IntegerField(primary_key=True)
+    # Remove fields that are already in AbstractUser
     email = models.EmailField(max_length=100, unique=True)
     username = models.CharField(max_length=50, unique=True)
-    password = models.CharField(max_length=100)
-
-    # Additional columns
+    
+    # Custom fields
     isAdmin = models.BooleanField(default=False, db_column='isAdmin')
     profile_id = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.CharField(max_length=255, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
-
-    # Keep Django’s staff/superuser flags in sync if you need them
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
+    class Meta:
+        db_table = 'Users'
     def __str__(self):
         return self.username
 
