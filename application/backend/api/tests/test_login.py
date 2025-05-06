@@ -156,6 +156,7 @@ class ServerStatusTests(TestCase):
 
     def test_server_status(self):
         req = self.factory.get("/status/")
+        print("Request object:", req)  # Inspect the request
         resp = server_status(req)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, {"status": "Server is running"})
