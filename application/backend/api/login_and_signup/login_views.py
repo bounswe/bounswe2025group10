@@ -61,7 +61,7 @@ class LoginView(APIView):
             "auth": str(request.auth)
         }
         return Response(data = content, status = status.HTTP_200_OK)
-    
+
 @api_view(['GET'])
 def server_status(request):
     data = {
