@@ -62,7 +62,6 @@ class LoginView(APIView):
         }
         return Response(data = content, status = status.HTTP_200_OK)
 
-@permission_classes([AllowAny])
 @api_view(['GET'])
 def server_status(request):
     data = {
