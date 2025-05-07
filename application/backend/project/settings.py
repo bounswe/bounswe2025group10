@@ -32,14 +32,14 @@ ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io']
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
+    
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
-
+    'django.contrib.auth',
+    'django.contrib.admin',
     # third-party apps
     'rest_framework',
     'rest_framework.authtoken',
@@ -90,10 +90,6 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=36500),
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
-}
-
-MIGRATION_MODULES = {
-    'api': None,    # or whatever your app label is
 }
 
 TEMPLATES = [

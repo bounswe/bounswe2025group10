@@ -153,10 +153,15 @@ class LoginViewTests(TestCase):
 class ServerStatusTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
+        self.user = User.objects.create_user(
+            username="statususer",
+            email="status@example.com",
+            password="password123"
+        )
 
     def test_server_status(self):
         req = self.factory.get("/status/")
-        print("Request object:", req)  # Inspect the request
+        force_authenticate(req, user=self.user)
         resp = server_status(req)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, {"status": "Server is running"})
