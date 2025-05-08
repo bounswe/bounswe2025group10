@@ -3,10 +3,11 @@ from django.urls import path
 # Import JWT token views from rest_framework_simplejwt
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
+from .waste import waste_views
+from .tip import tip_views
 
 # URL patterns for authentication endpoints
 urlpatterns = [
-    # LOGIN / REGISTRATION RELATED
     # User registration endpoint
     path('signup/', login_views.SignUpView.as_view(), name='signup'),
     # User login endpoint
@@ -21,8 +22,12 @@ urlpatterns = [
     path("status/", login_views.server_status, name="server_status"),
     # User info endpoint
     path("me/", login_views.get_user_info, name="user-info"),
-
-    # ADMIN PANEL RELATED
+    # User waste creation endpoint
+    path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
+    # User waste retrieval endpoint
+    path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+    # Sending 3 recent tips endpoint
+    path("api/tips/", tip_views.get_recent_tips, name="get_recent_tips"),
     # Get reported posts endpoint
 
     # Get reported comments endpoint
@@ -32,6 +37,4 @@ urlpatterns = [
     # get reported challenges endpoint
 
     # Get reported users endpoint
-
-    # XXX RELATED
 ]
