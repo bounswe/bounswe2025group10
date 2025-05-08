@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -118,3 +119,33 @@ class UserChallenges(models.Model):
     class Meta:
         db_table = 'UserChallenges'
         unique_together = (('user', 'challenge'),) # these two together becomes primary key
+
+class Waste(models.Model):
+    WASTE_TYPES = [
+        ('PLASTIC', 'Plastic'),
+        ('PAPER', 'Paper'),
+        ('GLASS', 'Glass'),
+        ('METAL', 'Metal'),
+    ]
+    type = models.CharField(
+        max_length=50,
+        choices=WASTE_TYPES,
+        blank=False,
+        null=False
+    )
+
+    class Meta:
+        db_table = 'Waste'
+
+    def __str__(self):
+        return self.type
+
+class UserWastes(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    waste = models.ForeignKey(Waste, on_delete=models.PROTECT)
+    amount = models.FloatField(blank=False, null=False)
+    date = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'UserWastes'
+        ordering = ['-date']

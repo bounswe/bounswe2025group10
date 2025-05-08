@@ -3,6 +3,7 @@ from django.urls import path
 # Import JWT token views from rest_framework_simplejwt
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
+from .waste import waste_views
 
 # URL patterns for authentication endpoints
 urlpatterns = [
@@ -20,4 +21,6 @@ urlpatterns = [
     path("status/", login_views.server_status, name="server_status"),
     # User info endpoint
     path("me/", login_views.get_user_info, name="user-info"),
+    # User waste creation endpoint
+    path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
 ]
