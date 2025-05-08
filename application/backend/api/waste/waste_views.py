@@ -71,12 +71,10 @@ def get_user_wastes(request):
             total_amount = wastes.aggregate(total=Sum('amount'))['total'] or 0
 
             # Serialize the waste records
-            serializer = UserWasteSerializer(wastes, many=True)
             
             response_data.append({
                 'waste_type': waste_type.type,
                 'total_amount': total_amount,
-                'records': serializer.data
             })
 
         return Response({
