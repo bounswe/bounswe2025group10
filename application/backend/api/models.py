@@ -94,8 +94,8 @@ class Posts(models.Model):
 
 class Tips(models.Model):
     text = models.TextField()
-    like_count = models.IntegerField(blank=True, null=True)
-    dislike_count = models.IntegerField(blank=True, null=True)
+    like_count = models.IntegerField(blank=True, null=True, default= 0)
+    dislike_count = models.IntegerField(blank=True, null=True, default= 0)
 
     class Meta:
         db_table = 'Tips'
