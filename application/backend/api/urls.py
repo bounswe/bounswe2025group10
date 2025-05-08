@@ -6,6 +6,7 @@ from .login_and_signup import login_views
 
 # URL patterns for authentication endpoints
 urlpatterns = [
+    # LOGIN / REGISTRATION RELATED
     # User registration endpoint
     path('signup/', login_views.SignUpView.as_view(), name='signup'),
     # User login endpoint
@@ -20,4 +21,17 @@ urlpatterns = [
     path("status/", login_views.server_status, name="server_status"),
     # User info endpoint
     path("me/", login_views.get_user_info, name="user-info"),
+
+    # ADMIN PANEL RELATED
+    # Get reported posts endpoint
+
+    # Get reported comments endpoint
+
+    # get reported tips endpoint
+
+    # get reported challenges endpoint
+
+    # Get reported users endpoint
+
+    # XXX RELATED
 ]
