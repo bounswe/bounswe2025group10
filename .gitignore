@@ -83,3 +83,6 @@ pnpm-lock.yaml
 /application/front-end/build/
 /application/front-end/.env
 /Images/
+
+/application/backend/venv
+/application/backend/venv/*
