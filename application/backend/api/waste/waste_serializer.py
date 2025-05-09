@@ -17,7 +17,9 @@ class UserWasteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         waste_type = validated_data.pop('waste_type')
-        waste = Waste.objects.get(type=waste_type.upper())
+        waste = Waste.objects.filter(type=waste_type.upper()).first()
+        if not waste:
+            raise serializers.ValidationError(f"Invalid waste type: {waste_type}")
         return UserWastes.objects.create(
             waste=waste,
             **validated_data
