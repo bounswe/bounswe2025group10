@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'challenges',
     'django.contrib.auth',
     'django.contrib.admin',
     # third-party apps
