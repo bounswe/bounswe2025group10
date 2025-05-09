@@ -46,10 +46,18 @@ class LoginView(APIView):
         if user is not None:
             # Generate JWT tokens for authenticated user
             tokens = create_jwt_pair_for_user(user)
-            response = {
-                "message": "Login successful.",
-                "token": tokens,
-            }
+            if user.isAdmin:
+                response = {
+                    "message": "Login successful.",
+                    "token": tokens,
+                    "isAdmin": True,
+                }
+            else:
+                response = {
+                    "message": "Login successful.",
+                    "token": tokens,
+                    "isAdmin": False,
+                }
             return Response(data=response, status=status.HTTP_200_OK)
         
         return Response(data={"error": "Invalid credentials!"}, status=status.HTTP_401_UNAUTHORIZED)
