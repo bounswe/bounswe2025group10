@@ -1,54 +1,30 @@
 const React = require('react');
 
-// Mock specific components
+// Basic component mocks
 const mockComponents = {
   View: ({ children, ...props }) => React.createElement('View', props, children),
   Text: ({ children, ...props }) => React.createElement('Text', props, children),
+  TextInput: (props) => React.createElement('TextInput', props),
+  TouchableOpacity: ({ children, ...props }) => React.createElement('TouchableOpacity', props, children),
+  StatusBar: (props) => React.createElement('StatusBar', props),
   ScrollView: ({ children, ...props }) => React.createElement('ScrollView', props, children),
-  StatusBar: ({ ...props }) => React.createElement('StatusBar', props),
-  TextInput: ({ onChangeText, value, ...props }) => React.createElement('TextInput', {
-    ...props,
-    value: value || '',
-    onChange: (e) => onChangeText && onChangeText(e.target.value),
-  }),
-  TouchableOpacity: ({ onPress, children, ...props }) => React.createElement('TouchableOpacity', {
-    ...props,
-    onClick: onPress,
-  }, children),
-  ActivityIndicator: ({ ...props }) => React.createElement('ActivityIndicator', props),
-  Image: ({ source, ...props }) => React.createElement('Image', {
-    ...props,
-    src: typeof source === 'object' ? source.uri : source,
-  }),
 };
 
-// Mock APIs
+// Mock StyleSheet and NativeModules
 const mockAPIs = {
   StyleSheet: {
-    create: styles => styles,
-    flatten: style => {
-      if (Array.isArray(style)) {
-        return Object.assign({}, ...style);
-      }
-      return style;
-    },
+    create: (styles) => styles,
+    flatten: (style) => (Array.isArray(style) ? Object.assign({}, ...style) : style),
   },
-  Platform: {
-    OS: 'ios',
-    select: obj => obj.ios,
-  },
-  Dimensions: {
-    get: () => ({ width: 375, height: 812 }),
-  },
-  Animated: {
-    Value: jest.fn(),
-    timing: jest.fn(() => ({ start: jest.fn() })),
-    spring: jest.fn(() => ({ start: jest.fn() })),
-  },
+  NativeModules: {},
 };
 
-// Export mocked modules
+function useColorScheme() {
+  return 'light';
+}
+
 module.exports = {
   ...mockComponents,
   ...mockAPIs,
+  useColorScheme,
 }; 
