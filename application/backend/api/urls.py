@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .login_and_signup import login_views
 from .waste import waste_views
 from .tip import tip_views
+from .admin_panel.admin_panel_views import ReportViewSet
 
 # URL patterns for authentication endpoints
 urlpatterns = [
@@ -28,13 +29,10 @@ urlpatterns = [
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
     # Sending 3 recent tips endpoint
     path("api/tips/", tip_views.get_recent_tips, name="get_recent_tips"),
-    # Get reported posts endpoint
-
-    # Get reported comments endpoint
-
-    # get reported tips endpoint
-
-    # get reported challenges endpoint
-
-    # Get reported users endpoint
+    # Get a list of reported media endpoint
+    path("api/admin/reports/", ReportViewSet.as_view({'get': 'list'}), name="admin-reports-list"),
+    # get a specific report by report id endpoint
+    path("api/admin/reports/<int:pk>/", ReportViewSet.as_view({'get': 'retrieve'}), name="admin-reports-detail"),
+    # Moderate a report endpoint
+    path("api/admin/reports/<int:pk>/moderate/", ReportViewSet.as_view({'post': 'moderate'}), name="admin-reports-moderate"),
 ]
