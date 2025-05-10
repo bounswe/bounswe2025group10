@@ -6,10 +6,11 @@ from ..models import (
     Report,
     Posts,
     Comments,
-    Challenges,
     Tips,
     Users,
 )
+
+from challenges.models import Challenge
 
 # Per‑model “preview” serializers (minimal fields admin cares about)
 class PostPreviewSerializer(serializers.ModelSerializer):
@@ -26,7 +27,7 @@ class CommentPreviewSerializer(serializers.ModelSerializer):
 
 class ChallengePreviewSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Challenges
+        model = Challenge
         fields = ["id", "title", "description", "current_progress", "target_amount"]
 
 
@@ -48,7 +49,7 @@ class ReportedObjectField(serializers.Field):
             return PostPreviewSerializer(obj).data
         if isinstance(obj, Comments):
             return CommentPreviewSerializer(obj).data
-        if isinstance(obj, Challenges):
+        if isinstance(obj, Challenge):
             return ChallengePreviewSerializer(obj).data
         if isinstance(obj, Tips):
             return TipPreviewSerializer(obj).data

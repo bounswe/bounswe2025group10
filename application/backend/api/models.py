@@ -63,18 +63,6 @@ class Achievements(models.Model):
         db_table = 'Achievements'
 
 
-class Challenges(models.Model):
-    title = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    target_amount = models.FloatField(blank=True, null=True)
-    current_progress = models.FloatField(blank=True, null=True)
-    is_public = models.IntegerField(blank=True, null=True)
-    reward = models.ForeignKey(Achievements, models.DO_NOTHING, blank=True, null=True)
-
-    class Meta:
-        db_table = 'Challenges'
-
-
 class Comments(models.Model):
     post = models.ForeignKey('Posts', models.DO_NOTHING)
     author = models.ForeignKey('Users', models.DO_NOTHING)
@@ -112,16 +100,6 @@ class UserAchievements(models.Model):
     class Meta:
         db_table = 'UserAchievements'
         unique_together = (('user', 'achievement'),) # these two together becomes primary key
-
-
-class UserChallenges(models.Model):
-    user = models.ForeignKey('Users', models.DO_NOTHING)
-    challenge = models.ForeignKey(Challenges, models.DO_NOTHING)
-    joined_date = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'UserChallenges'
-        unique_together = (('user', 'challenge'),) # these two together becomes primary key
 
 class Waste(models.Model):
     WASTE_TYPES = [
@@ -173,3 +151,4 @@ class Report(models.Model):
 
     class Meta:
         db_table = 'Reports'
+
