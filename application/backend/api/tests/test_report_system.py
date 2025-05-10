@@ -194,13 +194,13 @@ class UserReportAPITests(APITestCase):
 
     def test_unauthenticated_cannot_report(self):
         """Anonymous users should get 401 when reporting."""
-        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"})
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_authenticated_can_report(self):
         """Logged-in users can successfully file a report."""
         self.client.login(email=self.user.email, password="userpass")
-        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"})
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         # verify the report was created correctly
         report = Report.objects.get(id=res.data["id"])
@@ -213,7 +213,7 @@ class UserReportAPITests(APITestCase):
     def test_report_without_description_is_allowed(self):
         """Omitting description should default to empty string."""
         self.client.login(email=self.user.email, password="userpass")
-        res = self.client.post(self.url, {"reason": "INAPPROPRIATE"})
+        res = self.client.post(self.url, {"reason": "INAPPROPRIATE"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         report = Report.objects.get(id=res.data["id"])
         self.assertEqual(report.description, "")
@@ -221,7 +221,7 @@ class UserReportAPITests(APITestCase):
     def test_missing_reason_returns_bad_request(self):
         """Missing required 'reason' field should return 400 with error."""
         self.client.login(email=self.user.email, password="userpass")
-        res = self.client.post(self.url, {"description": "just because"})
+        res = self.client.post(self.url, {"description": "just because"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("reason", res.data)
 
@@ -229,6 +229,6 @@ class UserReportAPITests(APITestCase):
         """Reporting with an unsupported content_type should return 400."""
         self.client.login(email=self.user.email, password="userpass")
         invalid_url = reverse("report_content", args=["invalid", self.post.id])
-        res = self.client.post(invalid_url, {"reason": "SPAM"})
+        res = self.client.post(invalid_url, {"reason": "SPAM"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("detail", res.data)
