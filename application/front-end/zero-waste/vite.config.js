@@ -7,5 +7,10 @@ export default defineConfig({
   server: {
     port: 5173,  //default port for Vite
     open: true,
-  }
+  },
+  test: {
+    globals: true,
+    environment: "jsdom",  // required for DOM-related tests
+    setupFiles:'./src/setupTests.js'
+  },
 })
