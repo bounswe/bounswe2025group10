@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
 from ..models import Report
-from .admin_panel_serializer import (
-    ReportSerializer,
+from .serializers import (
+    ReportReadSerializer,
     ModerationActionSerializer,
 )
 
@@ -25,7 +25,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class ReportViewSet(viewsets.ReadOnlyModelViewSet):
+class ModerateReportsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     list:   GET /api/admin/reports/
     retrieve: GET /api/admin/reports/{id}/
@@ -35,7 +35,7 @@ class ReportViewSet(viewsets.ReadOnlyModelViewSet):
         Report.objects.select_related("reporter", "content_type")
         .order_by("-date_reported")
     )
-    serializer_class = ReportSerializer
+    serializer_class = ReportReadSerializer
     permission_classes = [IsAdminUser]
     pagination_class = StandardResultsSetPagination
 

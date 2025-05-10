@@ -1,4 +1,4 @@
-# tests/test_admin_panel.py
+# tests/test_report_system.py
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -7,10 +7,10 @@ from rest_framework.test import APITestCase
 import uuid
 
 from api.models import Report, Posts
-from api.admin_panel.admin_panel_views import ReportViewSet
-from api.admin_panel.admin_panel_serializer import ReportSerializer
-from api.admin_panel.admin_panel_views import StandardResultsSetPagination
-from api.admin_panel.admin_panel_views import ModerationActionSerializer
+from api.report_system.admin_panel_views import ModerateReportsViewSet
+from api.report_system.serializers import ReportReadSerializer
+from api.report_system.admin_panel_views import StandardResultsSetPagination
+from api.report_system.admin_panel_views import ModerationActionSerializer
 
 
 User = get_user_model()
