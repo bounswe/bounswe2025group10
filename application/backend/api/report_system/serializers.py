@@ -92,12 +92,13 @@ class ReportCreateSerializer(serializers.ModelSerializer):
     object_id = serializers.IntegerField(
         help_text="The primary key of the object being reported"
     )
+    id = serializers.IntegerField(read_only=True)  # Add id field as read-only
     reason = serializers.CharField(max_length=255)
     description = serializers.CharField(allow_blank=True, required=False)
 
     class Meta:
         model = Report
-        fields = ["content_type", "object_id", "reason", "description"]
+        fields = ["id", "content_type", "object_id", "reason", "description"]
 
 
 # Serializer for moderation actions

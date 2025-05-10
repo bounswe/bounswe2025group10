@@ -193,9 +193,9 @@ class UserReportAPITests(APITestCase):
         cls.url = reverse("report_content", args=["posts", cls.post.id])
 
     def test_unauthenticated_cannot_report(self):
-        """Anonymous users should get 401 when reporting."""
+        """Anonymous users should get 403 when reporting."""
         res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"}, content_type="application/json")
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_authenticated_can_report(self):
         """Logged-in users can successfully file a report."""
