@@ -22,6 +22,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
+    console.log('Signup button pressed', email, username, password);
     if (!email || !username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -45,6 +46,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         ]);
       }
     } catch (error: any) {
+      console.log('Signup error:', error.response?.data, error.message, error);
       Alert.alert(
         'Error',
         error.response?.data?.error || 'An error occurred during signup'

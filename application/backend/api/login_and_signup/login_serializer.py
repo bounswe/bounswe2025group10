@@ -32,17 +32,10 @@ class LoginSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
         
     def create(self, validated_data):
-        # Extract password from validated data
-        password = validated_data.pop('password')
-
-        # Create user instance
-        user = super().create(validated_data)
-
-        # Create authentication token for user
+        user = Users.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            password=validated_data['password']
+        )
         Token.objects.create(user=user)
-
-        # Hash password and save user
-        user.set_password(password)
-        user.save()
-        
         return user

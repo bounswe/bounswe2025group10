@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import { storage } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
 
 interface HomeScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { logout } = useAuth();
+
   const handleLogout = async () => {
-    await storage.clearTokens();
-    navigation.replace('Login');
+    await logout();
+    // No manual navigation needed; AuthContext will handle it
   };
 
   return (
