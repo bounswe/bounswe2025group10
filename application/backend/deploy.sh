@@ -19,8 +19,8 @@ echo "🔄 Updating backend branch..."
 cd "$ROOT_DIR"
 git stash
 git fetch origin
-git checkout backend
-git pull origin backend
+git checkout main
+git pull origin main
 
 # ─── Step 2: Activate virtualenv if present ─────────────────
 echo "🐍 Activating virtual environment (if it exists)..."
