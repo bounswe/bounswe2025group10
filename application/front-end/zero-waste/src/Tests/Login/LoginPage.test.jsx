@@ -55,6 +55,8 @@ describe("LoginPage", () => {
   beforeEach(() => {
     loginMock.mockClear();
     navigateMock.mockClear();
+    loginMock.mockResolvedValue({ success: true, isAdmin: false }); // ✅ fix here
+
   });
 
   it("renders the key form elements", () => {

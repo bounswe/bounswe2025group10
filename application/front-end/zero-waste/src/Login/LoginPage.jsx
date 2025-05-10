@@ -23,13 +23,23 @@ export default function LoginPage() {
       e.preventDefault();
     
       // 1️⃣ Wait for login() to finish
-      const success = await login(email, password);
+      const login_data = await login(email, password)
+
+      const success=login_data.success
+      const isAdmin=login_data.isAdmin
+      
     
       if (success) {
         // 2️⃣ Show success alert
         showAlert("Login successful!", "success");
         // 3️⃣ Navigate after a short delay (so user sees the message)
+        console.log(isAdmin)
+        if(isAdmin){
+          setTimeout(() => navigate("/adminPage"), 1500); //go to adminPage if the user is admin
+        }
+        else{
         setTimeout(() => navigate("/"), 1500);
+        }
       } else {
         // 4️⃣ Only show the failure alert on error
         showAlert("Login has failed", "warning");

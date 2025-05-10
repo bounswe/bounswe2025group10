@@ -16,7 +16,8 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   const [user, setUser] = useState("");
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => localStorage.getItem("accessToken"));
+  
 
   const login = async (email, password) => {
     try {
@@ -53,9 +54,9 @@ export const AuthProvider = ({ children }) => {
         // If the API also returns user details, keep them;
         // otherwise fall back to { email }
         setUser(data.user ?? { email });
-      
-        return true;
+        return { success: true, isAdmin: data.isAdmin };
       }
+
   
       throw new Error("Token missing in response");
     } catch (err) {
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     
 
     try {
-      const response = await fetch("https://134-209-253-215.sslip.io/signup/", {
+      const response = await fetch(`${apiUrl}/signup/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

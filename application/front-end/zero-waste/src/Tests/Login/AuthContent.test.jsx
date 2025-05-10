@@ -27,30 +27,43 @@ beforeEach(() => {
 // 1. login
 ///////////////////////////////////////////////////////////////////////////
 describe("useAuth › login()", () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
   it("returns true and saves token on 200 OK", async () => {
     /* mock fetch */
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: true,
-      json: async () => ({ token: "abc123" }),
+      headers: {
+        get: () => "application/json",
+      },
+      text: async () => JSON.stringify({
+        token: { access: "abc123" },
+        isAdmin: false,
+      }),
     })));
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    let success;
+    let data;
     await act(async () => {
-      success = await result.current.login("e@mail.com", "pass");
+      data = await result.current.login("e@mail.com", "pass");
     });
+    
 
-    expect(success).toBe(true);
+    expect(data.success).toBe(true);
     expect(fetch).toHaveBeenCalledWith(
-      "http://134.209.253.215:8000/login",
+      `${apiUrl}/login/`,
       expect.objectContaining({
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json" ,
+          "Accept": "application/json"
+
+        },
         body: JSON.stringify({ email: "e@mail.com", password: "pass" }),
       })
     );
-    expect(localStorage.getItem("token")).toBe("abc123");
+    expect(localStorage.getItem("accessToken")).toBe("abc123");
   });
 
   it("returns false on network error", async () => {
