@@ -9,6 +9,7 @@ import uuid
 from api.models import Report, Posts
 from api.report_system.admin_panel_views import ModerateReportsViewSet
 from api.report_system.serializers import ReportReadSerializer
+from django.urls import reverse
 from api.report_system.admin_panel_views import StandardResultsSetPagination
 from api.report_system.admin_panel_views import ModerationActionSerializer
 
@@ -169,3 +170,65 @@ class AdminReportAPITests(APITestCase):
         # Post should still exist; report should still exist
         self.assertTrue(Posts.objects.filter(id=post.id).exists())
         self.assertTrue(Report.objects.filter(id=report.id).exists())
+
+
+# ---------------------------------------------------------------
+# User-facing report creation endpoint tests
+# ---------------------------------------------------------------
+
+class UserReportAPITests(APITestCase):
+    """Unit‑tests for the user-facing report creation endpoint."""
+
+    @classmethod
+    def setUpTestData(cls):
+        # create a regular user and a media owner
+        cls.user = make_regular_user()
+        cls.media_owner = make_regular_user()
+        # create a post to report
+        cls.post = Posts.objects.create(
+            creator=cls.media_owner,
+            text="Test post"
+        )
+        # URL for reporting that post
+        cls.url = reverse("report_content", args=["posts", cls.post.id])
+
+    def test_unauthenticated_cannot_report(self):
+        """Anonymous users should get 401 when reporting."""
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"})
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_authenticated_can_report(self):
+        """Logged-in users can successfully file a report."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"})
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        # verify the report was created correctly
+        report = Report.objects.get(id=res.data["id"])
+        self.assertEqual(report.reporter, self.user)
+        self.assertEqual(report.content_type.model, "posts")
+        self.assertEqual(report.object_id, self.post.id)
+        self.assertEqual(report.reason, "SPAM")
+        self.assertEqual(report.description, "spammy")
+
+    def test_report_without_description_is_allowed(self):
+        """Omitting description should default to empty string."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"reason": "INAPPROPRIATE"})
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        report = Report.objects.get(id=res.data["id"])
+        self.assertEqual(report.description, "")
+
+    def test_missing_reason_returns_bad_request(self):
+        """Missing required 'reason' field should return 400 with error."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"description": "just because"})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("reason", res.data)
+
+    def test_invalid_content_type_returns_bad_request(self):
+        """Reporting with an unsupported content_type should return 400."""
+        self.client.login(email=self.user.email, password="userpass")
+        invalid_url = reverse("report_content", args=["invalid", self.post.id])
+        res = self.client.post(invalid_url, {"reason": "SPAM"})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", res.data)
