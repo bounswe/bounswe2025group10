@@ -20,4 +20,6 @@ urlpatterns = [
     path("status/", login_views.server_status, name="server_status"),
     # User info endpoint
     path("me/", login_views.get_user_info, name="user-info"),
+    # Fake login endpoint
+    path('fake-login/', login_views.fake_login, name='fake_login'),
 ]

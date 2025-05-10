@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io']
+ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2']
 
 
 # Application definition
@@ -74,6 +74,9 @@ AUTH_USER_MODEL = 'api.Users'
 ROOT_URLCONF = 'project.urls'
 
 REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
     "NON_FIELD_ERRORS_KEY": "errors",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",

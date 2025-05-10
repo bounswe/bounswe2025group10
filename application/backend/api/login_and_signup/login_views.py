@@ -27,8 +27,8 @@ class SignUpView(generics.GenericAPIView):
                 "data": serializer.data
             }
             return Response(data = response, status=status.HTTP_201_CREATED)
-        
-        print("SIGNUP VALIDATION ERRORS:", serializer.errors)
+        import sys
+        print("SIGNUP VALIDATION ERRORS:", serializer.errors, file=sys.stderr, flush=True)
         return Response(data = serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # User authentication view
@@ -63,6 +63,7 @@ class LoginView(APIView):
         return Response(data = content, status = status.HTTP_200_OK)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def server_status(request):
     data = {
         "status": "Server is running",
@@ -81,3 +82,24 @@ def get_user_info(request):
         "is_authenticated": True
     }
     return Response(data=data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def fake_login(request):
+    """
+    A fake login endpoint that returns a hardcoded token for testing.
+    """
+    fake_token = {
+        'access': 'fake_access_token',
+        'refresh': 'fake_refresh_token'
+    }
+    return Response({
+        'message': 'Fake login successful',
+        'token': fake_token,
+        'data': {
+            'user': {
+                'id': 1,
+                'email': 'fake@example.com',
+                'username': 'fakeuser'
+            }
+        }
+    }, status=200)

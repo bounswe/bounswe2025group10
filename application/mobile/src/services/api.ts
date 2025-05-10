@@ -25,7 +25,7 @@ export interface AuthResponse {
 }
 
 // API Configuration
-const API_URL = 'http://10.0.2.2:8000/api'; // Android emulator localhost
+const API_URL = 'http://10.0.2.2:8000'; // Android emulator localhost
 
 const api = axios.create({
   baseURL: API_URL,
@@ -35,13 +35,13 @@ const api = axios.create({
 });
 
 // Add token to requests if it exists
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// api.interceptors.request.use((config) => {
+//   const token = localStorage.getItem('access_token');
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// });
 
 // Authentication Services
 export const authService = {
@@ -62,6 +62,11 @@ export const authService = {
 
   refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
     const response = await api.post('/jwt/refresh/', { refresh: refreshToken });
+    return response.data;
+  },
+
+  fakeLogin: async (): Promise<AuthResponse> => {
+    const response = await axios.post(`${API_URL}/fake-login/`);
     return response.data;
   },
 };
