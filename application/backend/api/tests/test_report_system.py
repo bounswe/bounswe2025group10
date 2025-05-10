@@ -112,7 +112,7 @@ class AdminReportAPITests(APITestCase):
     # ---------------------- Moderation Actions --------------------------- #
     def test_delete_media_action(self):
         self.auth_as_admin()
-        res = self.client.post(self.moderate_url, {"action": "delete_media"})
+        res = self.client.post(self.moderate_url, {"action": "delete_media"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         # Post should be gone, report should be gone
         self.assertFalse(Posts.objects.filter(id=self.post.id).exists())
@@ -129,7 +129,7 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "ban_user"})
+        res = self.client.post(url, {"action": "ban_user"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.media_owner.refresh_from_db()
         self.assertFalse(self.media_owner.is_active)
@@ -147,7 +147,7 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "ignore"})
+        res = self.client.post(url, {"action": "ignore"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         # Post should still exist; report removed
         self.assertTrue(Posts.objects.filter(id=post.id).exists())
@@ -165,7 +165,7 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "invalid_action"})
+        res = self.client.post(url, {"action": "invalid_action"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         # Post should still exist; report should still exist
         self.assertTrue(Posts.objects.filter(id=post.id).exists())

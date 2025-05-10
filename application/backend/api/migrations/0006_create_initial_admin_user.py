@@ -22,7 +22,7 @@ def reverse_admin_user(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0001_initial'),
+        ('api', '0005_alter_tips_dislike_count_alter_tips_like_count'),
     ]
 
     operations = [
