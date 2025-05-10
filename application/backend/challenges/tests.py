@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from challenges.models import Challenge
+import uuid
 
 
 User = get_user_model()
@@ -16,17 +17,20 @@ class ChallengeTests(TestCase):
         # Create a test client
         self.client = APIClient()
 
+        # Generate unique emails for each test run
+        unique_suffix = uuid.uuid4().hex[:8]
+
         # Create a regular user
         self.user = User.objects.create_user(
-            email="user@example.com",
-            username="user",
+            email=f"user_{unique_suffix}@example.com",
+            username=f"user_{unique_suffix}",
             password="password123"
         )
 
         # Create an admin user
         self.admin = User.objects.create_superuser(
-            email="admin@example.com",
-            username="admin",
+            email=f"admin_{unique_suffix}@example.com",
+            username=f"admin_{unique_suffix}",
             password="admin1234"
         )
 
@@ -66,12 +70,12 @@ class ChallengeTests(TestCase):
             "description": "This is a new challenge.",
             "is_public": True
         }
-        response = self.client.post('/api/challenges/', data)
+        response = self.client.post('/api/challenges/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Authenticate as a regular user
         self.client.force_authenticate(user=self.user)
-        response = self.client.post('/api/challenges/', data)
+        response = self.client.post('/api/challenges/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Challenge.objects.count(), 3)  # Two initial challenges + one new
 
@@ -81,12 +85,12 @@ class ChallengeTests(TestCase):
 
         # Try updating a public challenge (should fail for non-admin)
         data = {"title": "Updated Public Challenge"}
-        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data)
+        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Authenticate as an admin
         self.client.force_authenticate(user=self.admin)
-        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data)
+        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.public_challenge.refresh_from_db()
         self.assertEqual(self.public_challenge.title, "Updated Public Challenge")
