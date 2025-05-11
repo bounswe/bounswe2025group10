@@ -3,28 +3,18 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../Login/AuthContent";
 import Post from "../components/Post";
 import Navbar from "../components/Navbar";
-import "./ProfilePage.css"
 import { showToast } from "../util/toast";
-import {
-  Spinner,
-  Alert,
-  Button,
-  Form,
-  Card,
-  Image,
-  Row,
-  Col,
-} from "react-bootstrap";
+import { Spinner, Button, Form, Card, Image, Row, Col } from "react-bootstrap";
 
 export default function ProfilePage() {
-  const { token,logout } = useAuth();
+  const { token, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [bioDraft, setBioDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  const [avatarFile, setAvatarFile] = useState(null);              // 🆕
-  const fileInputRef = useRef(null);                               // 🆕
+  const [avatarFile, setAvatarFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
@@ -49,8 +39,7 @@ export default function ProfilePage() {
       {
         id: 1,
         title: "Composting 101",
-        description:
-          "A beginner-friendly guide on turning kitchen scraps into nutrient-rich soil.",
+        description: "A beginner-friendly guide on turning kitchen scraps into nutrient-rich soil.",
         image: "https://picsum.photos/seed/compost/600/300",
         like_count: 12,
         liked: false,
@@ -58,8 +47,7 @@ export default function ProfilePage() {
       {
         id: 2,
         title: "DIY Beeswax Wraps",
-        description:
-          "Step-by-step tutorial on making reusable food wraps to replace single-use plastic.",
+        description: "Step-by-step tutorial on making reusable food wraps to replace single-use plastic.",
         image: null,
         like_count: 7,
         liked: true,
@@ -134,100 +122,90 @@ export default function ProfilePage() {
     );
   }
 
-
   return (
-    <>
-    <Navbar active="Profile Page" />
-    <div className="container py-4">
-    
-      {/* ── PROFILE CARD ─────────────────────── */}
-      <Card className="mb-4 shadow-sm">
-        <Card.Body className="d-flex align-items-center">
-          {/* Avatar upload */}
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            className="d-none"
-            onChange={(e) => {
-              if (e.target.files[0]) setAvatarFile(e.target.files[0]);
-            }}
-          />
-          <Image
-            roundedCircle
-            src={
-              avatarFile
-                ? URL.createObjectURL(avatarFile)
-                : profile.avatar || "/placeholder-avatar.png"
-            }
-            alt="profile"
-            width={128}
-            height={128}
-            className="me-4 object-fit-cover"
-            style={{ cursor: "pointer" }}
-            onClick={() => fileInputRef.current?.click()}
-          />
-
-          <div className="flex-grow-1">
-            <h3 className="mb-1">
-              {profile.first_name} {profile.last_name}
-            </h3>
-
-            <Form.Group controlId="bioTextarea">
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={bioDraft}
-                onChange={(e) => setBioDraft(e.target.value)}
-              />
-            </Form.Group>
-
-            {saveError && <Alert variant="danger">{saveError}</Alert>}
-
-            <div className="mt-2 d-flex gap-2">
-              <Button
-                variant="success"
-                disabled={saving}
-                onClick={handleSaveProfile}
-              >
-                {saving ? "Saving…" : "Save"}
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={!avatarFile && bioDraft === profile.bio}
-                onClick={() => {
-                  setAvatarFile(null);
-                  setBioDraft(profile.bio);
+    <div className="main-bg min-vh-100 d-flex flex-column">
+      <Navbar active="Profile Page" />
+      <main className="container mx-auto px-4 py-8">
+        {/* Profile Section */}
+        <section className="mb-8">
+          <Card className="shadow-sm">
+            <Card.Body className="d-flex align-items-center">
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                className="d-none"
+                onChange={(e) => {
+                  if (e.target.files[0]) setAvatarFile(e.target.files[0]);
                 }}
-              >
-                Reset
-              </Button>
-            </div>
-          </div>
-        </Card.Body>
-      </Card>
+              />
+              <Image
+                roundedCircle
+                src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar}
+                alt="profile"
+                width={128}
+                height={128}
+                className="me-4"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ cursor: "pointer", objectFit: "cover" }}
+              />
+              <div className="flex-grow-1">
+                <h3 className="mb-1">
+                  {profile.first_name} {profile.last_name}
+                </h3>
+                <Form.Group controlId="bioTextarea">
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={bioDraft}
+                    onChange={(e) => setBioDraft(e.target.value)}
+                    placeholder="Write something about yourself..."
+                  />
+                </Form.Group>
+                {saveError && <div className="text-danger mt-2">{saveError}</div>}
+                <div className="mt-2 d-flex gap-2">
+                  <Button
+                    variant="success"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setBioDraft(profile.bio)}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </section>
 
-      {/* ── POSTS LIST (narrow column) ──────── */}
-      <Row className="justify-content-center">
-        <Col lg={8} md={10}>
+        {/* Posts Section */}
+        <section>
           <h4 className="mb-3">My Posts</h4>
           {loadingPosts ? (
             <Spinner animation="border" />
           ) : posts.length === 0 ? (
             <p className="text-muted">No posts yet.</p>
           ) : (
-            posts.map((p) => <Post key={p.id} post={p} />)
+            <Row className="g-4">
+              {posts.map((post) => (
+                <Col key={post.id} md={6} lg={4}>
+                  <Post post={post} />
+                </Col>
+              ))}
+            </Row>
           )}
-        </Col>
-      </Row>
-    </div>
-    <footer className="py-3 border-top text-center">
-        <div className="footer-box">
-          <button className="btn btn-outline-dark btn-sm ms-3" onClick={logout}>
-            Log out
-          </button>
-        </div>
+        </section>
+      </main>
+      <footer className="py-3 border-top text-center">
+        <Button variant="outline-dark" size="sm" onClick={logout}>
+          Log out
+        </Button>
       </footer>
-    </>
+    </div>
   );
 }
