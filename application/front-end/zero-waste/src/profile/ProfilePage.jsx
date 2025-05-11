@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../Login/AuthContent";
 import Post from "../components/Post";
+import Navbar from "../components/Navbar";
 import {
   Spinner,
   Alert,
@@ -14,7 +15,7 @@ import {
 } from "react-bootstrap";
 
 export default function ProfilePage() {
-  const { token } = useAuth();
+  const { token,logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [bioDraft, setBioDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -125,7 +126,10 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
+    <Navbar active="Main Page" />
     <div className="container py-4">
+    
       {/* ── PROFILE CARD ─────────────────────── */}
       <Card className="mb-4 shadow-sm">
         <Card.Body className="d-flex align-items-center">
@@ -207,5 +211,13 @@ export default function ProfilePage() {
         </Col>
       </Row>
     </div>
+    <footer className="py-3 border-top text-center">
+        <div className="footer-box">
+          <button className="btn btn-outline-dark btn-sm ms-3" onClick={logout}>
+            Log out
+          </button>
+        </div>
+      </footer>
+    </>
   );
 }
