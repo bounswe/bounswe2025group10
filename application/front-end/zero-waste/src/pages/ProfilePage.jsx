@@ -1,4 +1,3 @@
-// src/profile/ProfilePage.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../Login/AuthContent";
 import Post from "../components/Post";
@@ -14,6 +13,7 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState(null);
 
   const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
   const fileInputRef = useRef(null);
 
   const [posts, setPosts] = useState([]);
@@ -55,8 +55,7 @@ export default function ProfilePage() {
       {
         id: 3,
         title: "Up-cycled Planters",
-        description:
-          "Turn old cans and jars into stylish planters for your indoor garden.",
+        description: "Turn old cans and jars into stylish planters for your indoor garden.",
         image: "https://picsum.photos/seed/planter/600/300",
         like_count: 4,
         liked: false,
@@ -122,10 +121,12 @@ export default function ProfilePage() {
     );
   }
 
+  const avatarSrc = avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar;
+
   return (
     <div className="main-bg min-vh-100 d-flex flex-column">
       <Navbar active="Profile Page" />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow-1">
         {/* Profile Section */}
         <section className="mb-8">
           <Card className="shadow-sm">
@@ -139,20 +140,57 @@ export default function ProfilePage() {
                   if (e.target.files[0]) setAvatarFile(e.target.files[0]);
                 }}
               />
-              <Image
-                roundedCircle
-                src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar}
-                alt="profile"
-                width={128}
-                height={128}
-                className="me-4"
+              <div
+                style={{
+                  position: "relative",
+                  width: 128,
+                  height: 128,
+                  marginRight: "1rem",
+                  flexShrink: 0,
+                }}
                 onClick={() => fileInputRef.current?.click()}
-                style={{ cursor: "pointer", objectFit: "cover" }}
-              />
+              >
+                <Image
+                  roundedCircle
+                  src={avatarSrc}
+                  alt="profile"
+                  width={128}
+                  height={128}
+                  onLoad={() => setAvatarLoaded(true)}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    objectFit: "cover",
+                    cursor: "pointer",
+                    opacity: avatarLoaded ? 1 : 0,
+                    transition: "opacity 0.3s ease-in-out",
+                  }}
+                />
+                {!avatarLoaded && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 128,
+                      height: 128,
+                      borderRadius: "50%",
+                      backgroundColor: "#e0e0e0",
+                    }}
+                  />
+                )}
+              </div>
+
               <div className="flex-grow-1">
-                <h3 className="mb-1">
-                  {profile.first_name} {profile.last_name}
-                </h3>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <h3 className="mb-0">
+                    {profile.first_name} {profile.last_name}
+                  </h3>
+                  <Button variant="outline-dark" size="sm" onClick={logout}>
+                    Log out
+                  </Button>
+                </div>
                 <Form.Group controlId="bioTextarea">
                   <Form.Control
                     as="textarea"
@@ -201,11 +239,6 @@ export default function ProfilePage() {
           )}
         </section>
       </main>
-      <footer className="py-3 border-top text-center">
-        <Button variant="outline-dark" size="sm" onClick={logout}>
-          Log out
-        </Button>
-      </footer>
     </div>
   );
 }

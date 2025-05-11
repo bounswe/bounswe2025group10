@@ -1,17 +1,21 @@
-// src/components/Post.jsx
 import React, { useState } from "react";
-import { Card, Button } from "react-bootstrap";
-import { useAuth } from "../Login/AuthContent"; // adjust path if needed
+import { Card, Button, Spinner } from "react-bootstrap";
+import { useAuth } from "../Login/AuthContent";
 
-export default function Post({ post }) {
-  const { apiUrl, token } = useAuth();   // comment out if not needed
+export default function Post({ post, onToggleLike }) {
+  const { apiUrl, token } = useAuth();
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.like_count || 0);
   const [isSaving, setIsSaving] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  /* ─────────── Like / Unlike toggle (optional) ─────────── */
-  const toggleLike = async () => {
-    if (!token) return;      // skip if anonymous
+  const handleLike = async () => {
+    if (!token) return;
+    if (onToggleLike) {
+      onToggleLike(post.id); // delegate to parent if mock
+      return;
+    }
+
     setIsSaving(true);
     try {
       const res = await fetch(`${apiUrl}/api/posts/${post.id}/like/`, {
@@ -21,9 +25,10 @@ export default function Post({ post }) {
           Authorization: `Bearer ${token}`,
         },
       });
+
       if (res.ok) {
         setLiked(!liked);
-        setLikes(liked ? likes - 1 : likes + 1);
+        setLikes((prev) => (liked ? prev - 1 : prev + 1));
       } else {
         console.error("Like toggle failed");
       }
@@ -37,12 +42,35 @@ export default function Post({ post }) {
   return (
     <Card className="mb-4 shadow-sm">
       {post.image && (
-        <Card.Img
-          variant="top"
-          src={post.image}
-          alt={post.title || "post image"}
-          style={{ objectFit: "cover", maxHeight: 400 }}
-        />
+        <div style={{ position: "relative", maxHeight: 400 }}>
+          <Card.Img
+            variant="top"
+            src={post.image}
+            alt={post.title || "Post image"}
+            onLoad={() => setImgLoaded(true)}
+            style={{
+              objectFit: "cover",
+              maxHeight: 400,
+              opacity: imgLoaded ? 1 : 0,
+              transition: "opacity 0.3s ease-in-out",
+            }}
+          />
+          {!imgLoaded && (
+            <div
+              className="d-flex justify-content-center align-items-center"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                height: 400,
+                width: "100%",
+                backgroundColor: "#f0f0f0",
+              }}
+            >
+              <Spinner animation="border" variant="secondary" />
+            </div>
+          )}
+        </div>
       )}
 
       <Card.Body>
@@ -54,7 +82,7 @@ export default function Post({ post }) {
             variant={liked ? "primary" : "outline-primary"}
             size="sm"
             disabled={isSaving}
-            onClick={toggleLike}
+            onClick={handleLike}
           >
             {liked ? "Liked" : "Like"}
           </Button>

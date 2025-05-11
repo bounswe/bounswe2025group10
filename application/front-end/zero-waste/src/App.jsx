@@ -10,13 +10,17 @@ import UserPanel from "./Admin/UserPanel";
 import ProtectedAdminRoute from "./Login/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
 import Profile from "./pages/ProfilePage.jsx"
+import Community from "./pages/Community.jsx";
 export default function App() {
   return (
     <Routes>
       <Route element={<ProtectedUserRoute />}>
         <Route path="/" element={<MainPage />} />
+        {/*<Route path="/tips" element={<Tips />} />*/}
+        {/*<Route path="/achievements" element={<Achievements />} />*/}
+        {/*<Route path="/leaderboard" element={<Leaderboard />} />*/}
         <Route path="/challenges" element={<Challenges />} />
-        {/*<Route path="/community" element={<Community />} />*/}
+        <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile /> }></Route>
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
       </Route>
