@@ -3,8 +3,10 @@ from django.urls import path
 # Import JWT token views from rest_framework_simplejwt
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
+from .report_system.report_views import ReportCreateView
 from .waste import waste_views
 from .tip import tip_views
+from .report_system.admin_panel_views import ModerateReportsViewSet
 
 # URL patterns for authentication endpoints
 urlpatterns = [
@@ -28,4 +30,12 @@ urlpatterns = [
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
     # Sending 3 recent tips endpoint
     path("api/tips/", tip_views.get_recent_tips, name="get_recent_tips"),
+    # Get a list of reported media endpoint
+    path("api/admin/reports/", ModerateReportsViewSet.as_view({'get': 'list'}), name="admin-reports-list"),
+    # get a specific report by report id endpoint
+    path("api/admin/reports/<int:pk>/", ModerateReportsViewSet.as_view({'get': 'retrieve'}), name="admin-reports-detail"),
+    # Moderate a report endpoint
+    path("api/admin/reports/<int:pk>/moderate/", ModerateReportsViewSet.as_view({'post': 'moderate'}), name="admin-reports-moderate"),
+    # Post report endpoint
+    path("api/<str:content_type>/<int:object_id>/report/", ReportCreateView.as_view(), name="report_content"),
 ]

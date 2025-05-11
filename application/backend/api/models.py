@@ -3,6 +3,9 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         if not email:
@@ -60,18 +63,6 @@ class Achievements(models.Model):
         db_table = 'Achievements'
 
 
-class Challenges(models.Model):
-    title = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    target_amount = models.FloatField(blank=True, null=True)
-    current_progress = models.FloatField(blank=True, null=True)
-    is_public = models.IntegerField(blank=True, null=True)
-    reward = models.ForeignKey(Achievements, models.DO_NOTHING, blank=True, null=True)
-
-    class Meta:
-        db_table = 'Challenges'
-
-
 class Comments(models.Model):
     post = models.ForeignKey('Posts', models.DO_NOTHING)
     author = models.ForeignKey('Users', models.DO_NOTHING)
@@ -110,16 +101,6 @@ class UserAchievements(models.Model):
         db_table = 'UserAchievements'
         unique_together = (('user', 'achievement'),) # these two together becomes primary key
 
-
-class UserChallenges(models.Model):
-    user = models.ForeignKey('Users', models.DO_NOTHING)
-    challenge = models.ForeignKey(Challenges, models.DO_NOTHING)
-    joined_date = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'UserChallenges'
-        unique_together = (('user', 'challenge'),) # these two together becomes primary key
-
 class Waste(models.Model):
     WASTE_TYPES = [
         ('PLASTIC', 'Plastic'),
@@ -149,3 +130,25 @@ class UserWastes(models.Model):
     class Meta:
         db_table = 'UserWastes'
         ordering = ['-date']
+
+# Report logs for all kinds of media and users
+class Report(models.Model):
+    REPORT_REASON_CHOICES = [
+        ('SPAM', 'Spam'),
+        ('INAPPROPRIATE', 'Inappropriate'),
+        ('OTHER', 'Other'),
+    ]
+
+    reporter = models.ForeignKey('Users', on_delete=models.CASCADE)
+    reason = models.CharField(max_length=50, choices=REPORT_REASON_CHOICES)
+    description = models.TextField(blank=True, null=True)
+    date_reported = models.DateTimeField(default=timezone.now)
+
+    # Generic foreign key fields
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    class Meta:
+        db_table = 'Reports'
+
