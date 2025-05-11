@@ -3,6 +3,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../Login/AuthContent";
 import Post from "../components/Post";
 import Navbar from "../components/Navbar";
+import "./ProfilePage.css"
+import { showToast } from "../util/toast";
 import {
   Spinner,
   Alert,
@@ -94,27 +96,34 @@ export default function ProfilePage() {
     }
 
     try {
-      const form = new FormData();
-      form.append("bio", bioDraft);
-      if (avatarFile) form.append("avatar", avatarFile);
+        const form = new FormData();
+        form.append("bio", bioDraft);
+        if (avatarFile) form.append("avatar", avatarFile);
+        const res = await fetch(`${apiUrl}/api/profile/`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // ⚠️ DO NOT set Content-Type here — browser will do it
+          },
+          body: form,
+          
+        });
 
-      const res = await fetch(`${apiUrl}/api/profile/`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: form,
-      });
-      if (!res.ok) throw new Error("Couldn’t save profile");
-      const updated = await res.json();
-      setProfile(updated);
-      setAvatarFile(null);
-    } catch (err) {
-      setSaveError(err.message);
-    } finally {
-      setSaving(false);
+        if (!res.ok) {
+          showToast("Profile could not be saved", "error", 1500);
+          return;
+        }
+      
+        const updated = await res.json();
+        setProfile(updated);
+        setAvatarFile(null);
+      } catch (err) {
+        showToast("Something went wrong", "error", 1500);
+      } finally {
+        setSaving(false);
+      }
     }
-  };
+    
 
   /* ────────────────────────────────────────── UI */
   if (!profile) {
@@ -125,9 +134,10 @@ export default function ProfilePage() {
     );
   }
 
+
   return (
     <>
-    <Navbar active="Main Page" />
+    <Navbar active="Profile Page" />
     <div className="container py-4">
     
       {/* ── PROFILE CARD ─────────────────────── */}
