@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import ProfilePage from "../../profile/ProfilePage";
+import ProfilePage from "../../pages/ProfilePage.jsx";
 
 // ───── Minimal mock for AuthContext ─────
 vi.mock("../../Login/AuthContent", () => ({

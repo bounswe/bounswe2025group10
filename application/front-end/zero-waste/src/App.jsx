@@ -9,7 +9,7 @@ import CommentPanel from "./Admin/CommentPanel";
 import UserPanel from "./Admin/UserPanel";
 import ProtectedAdminRoute from "./Login/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
-import Profile from "./profile/ProfilePage.jsx"
+import Profile from "./pages/ProfilePage.jsx"
 export default function App() {
   return (
     <Routes>
