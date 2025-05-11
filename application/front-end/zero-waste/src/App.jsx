@@ -8,13 +8,16 @@ import ChallengePanel from "./Admin/ChallengePanel";
 import CommentPanel from "./Admin/CommentPanel";
 import UserPanel from "./Admin/UserPanel";
 import ProtectedAdminRoute from "./Login/ProtectedAdminRoute"
+import Challenges from "./pages/Challenges.jsx";
 export default function App() {
   return (
-
-    
     <Routes>
       <Route element={<ProtectedUserRoute />}>
         <Route path="/" element={<MainPage />} />
+        <Route path="/challenges" element={<Challenges />} />
+        {/*<Route path="/community" element={<Community />} />*/}
+        {/*<Route path="/profile" element={<Profile />} />*/}
+        <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
       </Route>
 
       
@@ -31,5 +34,4 @@ export default function App() {
       <Route path="*" element={<LoginPage />} />
     </Routes>
   );
-  // return <MainPage />;
 }
