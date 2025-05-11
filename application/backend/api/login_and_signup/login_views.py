@@ -28,7 +28,6 @@ class SignUpView(generics.GenericAPIView):
             }
             return Response(data = response, status=status.HTTP_201_CREATED)
         import sys
-        print("SIGNUP VALIDATION ERRORS:", serializer.errors, file=sys.stderr, flush=True)
         return Response(data = serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # User authentication view
