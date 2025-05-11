@@ -9,6 +9,7 @@ import CommentPanel from "./Admin/CommentPanel";
 import UserPanel from "./Admin/UserPanel";
 import ProtectedAdminRoute from "./Login/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
+import Profile from "./profile/ProfilePage.jsx"
 export default function App() {
   return (
     <Routes>
@@ -16,7 +17,7 @@ export default function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/challenges" element={<Challenges />} />
         {/*<Route path="/community" element={<Community />} />*/}
-        {/*<Route path="/profile" element={<Profile />} />*/}
+        <Route path="/profile" element={<Profile /> }></Route>
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
       </Route>
 
