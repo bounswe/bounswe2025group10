@@ -125,7 +125,7 @@ export default function ProfilePage() {
 
   return (
     <div className="main-bg min-vh-100 d-flex flex-column">
-      <Navbar active="Profile Page" />
+      <Navbar active="Profile" />
       <main className="container mx-auto px-4 py-8 flex-grow-1">
         {/* Profile Section */}
         <section className="mb-8">
