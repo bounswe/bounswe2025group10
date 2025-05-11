@@ -38,6 +38,12 @@ def upload_profile_picture(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
+        # Delete old profile picture if exists
+        if request.user.profile_image:
+            old_image_path = os.path.join(settings.MEDIA_ROOT, request.user.profile_image)
+            if os.path.exists(old_image_path):
+                os.remove(old_image_path)
+        
         # Create user-specific directory
         user_directory = os.path.join('users', str(request.user.id))
         full_directory = os.path.join(settings.MEDIA_ROOT, user_directory)
