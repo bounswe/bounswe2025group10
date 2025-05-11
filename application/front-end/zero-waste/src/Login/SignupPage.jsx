@@ -1,10 +1,9 @@
 import "../App.css";
-import { useState } from "react";
+import { useState, React} from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./AuthContent";
 import { useNavigate } from "react-router-dom";
-import Alert from "./Alert";
-import React from "react";
+import { showToast } from "../util/toast.js";
 
 
 export default function SignupPage() {
@@ -13,48 +12,27 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState('');
-  const [type, setType] = useState('success');
-
-  //alert function
-  const showAlert = (message, type = 'info') => {
-    setMsg(message);
-     setType(type);
-     setTimeout(() => setMsg(''), 3000);
-   };
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const status= await signup(email, user, password);
-    //sign up is succesful
-    if (status) {
-      // 2️⃣ Show success alert
-      showAlert("Sign up successful!", "success");
+    const {success, message} = await signup(email, user, password);
+    if (success) {
+      showToast("Sign up successful! Redirection to login page...", "success", 2000);
       // 3️⃣ Navigate after a short delay (so user sees the message)
-      setTimeout(() => navigate("/"), 1500);
+      setTimeout(() => navigate("/login"), 1500);
     } else {
-      // 4️⃣ Only show the failure alert on error
-      showAlert("Sign up has failed", "warning");
-      // no navigation here
+      showToast("Sign up has failed. Error: " + message, "error");
+      console.log("Sign up failed");
+      console.log(success, message);
     }
-
   };
 
   return (
-    <>
-   {msg && (
-        <div
-          className="position-fixed top-0 start-50 translate-middle-x mt-3"
-          style={{ zIndex: 1050, width: "400px" }}
-        >
-          <Alert message={msg} type={type} onClose={() => setMsg("")} />
-        </div>
-      )}
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-success bg-opacity-10">
       <div
-        className="card border-success shadow-lg rounded-4 p-5"
-        style={{ maxWidth: "400px", width: "100%" }}
+          className="card border-success shadow-lg rounded-4 p-5 col-12 col-md-6 col-lg-4 mx-auto"
+          style={{ padding: "3rem" }}
       >
         {/* Header with a zero-waste tagline */}
         <div className="text-center mb-4">
@@ -113,7 +91,7 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <div className="text-center mt-3">
+        <div className="text-center mt-3" style={{ marginTop: "1rem" }}>
           <p className="small text-muted">
             Already have an account?{" "}
             <Link to="/login" className="link-success fw-semibold">
@@ -123,6 +101,5 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

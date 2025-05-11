@@ -1,9 +1,8 @@
 import "../App.css";
-import { useState } from "react";
+import { useState, React } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContent";
-import Alert from "./Alert";
-import React from "react";
+import { showToast } from "../util/toast.js";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -11,57 +10,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [msg, setMsg] = useState('');
-  const [type, setType] = useState('success');
-  const showAlert = (message, type = 'info') => {
-      setMsg(message);
-       setType(type);
-       setTimeout(() => setMsg(''), 3000);
-     };
-  
-     const handleSubmit = async (e) => {
-      e.preventDefault();
-    
-      // 1️⃣ Wait for login() to finish
-      const login_data = await login(email, password)
+   const handleSubmit = async (e) => {
+    e.preventDefault();
 
-      const success=login_data.success
-      const isAdmin=login_data.isAdmin
-      
-    
-      if (success) {
-        // 2️⃣ Show success alert
-        showAlert("Login successful!", "success");
-        // 3️⃣ Navigate after a short delay (so user sees the message)
-        console.log(isAdmin)
-        if(isAdmin){
-          setTimeout(() => navigate("/adminPage"), 1500); //go to adminPage if the user is admin
-        }
-        else{
-        setTimeout(() => navigate("/"), 1500);
-        }
-      } else {
-        // 4️⃣ Only show the failure alert on error
-        showAlert("Login has failed", "warning");
-        // no navigation here
+    const login_data = await login(email, password)
+    const success=login_data.success
+    const isAdmin=login_data.isAdmin
+
+    if (success) {
+      showToast("Login successful! Redirecting...", "success", 2000);
+      if(isAdmin){
+        setTimeout(() => navigate("/adminPage"), 1500); //go to adminPage if the user is admin
       }
-    };
+      else{
+        setTimeout(() => navigate("/"), 1500);
+      }
+    } else {
+        showToast("Login has failed. Error: " + login_data.message, "error");
+        console.log("Login failed");
+        console.log(login_data);
+    }
+  };
 
   return (
-    <>
-    {msg && (
-        <div
-          className="position-fixed top-0 start-50 translate-middle-x mt-3"
-          style={{ zIndex: 1050, width: "400px" }}
-        >
-          <Alert message={msg} type={type} onClose={() => setMsg("")} />
-        </div>
-      )}
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-success bg-opacity-10">
-      <div
-        className="card border-success shadow-lg rounded-4 p-5 w-100"
-        style={{ maxWidth: "400px" }}
-      >
+        <div
+            className="card border-success shadow-lg rounded-4 p-5 col-12 col-md-6 col-lg-4 mx-auto"
+            style={{ padding: "3rem" }}
+        >
         {/* Header with a zero-waste welcome */}
         <div className="text-center mb-4">
           <h1 className="h3 fw-bold text-success mb-1">Sign In</h1>
@@ -104,7 +80,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center">
+        <div className="text-center mt-3" style={{ marginTop: "1rem" }}>
           <p className="small text-muted">
             Don’t have an account?{" "}
             <Link to="/signup" className="link-success fw-semibold">
@@ -112,8 +88,8 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
       </div>
     </div>
-    </>
   );
 }
