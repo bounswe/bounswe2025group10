@@ -27,6 +27,8 @@ urlpatterns = [
     path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
     # User waste retrieval endpoint
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+    # Get top 10 users endpoint
+    path("api/waste/leaderboard/", waste_views.get_top_users, name="get_top_users"),
     # Sending 3 recent tips endpoint
     path("api/tips/", tip_views.get_recent_tips, name="get_recent_tips"),
     # Get a list of reported media endpoint
