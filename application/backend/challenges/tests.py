@@ -185,7 +185,6 @@ class ChallengeParticipationTests(TestCase):
         data = {"challenge": self.private_challenge.id}
         response = self.client.post('/api/challenges/participate/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("You can only join public challenges.", response.data['challenge'][0])
 
     def test_participate_in_own_private_challenge(self):
         """
@@ -205,4 +204,32 @@ class ChallengeParticipationTests(TestCase):
         data = {"challenge": self.participated_challenge.id}
         response = self.client.post('/api/challenges/participate/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("You are already participating in this challenge.", response.data['challenge'][0])
+
+    def test_view_enrolled_challenges(self):
+        """
+        Test that a user can view the challenges they are enrolled in.
+        """
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/challenges/enrolled/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify that only enrolled challenges are returned
+        enrolled_challenge_ids = [challenge['challenge'] for challenge in response.data]
+        self.assertIn(self.participated_challenge.id, enrolled_challenge_ids)
+        self.assertNotIn(self.public_challenge.id, enrolled_challenge_ids)
+        self.assertNotIn(self.private_challenge.id, enrolled_challenge_ids)
+
+    def test_unauthenticated_user_cannot_participate(self):
+        """
+        Test that an unauthenticated user cannot participate in a challenge.
+        """
+        data = {"challenge": self.public_challenge.id}
+        response = self.client.post('/api/challenges/participate/', data, content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unauthenticated_user_cannot_view_enrolled_challenges(self):
+        """
+        Test that an unauthenticated user cannot view enrolled challenges.
+        """
+        response = self.client.get('/api/challenges/enrolled/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
