@@ -1,11 +1,11 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import UserWastes, Waste
-from django.db.models import Sum
+from ..models import UserWastes, Waste, Users
+from django.db.models import Sum, F
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -79,6 +79,42 @@ def get_user_wastes(request):
 
         return Response({
             'message': 'User wastes retrieved successfully',
+            'data': response_data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_top_users(request):
+    """
+    Get top 10 users with most total waste contributions.
+    Returns a list of users with their total waste amounts.
+    """
+    try:
+        # Calculate total waste amount per user across all waste types
+        top_users = Users.objects.annotate(
+            total_waste=Sum('userwastes__amount')
+        ).filter(
+            total_waste__isnull=False  # Only include users who have waste records
+        ).order_by(
+            '-total_waste'  # Sort by total waste in descending order
+        )[:10]  # Limit to top 10
+
+        # Prepare response data
+        response_data = []
+        for user in top_users:
+            response_data.append({
+                'username': user.username,
+                'total_waste': user.total_waste,
+                'profile_picture': user.profile_image_url,
+            })
+
+        return Response({
+            'message': 'Top users retrieved successfully',
             'data': response_data
         }, status=status.HTTP_200_OK)
     

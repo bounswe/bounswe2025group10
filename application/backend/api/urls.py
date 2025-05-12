@@ -7,6 +7,7 @@ from .report_system.report_views import ReportCreateView
 from .waste import waste_views
 from .tip import tip_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
+from .profile import profile_views
 
 # URL patterns for authentication endpoints
 urlpatterns = [
@@ -14,6 +15,8 @@ urlpatterns = [
     path('signup/', login_views.SignUpView.as_view(), name='signup'),
     # User login endpoint
     path('login/', login_views.LoginView.as_view(), name='login'),
+    # Profile picture upload endpoint
+    path('me/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     # JWT token refresh endpoint
