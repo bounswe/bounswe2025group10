@@ -5,17 +5,12 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import {toBoolean} from "@/util/helper.js";
+import { toBoolean } from "@/util/helper.js";
 
-/**
- * Authentication context for the application.
- * Provides token, user data and convenient auth helpers.
- */
+// Create Auth context
 const AuthContext = createContext(null);
 
-/**
- * Convenience hook so consumers don’t need to import useContext + AuthContext.
- */
+// Hook to use Auth context
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
@@ -29,161 +24,80 @@ export function AuthProvider({ children }) {
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
-  /**
-   * Persist token in localStorage so users stay logged‑in after refresh.
-   */
-  const [token, setToken] = useState(() =>
-      localStorage.getItem(ACCESS_TOKEN_KEY)
-  );
+  const [token, setToken] = useState(() => localStorage.getItem(ACCESS_TOKEN_KEY));
   const [isAdmin, setIsAdmin] = useState(() =>
-      toBoolean(localStorage.getItem(ADMIN_KEY))
+    toBoolean(localStorage.getItem(ADMIN_KEY))
   );
 
-  /* ------------------------------------------------------------------ */
-  /* Helpers                                                            */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * Centralised place to update / remove token + localStorage.
-   */
-  const saveToken = useCallback((newToken, isAdmin) => {
+  const saveToken = useCallback((newToken, isAdminFlag) => {
     setToken(newToken);
-    setIsAdmin(isAdmin);
+    setIsAdmin(isAdminFlag);
     if (newToken) {
       localStorage.setItem(ACCESS_TOKEN_KEY, newToken);
-      localStorage.setItem(ADMIN_KEY, isAdmin);
+      localStorage.setItem(ADMIN_KEY, isAdminFlag);
     } else {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(ADMIN_KEY);
-
-export const AuthProvider = ({ children }) => {
-  const apiUrl = import.meta.env.VITE_API_URL;
-
-  const navigate = useNavigate();
-
-  const [user, setUser] = useState("");
-  const [token, setToken] = useState(() => localStorage.getItem("accessToken"));
-  
-
-  const login = async (email, password) => {
-    try {
-      const res = await fetch(`${apiUrl}/login/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ email, password })          // 🔁 or { username, password }
-      });
-      
-      // --- Read safely -------------------------------------------------
-      const raw = await res.text();                        // read once
-      const isJson = res.headers
-        .get("content-type")
-        ?.includes("application/json");
-  
-      const data = isJson && raw ? JSON.parse(raw) : {};   // parse only if safe
-      console.log(data)
-      // ----------------------------------------------------------------
-  
-      if (!res.ok) {
-        // Expose backend message (if any) so UI can show it
-        throw new Error(data.message || `HTTP ${res.status}`);
-      }
-      console.log(JSON.stringify({ email, password }))
-      // At this point the request was 2xx ------------------------------
-      if (data?.token?.access) {                // ① safest guard
-        localStorage.setItem("accessToken",     // ② explicit key name
-                             data.token.access);
-        setToken(data.token.access);
-      
-        // If the API also returns user details, keep them;
-        // otherwise fall back to { email }
-        setUser(data.user ?? { email });
-        return { success: true, isAdmin: data.isAdmin };
-      }
-
-  
-      throw new Error("Token missing in response");
-    } catch (err) {
-      console.error("Login error:", err.message);
-      return false;
     }
   }, []);
 
-  /**
-   * Parse JSON safely – avoids exceptions on non‑JSON responses.
-   */
   const safeJson = async (response) => {
     const text = await response.text();
-    const isJson = response.headers
-        .get("content-type")
-        ?.includes("application/json");
+    const isJson = response.headers.get("content-type")?.includes("application/json");
     return isJson && text ? JSON.parse(text) : null;
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Auth API wrappers                                                   */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * Log in with credentials. Returns { success, message?, isAdmin? }.
-   */
   const login = useCallback(
-      async (email, password) => {
-        if (!email || !password) {
-          return { success: false, message: "Missing email or password" };
-        }
-        try {
-          const res = await fetch(`${apiUrl}/login/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          });
+    async (email, password) => {
+      if (!email || !password) {
+        return { success: false, message: "Missing email or password" };
+      }
+      try {
+        const res = await fetch(`${apiUrl}/login/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-          const data = await safeJson(res);
-          if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
 
-          const access = data?.token?.access;
-          if (!access) throw new Error("Missing access token");
+        const access = data?.token?.access;
+        if (!access) throw new Error("Missing access token");
 
-          saveToken(access, data.isAdmin ?? false);
-          return { success: true, isAdmin: data.isAdmin ?? false };
-        } catch (err) {
-          console.error("Login failed:", err);
-          return { success: false, message: err.message };
-        }
-      },
-      [apiUrl, saveToken]
+        saveToken(access, data.isAdmin ?? false);
+        return { success: true, isAdmin: data.isAdmin ?? false };
+      } catch (err) {
+        console.error("Login failed:", err);
+        return { success: false, message: err.message };
+      }
+    },
+    [apiUrl, saveToken]
   );
 
-  /**
-   * Register a new account. Returns { success, message? }.
-   */
   const signup = useCallback(
-      async (email, username, password) => {
-        try {
-          const res = await fetch(`${apiUrl}/signup/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, username, password }),
-          });
+    async (email, username, password) => {
+      try {
+        const response = await fetch(`${apiUrl}/signup/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username, password }),
+        });
 
-          const data = await safeJson(res);
-          if (!res.ok) throw new Error(data?.message ?? `HTTP ${res.status}`);
+        const data = await safeJson(response);
+        if (!response.ok) throw new Error(data?.message ?? `HTTP ${response.status}`);
 
-          return { success: true, message: "Account created successfully!" };
-        } catch (err) {
-          console.error("Signup failed:", err);
-          return { success: false, message: err.message };
-        }
-      },
-      [apiUrl]
+        return { success: true, message: "Account created successfully!" };
+      } catch (err) {
+        console.error("Signup failed:", err);
+        return { success: false, message: err.message };
+      }
+    },
+    [apiUrl]
   );
 
-  /**
-   * Clear auth state and redirect to login.
-   */
   const logout = useCallback(() => {
     saveToken(null, null);
     navigate("/login", { replace: true });
@@ -192,44 +106,10 @@ export const AuthProvider = ({ children }) => {
   const value = {
     isAdmin,
     token,
-    isAuthenticated : Boolean(token),
+    isAuthenticated: Boolean(token),
     login,
     signup,
     logout,
- 
-
-  const signup= async (email,username, password) => {
-    
-
-    try {
-      const response = await fetch(`${apiUrl}/signup/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, username, password }),
-      });
-      
-      const data = await response.json();
-      console.log(JSON.stringify({ email, username, password }))
-      
-      return data
-
-    } catch (err) {
-      console.error("Signup error:", err.message);
-      return false
-    }
-    //return true if sign up is succesful
-    if(data && data.response==="ok"){
-      console.log("true")
-      return true
-      
-    }
-    //else return false
-    console.log("false")
-    return false
-    
-    
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

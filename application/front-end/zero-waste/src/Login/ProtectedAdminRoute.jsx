@@ -7,9 +7,4 @@ export default function ProtectedAdminRoute() {
   if (isAuthenticated) {
     return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
   }
-  return <Navigate to="/login" replace />;
-
-export default function ProtectedUserRoute() {
-  const token = localStorage.getItem("accessToken");
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
 }
