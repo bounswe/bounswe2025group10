@@ -6,46 +6,139 @@ from .login_and_signup import login_views
 from .report_system.report_views import ReportCreateView
 from .waste import waste_views
 from .tip import tip_views
+from .post import post_views
+from .comment import comment_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
 
-# URL patterns for authentication endpoints
+# URL patterns for all API endpoints
 urlpatterns = [
-    # User registration endpoint
+    # Authentication and User Management Endpoints
+    # ----------------------------------------
+    
+    # POST: Register a new user account with email, username and password
     path('signup/', login_views.SignUpView.as_view(), name='signup'),
-    # User login endpoint
+    
+    # POST: Authenticate a user and receive an access token
     path('login/', login_views.LoginView.as_view(), name='login'),
-    # Profile picture upload endpoint
+    
+    # POST: Upload a new profile picture for the authenticated user
     path('me/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
-    # JWT token creation endpoint
+    
+    # POST: Create a new JWT token pair (access and refresh tokens)
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
-    # JWT token refresh endpoint
+    
+    # POST: Refresh an expired JWT access token using a valid refresh token
     path("jwt/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    # JWT token verification endpoint
+    
+    # POST: Verify if a given JWT token is valid
     path("jwt/verify/", TokenVerifyView.as_view(), name="token_verify"),
-    # Server status endpoint
+    
+    # GET: Check if the API server is operational and healthy
     path("status/", login_views.server_status, name="server_status"),
-    # User info endpoint
+    
+    # GET: Retrieve details of the currently authenticated user
     path("me/", login_views.get_user_info, name="user-info"),
-    # User waste creation endpoint
+    
+    # Post Management Endpoints
+    # ----------------------------------------
+    
+    # POST: Create a new post with text and/or image
+    path("api/posts/create/", post_views.create_post, name="create_post"),
+    
+    # GET: Retrieve all posts across the platform, sorted by most recent first
+    path("api/posts/all/", post_views.get_all_posts, name="get_all_posts"),
+    
+    # GET: Retrieve details of a specific post by ID including its comments
+    path("api/posts/<int:post_id>/", post_views.get_post_detail, name="get_post_detail"),
+    
+    # GET: Retrieve all posts created by the currently authenticated user
+    path("api/posts/user/", post_views.get_user_posts, name="get_user_posts"),
+    
+    # POST: Like a specific post (adds user's like reaction)
+    path("api/posts/<int:post_id>/like/", post_views.like_post, name="like_post"),
+    
+    # POST: Remove a user's like from a specific post
+    path("api/posts/<int:post_id>/unlike/", post_views.unlike_post, name="unlike_post"),
+    
+    # POST: Dislike a specific post (adds user's dislike reaction)
+    path("api/posts/<int:post_id>/dislike/", post_views.dislike_post, name="dislike_post"),
+    
+    # POST: Remove a user's dislike from a specific post
+    path("api/posts/<int:post_id>/undislike/", post_views.undislike_post, name="undislike_post"),
+    
+    # GET: Get the current user's reaction (like/dislike) to a specific post
+    path("api/posts/<int:post_id>/reaction/", post_views.get_user_reaction, name="get_user_reaction"),
+    
+    # POST: Save a post to the user's saved posts collection
+    path("api/posts/<int:post_id>/save/", post_views.save_post, name="save_post"),
+    
+    # POST: Remove a post from the user's saved posts collection
+    path("api/posts/<int:post_id>/unsave/", post_views.unsave_post, name="unsave_post"),
+    
+    # GET: Retrieve all posts saved by the current user
+    path("api/posts/saved/", post_views.get_saved_posts, name="get_saved_posts"),
+    
+    # Comment Management Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve all comments for a specific post
+    path("api/posts/<int:post_id>/comments/", comment_views.get_post_comments, name="get_post_comments"),
+    
+    # POST: Create a new comment on a specific post
+    path("api/posts/<int:post_id>/comments/create/", comment_views.create_comment, name="create_comment"),
+    
+    # Waste Management Endpoints
+    # ----------------------------------------
+    
+    # POST: Log a new waste entry for the current user (recycling tracking)
     path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
-    # Get top 10 users endpoint
+    
+    # GET: Retrieve the top 10 users based on their waste recycling metrics
     path("api/waste/leaderboard/", waste_views.get_top_users, name="get_top_users"),
-    # User waste retrieval endpoint
-    path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),    # Tips endpoints
+    
+    # GET: Retrieve all waste entries logged by the current user
+    path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+    
+    # Tips Management Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve the most recent recycling/environmental tips
     path("api/tips/get_recent_tips", tip_views.get_recent_tips, name="get_recent_tips"),
+    
+    # GET: Retrieve all available tips
     path("api/tips/all/", tip_views.get_all_tips, name="get_all_tips"),
+    
+    # POST: Create a new tip (requires admin or moderator privileges)
     path("api/tips/create/", tip_views.create_tip, name="create_tip"),
+    
+    # POST: Like a specific tip
     path("api/tips/<int:tip_id>/like/", tip_views.like_tip, name="like_tip"),
+    
+    # POST: Remove a like from a specific tip
     path("api/tips/<int:tip_id>/unlike/", tip_views.unlike_tip, name="unlike_tip"),
+    
+    # POST: Dislike a specific tip
     path("api/tips/<int:tip_id>/dislike/", tip_views.dislike_tip, name="dislike_tip"),
+    
+    # POST: Remove a dislike from a specific tip
     path("api/tips/<int:tip_id>/undislike/", tip_views.undislike_tip, name="undislike_tip"),
-    # Get a list of reported media endpoint
+    
+    # Admin and Moderation Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve a list of all reported content for moderation
     path("api/admin/reports/", ModerateReportsViewSet.as_view({'get': 'list'}), name="admin-reports-list"),
-    # get a specific report by report id endpoint
+    
+    # GET: Retrieve details of a specific report by its ID
     path("api/admin/reports/<int:pk>/", ModerateReportsViewSet.as_view({'get': 'retrieve'}), name="admin-reports-detail"),
-    # Moderate a report endpoint
+    
+    # POST: Process and moderate a report (approve or reject)
     path("api/admin/reports/<int:pk>/moderate/", ModerateReportsViewSet.as_view({'post': 'moderate'}), name="admin-reports-moderate"),
-    # Post report endpoint
+    
+    # Reporting Endpoint
+    # ----------------------------------------
+    
+    # POST: Report inappropriate content (posts, comments, etc.)
     path("api/<str:content_type>/<int:object_id>/report/", ReportCreateView.as_view(), name="report_content"),
 ]

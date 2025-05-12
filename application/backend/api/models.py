@@ -92,6 +92,8 @@ class Posts(models.Model):
     date = models.DateTimeField(blank=True, null=True)
     text = models.TextField(blank=True, null=True)
     image = models.CharField(max_length=255, blank=True, null=True)
+    like_count = models.IntegerField(blank=True, null=True, default=0)
+    dislike_count = models.IntegerField(blank=True, null=True, default=0)
 
     class Meta:
         db_table = 'Posts'
@@ -146,6 +148,30 @@ class UserWastes(models.Model):
         db_table = 'UserWastes'
         ordering = ['-date']
 
+class PostLikes(models.Model):
+    REACTION_CHOICES = [
+        ('LIKE', 'Like'),
+        ('DISLIKE', 'Dislike'),
+    ]
+    
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    post = models.ForeignKey('Posts', on_delete=models.CASCADE)
+    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'PostLikes'
+        unique_together = (('user', 'post'),)  # Prevent multiple reactions from the same user on the same post
+
+class SavedPosts(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    post = models.ForeignKey('Posts', on_delete=models.CASCADE)
+    date_saved = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'SavedPosts'
+        unique_together = (('user', 'post'),)  # Prevent saving the same post multiple times
+        
 # Report logs for all kinds of media and users
 class Report(models.Model):
     REPORT_REASON_CHOICES = [
