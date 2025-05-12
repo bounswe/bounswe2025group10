@@ -7,6 +7,7 @@ from .report_system.report_views import ReportCreateView
 from .waste import waste_views
 from .tip import tip_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
+from .profile import profile_views
 
 # URL patterns for authentication endpoints
 urlpatterns = [
@@ -14,6 +15,8 @@ urlpatterns = [
     path('signup/', login_views.SignUpView.as_view(), name='signup'),
     # User login endpoint
     path('login/', login_views.LoginView.as_view(), name='login'),
+    # Profile picture upload endpoint
+    path('me/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     # JWT token refresh endpoint
@@ -28,6 +31,8 @@ urlpatterns = [
     path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
     # User waste retrieval endpoint
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+    # Get top 10 users endpoint
+    path("api/waste/leaderboard/", waste_views.get_top_users, name="get_top_users"),
     # Sending 3 recent tips endpoint
     path("api/tips/", tip_views.get_recent_tips, name="get_recent_tips"),
     # Get a list of reported media endpoint

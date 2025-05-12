@@ -40,6 +40,28 @@ This project supports Docker for consistent development and deployment environme
    docker-compose build --no-cache
    ```
 
+### ⚡️  Running Mobile App 
+
+1. **Build and run the the backend  server on docker:**
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **On a seperate terminal, start React Native**
+   ```bash
+   npx react-native start
+   ```
+
+3. **On yet another seperate terminal, start your emulator**
+   ```bash
+   emulator <YOUR_EMULATOR_DEVICE_NAME>
+   ```
+
+4. **On any terminal, start the app**
+   ```bash
+   npm run android
+   ```
+
 ### 🧱 Project Structure in Docker
 
 - `Dockerfile`: Defines the base image and build process for backend/frontend
