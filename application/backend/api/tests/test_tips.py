@@ -121,3 +121,65 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Tips.objects.count(), 4)  # No new tip should be created
+
+    def test_like_tip_authenticated(self):
+        """Test liking a tip when authenticated"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('like_tip', args=[self.tips[0].id])
+        initial_likes = self.tips[0].like_count
+
+        response = self.client.post(url)
+        self.tips[0].refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip liked successfully')
+        self.assertEqual(self.tips[0].like_count, initial_likes + 1)
+
+    def test_unlike_tip_authenticated(self):
+        """Test unliking a tip when authenticated"""
+        self.client.force_authenticate(user=self.user)
+        tip = self.tips[0]
+        tip.like_count = 1
+        tip.save()
+
+        url = reverse('unlike_tip', args=[tip.id])
+        response = self.client.post(url)
+        tip.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip unliked successfully')
+        self.assertEqual(tip.like_count, 0)
+
+    def test_dislike_tip_authenticated(self):
+        """Test disliking a tip when authenticated"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('dislike_tip', args=[self.tips[0].id])
+        initial_dislikes = self.tips[0].dislike_count
+
+        response = self.client.post(url)
+        self.tips[0].refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip disliked successfully')
+        self.assertEqual(self.tips[0].dislike_count, initial_dislikes + 1)
+
+    def test_undislike_tip_authenticated(self):
+        """Test undisliking a tip when authenticated"""
+        self.client.force_authenticate(user=self.user)
+        tip = self.tips[0]
+        tip.dislike_count = 1
+        tip.save()
+
+        url = reverse('undislike_tip', args=[tip.id])
+        response = self.client.post(url)
+        tip.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip undisliked successfully')
+        self.assertEqual(tip.dislike_count, 0)
+
+    def test_like_tip_unauthenticated(self):
+        """Test liking a tip when not authenticated"""
+        url = reverse('like_tip', args=[self.tips[0].id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

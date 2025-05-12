@@ -27,11 +27,14 @@ urlpatterns = [
     # User waste creation endpoint
     path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
     # User waste retrieval endpoint
-    path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
-    # Tips endpoints
+    path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),    # Tips endpoints
     path("api/tips/get_recent_tips", tip_views.get_recent_tips, name="get_recent_tips"),
     path("api/tips/all/", tip_views.get_all_tips, name="get_all_tips"),
     path("api/tips/create/", tip_views.create_tip, name="create_tip"),
+    path("api/tips/<int:tip_id>/like/", tip_views.like_tip, name="like_tip"),
+    path("api/tips/<int:tip_id>/unlike/", tip_views.unlike_tip, name="unlike_tip"),
+    path("api/tips/<int:tip_id>/dislike/", tip_views.dislike_tip, name="dislike_tip"),
+    path("api/tips/<int:tip_id>/undislike/", tip_views.undislike_tip, name="undislike_tip"),
     # Get a list of reported media endpoint
     path("api/admin/reports/", ModerateReportsViewSet.as_view({'get': 'list'}), name="admin-reports-list"),
     # get a specific report by report id endpoint
