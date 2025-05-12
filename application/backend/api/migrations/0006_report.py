@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0006_create_initial_admin_user'),
+        ('api', '0005_create_initial_admin_user'),
         ('contenttypes', '0002_remove_content_type_name'),
     ]
 
