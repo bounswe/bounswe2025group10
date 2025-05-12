@@ -1,7 +1,8 @@
 from django.test import TestCase
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
 from api.models import Users, Waste, UserWastes
+from challenges.models import Challenge, UserChallenge
 from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users
 from django.utils import timezone
 
@@ -207,3 +208,29 @@ class WasteViewsTests(TestCase):
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['username'], 'testuser')
         self.assertEqual(response.data['data'][0]['total_waste'], 1.5)
+
+
+class WasteLoggingTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = Users.objects.create_user(email="user@example.com", password="password123")
+        self.challenge = Challenge.objects.create(
+            title="Recycle Plastic",
+            description="Recycle 100kg of plastic",
+            target_amount=100,
+            current_progress=0,
+            is_public=True,
+            creator=self.user
+        )
+        UserChallenge.objects.create(user=self.user, challenge=self.challenge)
+        self.waste_type = Waste.objects.create(type="PLASTIC")
+    
+    def test_waste_logging_updates_challenge_progress(self):
+        self.client.force_authenticate(user=self.user)
+        data = {"waste_type": "PLASTIC", "amount": 10}
+        response = self.client.post('/api/waste/', data, content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify that the challenge's current_progress is updated
+        self.challenge.refresh_from_db()
+        self.assertEqual(self.challenge.current_progress, 10)
