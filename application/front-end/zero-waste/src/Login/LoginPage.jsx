@@ -24,6 +24,40 @@ export default function LoginPage() {
       }
       else{
         setTimeout(() => navigate("/"), 1500);
+
+  const [msg, setMsg] = useState('');
+  const [type, setType] = useState('success');
+  const showAlert = (message, type = 'info') => {
+      setMsg(message);
+       setType(type);
+       setTimeout(() => setMsg(''), 3000);
+     };
+  
+     const handleSubmit = async (e) => {
+      e.preventDefault();
+    
+      // 1️⃣ Wait for login() to finish
+      const login_data = await login(email, password)
+
+      const success=login_data.success
+      const isAdmin=login_data.isAdmin
+      
+    
+      if (success) {
+        // 2️⃣ Show success alert
+        showAlert("Login successful!", "success");
+        // 3️⃣ Navigate after a short delay (so user sees the message)
+        console.log(isAdmin)
+        if(isAdmin){
+          setTimeout(() => navigate("/adminPage"), 1500); //go to adminPage if the user is admin
+        }
+        else{
+        setTimeout(() => navigate("/"), 1500);
+        }
+      } else {
+        // 4️⃣ Only show the failure alert on error
+        showAlert("Login has failed", "warning");
+        // no navigation here
       }
     } else {
         showToast("Login has failed. Error: " + login_data.message, "error");

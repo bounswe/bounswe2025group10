@@ -1,4 +1,4 @@
-# admin_panel_serializer.py
+# serializers.py
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
@@ -6,10 +6,11 @@ from ..models import (
     Report,
     Posts,
     Comments,
-    Challenges,
     Tips,
     Users,
 )
+
+from challenges.models import Challenge
 
 # Per‑model “preview” serializers (minimal fields admin cares about)
 class PostPreviewSerializer(serializers.ModelSerializer):
@@ -26,7 +27,7 @@ class CommentPreviewSerializer(serializers.ModelSerializer):
 
 class ChallengePreviewSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Challenges
+        model = Challenge
         fields = ["id", "title", "description", "current_progress", "target_amount"]
 
 
@@ -48,7 +49,7 @@ class ReportedObjectField(serializers.Field):
             return PostPreviewSerializer(obj).data
         if isinstance(obj, Comments):
             return CommentPreviewSerializer(obj).data
-        if isinstance(obj, Challenges):
+        if isinstance(obj, Challenge):
             return ChallengePreviewSerializer(obj).data
         if isinstance(obj, Tips):
             return TipPreviewSerializer(obj).data
@@ -60,7 +61,7 @@ class ReportedObjectField(serializers.Field):
 
 
 # Main serializer fed to admin panel
-class ReportSerializer(serializers.ModelSerializer):
+class ReportReadSerializer(serializers.ModelSerializer):
     reporter = serializers.StringRelatedField()
     content_type = serializers.SlugRelatedField(
         slug_field="model", read_only=True
@@ -79,6 +80,25 @@ class ReportSerializer(serializers.ModelSerializer):
             "object_id",
             "content",
         ]
+
+
+class ReportCreateSerializer(serializers.ModelSerializer):
+    # allow users to specify the model by its lowercase name, e.g. "post"
+    content_type = serializers.SlugRelatedField(
+        slug_field="model",
+        queryset=ContentType.objects.all(),
+        help_text="The model name, e.g. 'post', 'comment', 'tip', etc."
+    )
+    object_id = serializers.IntegerField(
+        help_text="The primary key of the object being reported"
+    )
+    id = serializers.IntegerField(read_only=True)  # Add id field as read-only
+    reason = serializers.CharField(max_length=255)
+    description = serializers.CharField(allow_blank=True, required=False)
+
+    class Meta:
+        model = Report
+        fields = ["id", "content_type", "object_id", "reason", "description"]
 
 
 # Serializer for moderation actions

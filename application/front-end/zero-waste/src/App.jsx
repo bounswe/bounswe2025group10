@@ -12,8 +12,11 @@ import Challenges from "./pages/Challenges.jsx";
 import Profile from "./pages/ProfilePage.jsx"
 import Community from "./pages/Community.jsx";
 import Tips from "./pages/Tips.jsx";
+
 export default function App() {
   return (
+
+    
     <Routes>
       <Route element={<ProtectedUserRoute />}>
         <Route path="/" element={<MainPage />} />
@@ -24,6 +27,7 @@ export default function App() {
         <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile /> }></Route>
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
+
       </Route>
 
       

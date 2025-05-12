@@ -60,12 +60,32 @@ describe("useAuth › login()", () => {
         )
     );
 
+///////////////////////////////////////////////////////////////////////////
+// 1. login
+///////////////////////////////////////////////////////////////////////////
+describe("useAuth › login()", () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  it("returns true and saves token on 200 OK", async () => {
+    /* mock fetch */
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      headers: {
+        get: () => "application/json",
+      },
+      text: async () => JSON.stringify({
+        token: { access: "abc123" },
+        isAdmin: false,
+      }),
+    })));
+
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     let data;
     await act(async () => {
       data = await result.current.login("e@mail.com", "pass");
     });
+    
 
     expect(data).toEqual({ success: true, isAdmin: false });
 
@@ -76,6 +96,19 @@ describe("useAuth › login()", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: "e@mail.com", password: "pass" }),
         })
+
+    expect(data.success).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(
+      `${apiUrl}/login/`,
+      expect.objectContaining({
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json" ,
+          "Accept": "application/json"
+
+        },
+        body: JSON.stringify({ email: "e@mail.com", password: "pass" }),
+      })
     );
     expect(localStorage.getItem("accessToken")).toBe("abc123");
   });

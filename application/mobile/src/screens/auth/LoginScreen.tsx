@@ -11,6 +11,8 @@ import {
 import { colors, spacing, typography, commonStyles } from '../../utils/theme';
 import { authService } from '../../services/api';
 import { storage } from '../../utils/storage';
+import { CommonActions } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
 
 interface LoginScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
@@ -20,6 +22,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -29,13 +32,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await authService.login({ email, password });
-      
-      if (response.token) {
-        await storage.setToken(response.token.access);
-        await storage.setRefreshToken(response.token.refresh);
-        // Navigate to home screen
-        navigation.replace('Home');
+      const response = await login(email, password);
+      console.log('Login response:', response);
+      if (!response || !response.token) {
+        Alert.alert('Error', 'Invalid credentials');
       }
     } catch (error: any) {
       Alert.alert(

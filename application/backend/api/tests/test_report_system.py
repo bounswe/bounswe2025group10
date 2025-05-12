@@ -1,4 +1,4 @@
-# tests/test_admin_panel.py
+# tests/test_report_system.py
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -7,10 +7,11 @@ from rest_framework.test import APITestCase
 import uuid
 
 from api.models import Report, Posts
-from api.admin_panel.admin_panel_views import ReportViewSet
-from api.admin_panel.admin_panel_serializer import ReportSerializer
-from api.admin_panel.admin_panel_views import StandardResultsSetPagination
-from api.admin_panel.admin_panel_views import ModerationActionSerializer
+from api.report_system.admin_panel_views import ModerateReportsViewSet
+from api.report_system.serializers import ReportReadSerializer
+from django.urls import reverse
+from api.report_system.admin_panel_views import StandardResultsSetPagination
+from api.report_system.admin_panel_views import ModerationActionSerializer
 
 
 User = get_user_model()
@@ -111,7 +112,7 @@ class AdminReportAPITests(APITestCase):
     # ---------------------- Moderation Actions --------------------------- #
     def test_delete_media_action(self):
         self.auth_as_admin()
-        res = self.client.post(self.moderate_url, {"action": "delete_media"})
+        res = self.client.post(self.moderate_url, {"action": "delete_media"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         # Post should be gone, report should be gone
         self.assertFalse(Posts.objects.filter(id=self.post.id).exists())
@@ -128,7 +129,7 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "ban_user"})
+        res = self.client.post(url, {"action": "ban_user"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.media_owner.refresh_from_db()
         self.assertFalse(self.media_owner.is_active)
@@ -146,7 +147,7 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "ignore"})
+        res = self.client.post(url, {"action": "ignore"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         # Post should still exist; report removed
         self.assertTrue(Posts.objects.filter(id=post.id).exists())
@@ -164,8 +165,70 @@ class AdminReportAPITests(APITestCase):
         )
         url = reverse("admin-reports-moderate", args=[report.id])
         self.auth_as_admin()
-        res = self.client.post(url, {"action": "invalid_action"})
+        res = self.client.post(url, {"action": "invalid_action"}, content_type="application/json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         # Post should still exist; report should still exist
         self.assertTrue(Posts.objects.filter(id=post.id).exists())
         self.assertTrue(Report.objects.filter(id=report.id).exists())
+
+
+# ---------------------------------------------------------------
+# User-facing report creation endpoint tests
+# ---------------------------------------------------------------
+
+class UserReportAPITests(APITestCase):
+    """Unit‑tests for the user-facing report creation endpoint."""
+
+    @classmethod
+    def setUpTestData(cls):
+        # create a regular user and a media owner
+        cls.user = make_regular_user()
+        cls.media_owner = make_regular_user()
+        # create a post to report
+        cls.post = Posts.objects.create(
+            creator=cls.media_owner,
+            text="Test post"
+        )
+        # URL for reporting that post
+        cls.url = reverse("report_content", args=["posts", cls.post.id])
+
+    def test_unauthenticated_cannot_report(self):
+        """Anonymous users should get 403 when reporting."""
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"}, content_type="application/json")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_authenticated_can_report(self):
+        """Logged-in users can successfully file a report."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"reason": "SPAM", "description": "spammy"}, content_type="application/json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        # verify the report was created correctly
+        report = Report.objects.get(id=res.data["id"])
+        self.assertEqual(report.reporter, self.user)
+        self.assertEqual(report.content_type.model, "posts")
+        self.assertEqual(report.object_id, self.post.id)
+        self.assertEqual(report.reason, "SPAM")
+        self.assertEqual(report.description, "spammy")
+
+    def test_report_without_description_is_allowed(self):
+        """Omitting description should default to empty string."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"reason": "INAPPROPRIATE"}, content_type="application/json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        report = Report.objects.get(id=res.data["id"])
+        self.assertEqual(report.description, "")
+
+    def test_missing_reason_returns_bad_request(self):
+        """Missing required 'reason' field should return 400 with error."""
+        self.client.login(email=self.user.email, password="userpass")
+        res = self.client.post(self.url, {"description": "just because"}, content_type="application/json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("reason", res.data)
+
+    def test_invalid_content_type_returns_bad_request(self):
+        """Reporting with an unsupported content_type should return 400."""
+        self.client.login(email=self.user.email, password="userpass")
+        invalid_url = reverse("report_content", args=["invalid", self.post.id])
+        res = self.client.post(invalid_url, {"reason": "SPAM"}, content_type="application/json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", res.data)

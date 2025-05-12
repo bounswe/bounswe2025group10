@@ -8,4 +8,8 @@ export default function ProtectedAdminRoute() {
     return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
   }
   return <Navigate to="/login" replace />;
+
+export default function ProtectedUserRoute() {
+  const token = localStorage.getItem("accessToken");
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
 }
