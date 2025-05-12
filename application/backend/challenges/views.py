@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Challenge
-from .serializers import ChallengeSerializer
+from .models import Challenge, UserChallenge
+from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
 
 class ChallengeListCreateView(generics.ListCreateAPIView):
     queryset = Challenge.objects.all()
@@ -92,4 +92,15 @@ class ChallengeDeleteView(generics.DestroyAPIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
         return super().destroy(request, *args, **kwargs)
+    
+
+class ChallengeParticipationView(generics.CreateAPIView):
+    queryset = UserChallenge.objects.all()
+    serializer_class = ChallengeParticipationSerializer
+    permission_classes = [permissions.IsAuthenticated] # Only authenticated users can participate in challenges
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
