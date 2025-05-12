@@ -26,6 +26,8 @@ urlpatterns = [
     path("me/", login_views.get_user_info, name="user-info"),
     # User waste creation endpoint
     path("api/waste/", waste_views.create_user_waste, name="create_user_waste"),
+    # Get top 10 users endpoint
+    path("api/waste/leaderboard/", waste_views.get_top_users, name="get_top_users"),
     # User waste retrieval endpoint
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),    # Tips endpoints
     path("api/tips/get_recent_tips", tip_views.get_recent_tips, name="get_recent_tips"),
