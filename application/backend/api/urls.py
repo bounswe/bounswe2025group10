@@ -16,7 +16,9 @@ urlpatterns = [
     # User login endpoint
     path('login/', login_views.LoginView.as_view(), name='login'),
     # Profile picture upload endpoint
-    path('me/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
+    path('api/profile/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
+    # Profile picture retrieval endpoint
+    path('api/profile/download-picture/', profile_views.download_profile_picture, name='download-profile-picture'),
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     # JWT token refresh endpoint

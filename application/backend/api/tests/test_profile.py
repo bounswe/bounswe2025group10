@@ -34,7 +34,7 @@ class ProfilePictureUploadTests(TestCase):
 
     def test_upload_profile_picture_success(self):
         """Test successful profile picture upload"""
-        request = self.factory.post('/me/profile-picture/', 
+        request = self.factory.post('/api/profile/profile-picture/', 
                                   {'image': self.image}, 
                                   format='multipart')
         force_authenticate(request, user=self.user)
@@ -52,7 +52,7 @@ class ProfilePictureUploadTests(TestCase):
 
     def test_upload_profile_picture_no_image(self):
         """Test upload without providing an image"""
-        request = self.factory.post('/me/profile-picture/', {}, format='multipart')
+        request = self.factory.post('/api/profile/profile-picture/', {}, format='multipart')
         force_authenticate(request, user=self.user)
         response = upload_profile_picture(request)
         
@@ -66,7 +66,7 @@ class ProfilePictureUploadTests(TestCase):
             b"text content",
             content_type="text/plain"
         )
-        request = self.factory.post('/me/profile-picture/', 
+        request = self.factory.post('/api/profile/profile-picture/', 
                                   {'image': invalid_file}, 
                                   format='multipart')
         force_authenticate(request, user=self.user)
@@ -78,7 +78,7 @@ class ProfilePictureUploadTests(TestCase):
 
     def test_upload_profile_picture_unauthenticated(self):
         """Test upload without authentication"""
-        request = self.factory.post('/me/profile-picture/', 
+        request = self.factory.post('/api/profile/profile-picture/', 
                                   {'image': self.image}, 
                                   format='multipart')
         response = upload_profile_picture(request)

@@ -5,7 +5,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
+from django.http import FileResponse
 from datetime import datetime
+import mimetypes
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -78,3 +81,30 @@ def upload_profile_picture(request):
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_profile_picture(request):
+    """
+    Download the authenticated user's profile picture.
+    """
+    # Make sure the user actually has a profile_image set
+    if not request.user.profile_image:
+        return Response({'error': 'No profile picture found.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # Build full path
+    file_path = os.path.join(settings.MEDIA_ROOT, request.user.profile_image)
+    if not os.path.exists(file_path):
+        return Response({'error': 'Profile picture not found on server.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # Guess the content type; default to octet-stream
+    content_type, _ = mimetypes.guess_type(file_path)
+    content_type = content_type or 'application/octet-stream'
+
+    # Stream the file back
+    response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+    return response
