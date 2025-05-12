@@ -6,6 +6,7 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { toBoolean } from "@/util/helper.js";
+import { useEffect } from "react";
 
 // Create Auth context
 const AuthContext = createContext(null);
@@ -102,6 +103,14 @@ export function AuthProvider({ children }) {
     saveToken(null, null);
     navigate("/login", { replace: true });
   }, [navigate, saveToken]);
+
+  useEffect(() => {
+    if (!token) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_KEY);
+    }
+    // run once only
+  }, []);   
 
   const value = {
     isAdmin,
