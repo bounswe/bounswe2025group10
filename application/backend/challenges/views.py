@@ -104,3 +104,15 @@ class ChallengeParticipationView(generics.CreateAPIView):
         context['request'] = self.request
         return context
 
+
+class ChallengeEnrolledView(generics.ListAPIView):
+    serializer_class = ChallengeParticipationSerializer
+    permission_classes = [permissions.IsAuthenticated] # Only authenticated users can view their enrolled challenges
+
+    def get_queryset(self):
+        '''
+        Return challenges the user is currently enrolled in.
+        '''
+        user = self.request.user
+        return UserChallenge.objects.filter(user=user)
+
