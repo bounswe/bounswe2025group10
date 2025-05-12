@@ -8,37 +8,57 @@
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { getPreEmitDiagnostics } from "typescript";
+import { OperationCanceledException } from "typescript";
 import { useAuth } from "../Login/AuthContent";
 import PostCard from "./PostCard";
 
 function AdminPanel({ children }) {
-  const { token } = useAuth(); // reserved for real API calls later
 
-  /* ▸▸ MOCK DATA (using picsum.photos) ───────────────────────── */
-  const mockPosts = [
-    {
-      id: 1,
-      image: "https://picsum.photos/seed/compost/600/300",
-      title: "Composting 101",
-      description:
-        "A beginner-friendly guide on turning kitchen scraps into nutrient-rich soil.",
-    },
-    {
-      id: 2,
-      image: "https://picsum.photos/seed/plasticfree/600/300",
-      title: "Plastic-Free July Recap",
-      description:
-        "See how our community reduced 80 kg of single-use plastic in one month.",
-    },
-    {
-      id: 3,
-      image: "https://picsum.photos/seed/recycle/600/300",
-      title: "Recycling Myths Busted",
-      description:
-        "We debunk the 7 most common misconceptions about household recycling.",
-    },
-  ];
-  /* ──────────────────────────────────────────────────────────── */
+  const token = localStorage.getItem("accessToken"); // reserved for real API calls later
+  const apiUrl = import.meta.env.VITE_API_URL; //get api 
+  
+  const posts=[]
+  const getPosts= async ()=>{
+  try {
+    const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+  
+    const data = await response.json();
+    console.log(data);
+    const posts = data.results.filter(item => item.content_type === "posts");
+  } catch (error) {
+    console.error("Failed to fetch admin reports:", error);
+  }
+}
+  getPosts()
+    
+ //deletes given post given 
+const deletePost=async (post_id)=>{
+  try {
+    const response = await fetch(`${apiUrl}/api/admin/reports/${post_id}/moderate/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: "delete_media" })
+    });
+  
+    const data = await response.json();
+    console.log(data);
+}
+catch (error) {
+  console.error("Error deleting post:", error);
+}
+}
+
+  /* ─────────────────────────────────────────────────────────── */
 
   return (
     <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
@@ -102,13 +122,13 @@ function AdminPanel({ children }) {
 
           {/* Mock posts - centered */}
           <div className="d-flex flex-column align-items-center">
-            {mockPosts.map((post) => (
+            {posts.map((post) => (
               <PostCard
                 key={post.id}
                 image={post.image}
                 title={post.title}
                 description={post.description}
-                onDelete={() => console.log(`Delete post ${post.id}`)}
+                onDelete={() => deletePost(post.id)}
               />
             ))}
           </div>

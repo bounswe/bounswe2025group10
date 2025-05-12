@@ -11,53 +11,75 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
   const navigate = useNavigate();
 
   const [user, setUser] = useState("");
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => localStorage.getItem("accessToken"));
+  
 
   const login = async (email, password) => {
     try {
-      const response = await fetch("http://134.209.253.215:8000/login", {
+      const res = await fetch(`${apiUrl}/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })          // 🔁 or { username, password }
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.token) {
-        localStorage.setItem("token", data.token); // ✅ Save to localStorage
-        setToken(data.token);
-        setUser(email);
-        return true;
-      } else {
-        return false;
+      
+      // --- Read safely -------------------------------------------------
+      const raw = await res.text();                        // read once
+      const isJson = res.headers
+        .get("content-type")
+        ?.includes("application/json");
+  
+      const data = isJson && raw ? JSON.parse(raw) : {};   // parse only if safe
+      console.log(data)
+      // ----------------------------------------------------------------
+  
+      if (!res.ok) {
+        // Expose backend message (if any) so UI can show it
+        throw new Error(data.message || `HTTP ${res.status}`);
       }
+      console.log(JSON.stringify({ email, password }))
+      // At this point the request was 2xx ------------------------------
+      if (data?.token?.access) {                // ① safest guard
+        localStorage.setItem("accessToken",     // ② explicit key name
+                             data.token.access);
+        setToken(data.token.access);
+      
+        // If the API also returns user details, keep them;
+        // otherwise fall back to { email }
+        setUser(data.user ?? { email });
+        return { success: true, isAdmin: data.isAdmin };
+      }
+
+  
+      throw new Error("Token missing in response");
     } catch (err) {
       console.error("Login error:", err.message);
       return false;
     }
   };
-
  
 
-  const signup= async (email,username, _password) => {
+  const signup= async (email,username, password) => {
     
 
     try {
-      const response = await fetch("http://134.209.253.215:8000/signup", {
+      const response = await fetch(`${apiUrl}/signup/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, username, _password }),
+        body: JSON.stringify({ email, username, password }),
       });
-
+      
       const data = await response.json();
-
+      console.log(JSON.stringify({ email, username, password }))
       
       return data
 
