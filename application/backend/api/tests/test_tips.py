@@ -9,10 +9,10 @@ class TipViewsTests(TestCase):
         self.factory = APIRequestFactory()
         # Create some test tips
         self.tips = [
-            Tips.objects.create(text="Test tip 1", like_count=0, dislike_count=0),
-            Tips.objects.create(text="Test tip 2", like_count=5, dislike_count=2),
-            Tips.objects.create(text="Test tip 3", like_count=10, dislike_count=1),
-            Tips.objects.create(text="Test tip 4", like_count=3, dislike_count=0)
+            Tips.objects.create( text="Test tip 1", like_count=0, dislike_count=0),
+            Tips.objects.create( text="Test tip 2", like_count=5, dislike_count=2),
+            Tips.objects.create( text="Test tip 3", like_count=10, dislike_count=1),
+            Tips.objects.create( text="Test tip 4", like_count=3, dislike_count=0)
         ]
 
     def test_get_recent_tips_success(self):
