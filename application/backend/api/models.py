@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.conf import settings
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -50,6 +51,19 @@ class Users(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+
+    @property
+    def profile_image_url(self):
+        """
+        Returns the full URL for the profile image if it exists.
+        If the image is already a full URL, returns it as is.
+        If it's a relative path, prepends the MEDIA_URL.
+        """
+        if not self.profile_image:
+            return None
+        if self.profile_image.startswith(('http://', 'https://')):
+            return self.profile_image
+        return f"{settings.MEDIA_URL}{self.profile_image}"
 
     def __str__(self):
         return self.username
