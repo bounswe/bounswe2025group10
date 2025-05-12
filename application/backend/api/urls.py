@@ -17,8 +17,10 @@ urlpatterns = [
     path('login/', login_views.LoginView.as_view(), name='login'),
     # Profile picture upload endpoint
     path('api/profile/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
-    # Profile picture retrieval endpoint
-    path('api/profile/download-picture/', profile_views.download_profile_picture, name='download-profile-picture'),
+    # User profile update endpoint
+    path('api/profile/<int:user_id>/bio/', profile_views.user_bio, name='user-bio'),
+    # Public profile picture retrieval endpoint
+    path('api/profile/<int:user_id>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     # JWT token refresh endpoint

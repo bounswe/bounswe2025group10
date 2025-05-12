@@ -2,13 +2,15 @@ import os
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
 from django.http import FileResponse
 from datetime import datetime
 import mimetypes
 
+
+from api.models import Users
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -83,28 +85,56 @@ def upload_profile_picture(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET', 'PUT'])
+@permission_classes([AllowAny])
+def user_bio(request, user_id):
+    """
+    GET  /api/profile/<user_id>/bio/   → public: returns { user_id, bio }
+    PUT  /api/profile/<user_id>/bio/   → allows the *owner* (authenticated) to update their bio
+    """
+    try:
+        user = Users.objects.get(id=user_id)
+    except Users.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response({'user_id': user.id, 'bio': user.bio}, status=status.HTTP_200_OK)
+
+    # PUT
+    if not request.user or not request.user.is_authenticated:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+    if request.user.id != user_id:
+        return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+    new_bio = request.data.get('bio', None)
+    if new_bio is None:
+        return Response({'error': 'No bio provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.bio = new_bio
+    user.save(update_fields=['bio'])
+    return Response({'message': 'Bio updated successfully.', 'bio': user.bio}, status=status.HTTP_200_OK)
+
+
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def download_profile_picture(request):
+@permission_classes([AllowAny])
+def download_profile_picture_public(request, user_id):
     """
-    Download the authenticated user's profile picture.
+    GET /api/profile/<user_id>/picture/ → streams back the user's profile_image file (if any)
     """
-    # Make sure the user actually has a profile_image set
-    if not request.user.profile_image:
-        return Response({'error': 'No profile picture found.'},
-                        status=status.HTTP_404_NOT_FOUND)
+    try:
+        user = Users.objects.get(id=user_id)
+    except Users.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Build full path
-    file_path = os.path.join(settings.MEDIA_ROOT, request.user.profile_image)
+    if not user.profile_image:
+        return Response({'error': 'No profile picture found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    file_path = os.path.join(settings.MEDIA_ROOT, user.profile_image)
     if not os.path.exists(file_path):
-        return Response({'error': 'Profile picture not found on server.'},
-                        status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Profile picture not found on server.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Guess the content type; default to octet-stream
     content_type, _ = mimetypes.guess_type(file_path)
-    content_type = content_type or 'application/octet-stream'
-
-    # Stream the file back
-    response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+    response = FileResponse(open(file_path, 'rb'),
+                            content_type=content_type or 'application/octet-stream')
     response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
     return response
