@@ -1,37 +1,97 @@
-import React, { useState } from "react";
+console.log("MainPage loaded");
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../Login/AuthContent";
 import "./MainPage.css";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import Navbar from "../components/Navbar";
+import axios from "axios";
 
 export default function MainPage() {
   const { user, logout } = useAuth();
   const [wasteType, setWasteType] = useState("");
   const [wasteQuantity, setWasteQuantity] = useState("");
-  const [data, setData] = useState([
-    { type: "Plastic", quantity: 3 },
-    { type: "Glass", quantity: 1 },
-    { type: "Paper", quantity: 2 },
-  ]);
+  const [data, setData] = useState([]); 
+  const [sustainabilityTips, setSustainabilityTips] = useState([]);
 
-  const sustainabilityTips = [
-    "Choose reusable products instead of single-use plastics.",
-    "Bring your own bag when grocery shopping.",
-    "Compost food scraps to reduce landfill waste.",
-  ];
-
-  const handleAddWaste = () => {
-    if (!wasteType || !wasteQuantity) return;
-    const qty = Number(wasteQuantity);
-    setData((prev) => {
-      const existing = prev.find((d) => d.type === wasteType);
-      if (existing) {
-        return prev.map((d) =>
-          d.type === wasteType ? { ...d, quantity: d.quantity + qty } : d
-        );
+  useEffect(() => {
+    const fetchTips = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tips`);
+        setSustainabilityTips(response.data.data);
+      } catch (error) {
+        console.error("Failed to fetch tips:", error);
       }
-      return [...prev, { type: wasteType, quantity: qty }];
-    });
+    };
+
+    const fetchWasteData = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/get/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const backendData = response?.data?.data;
+        if (!Array.isArray(backendData)) {
+          console.error("Waste data is not an array:", backendData);
+          return;
+        }
+        const chartData = backendData.map((item) => ({
+          type: item.waste_type.charAt(0) + item.waste_type.slice(1).toLowerCase(),
+          quantity: item.total_amount,
+        }));
+
+        setData(chartData);
+      } catch (error) {
+        console.error("Failed to fetch waste data:", error);
+      }
+    };
+
+    fetchTips();
+    fetchWasteData();
+  }, []);
+
+  const handleAddWaste = async () => {
+    if (!wasteType || !wasteQuantity) return;
+
+    const token = localStorage.getItem("accessToken");
+    const payload = {
+      waste_type: wasteType.toUpperCase(),
+      amount: wasteQuantity,
+    };
+
+    try {
+      console.log("Submitting waste:", payload);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/waste/`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Güncel veriyi tekrar çek
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/get/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const backendData = response?.data?.data;
+      if (!Array.isArray(backendData)) {
+        console.error("Waste data is not an array:", backendData);
+        return;
+      }
+      const chartData = backendData.map((item) => ({
+        type: item.waste_type.charAt(0) + item.waste_type.slice(1).toLowerCase(),
+        quantity: item.total_amount,
+      }));
+
+      setData(chartData);
+    } catch (error) {
+      console.error("Failed to add waste:", error);
+    }
+
     setWasteType("");
     setWasteQuantity("");
   };
@@ -47,13 +107,18 @@ export default function MainPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card p-4">
               <label className="form-label">Waste Type</label>
-              <input
-                type="text"
-                className="form-control"
+              <select
+                className="form-select"
                 value={wasteType}
                 onChange={(e) => setWasteType(e.target.value)}
-                placeholder="e.g., Plastic"
-              />
+                required
+              >
+                <option value="">Select type</option>
+                <option value="PLASTIC">Plastic</option>
+                <option value="PAPER">Paper</option>
+                <option value="GLASS">Glass</option>
+                <option value="METAL">Metal</option>
+              </select>
             </div>
             <div className="card p-4">
               <label className="form-label">Waste Quantity</label>
@@ -78,9 +143,9 @@ export default function MainPage() {
           <div className="card p-4">
             <h2 className="text-lg font-semibold mb-3">Sustainability Tips</h2>
             <ul className="list-unstyled">
-              {sustainabilityTips.map((tip, index) => (
-                <li key={index} className="tip-card mb-2">
-                  {tip}
+              {Array.isArray(sustainabilityTips) && sustainabilityTips.map((tip) => (
+                <li key={tip.id} className="tip-card mb-2">
+                  {tip.text}
                 </li>
               ))}
             </ul>
@@ -93,7 +158,7 @@ export default function MainPage() {
               <YAxis />
               <Tooltip />
               <Bar dataKey="quantity">
-                {data.map((entry, index) => {
+                {Array.isArray(data) && data.map((entry, index) => {
                   let barClass = "";
                   if (entry.type === "Plastic") barClass = "bar-plastic";
                   if (entry.type === "Glass") barClass = "bar-glass";
