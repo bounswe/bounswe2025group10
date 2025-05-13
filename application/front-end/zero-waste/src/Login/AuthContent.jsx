@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { toBoolean } from "@/util/helper.js";
 
 // Create Auth context
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 // Hook to use Auth context
 export const useAuth = () => {

@@ -16,7 +16,7 @@ export default function MainPage() {
   useEffect(() => {
     const fetchTips = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tips`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tips/get_recent_tips`);
         setSustainabilityTips(response.data.data);
       } catch (error) {
         console.error("Failed to fetch tips:", error);
@@ -103,11 +103,14 @@ export default function MainPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Input Section */}
         <section className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-4">Log Your Waste</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-4">
+            Log Your Waste
+          </h1>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card p-4">
-              <label className="form-label">Waste Type</label>
+              <label className="form-label" htmlFor="waste-type">Waste Type</label>
               <select
+                id="waste-type"
                 className="form-select"
                 value={wasteType}
                 onChange={(e) => setWasteType(e.target.value)}
@@ -121,8 +124,9 @@ export default function MainPage() {
               </select>
             </div>
             <div className="card p-4">
-              <label className="form-label">Waste Quantity</label>
+              <label className="form-label" htmlFor="waste-quantity">Waste Quantity</label>
               <input
+                id="waste-quantity"
                 type="number"
                 className="form-control"
                 value={wasteQuantity}
@@ -131,7 +135,10 @@ export default function MainPage() {
               />
             </div>
             <div className="card p-4 d-flex align-items-center justify-content-center">
-              <button className="btn btn-success w-100" onClick={handleAddWaste}>
+              <button
+                className="btn btn-success w-100"
+                onClick={handleAddWaste}
+              >
                 Add Waste
               </button>
             </div>
@@ -143,11 +150,14 @@ export default function MainPage() {
           <div className="card p-4">
             <h2 className="text-lg font-semibold mb-3">Sustainability Tips</h2>
             <ul className="list-unstyled">
-              {Array.isArray(sustainabilityTips) && sustainabilityTips.map((tip) => (
-                <li key={tip.id} className="tip-card mb-2">
-                  {tip.text}
-                </li>
-              ))}
+              {Array.isArray(sustainabilityTips) &&
+                sustainabilityTips.map((tip) => (
+                  <li key={tip.id} className="tip-card mb-2">
+                    <strong>{tip.title}</strong>
+                    <br />
+                    {tip.description}
+                  </li>
+                ))}
             </ul>
           </div>
           <div className="card p-4">
@@ -158,13 +168,14 @@ export default function MainPage() {
               <YAxis />
               <Tooltip />
               <Bar dataKey="quantity">
-                {Array.isArray(data) && data.map((entry, index) => {
-                  let barClass = "";
-                  if (entry.type === "Plastic") barClass = "bar-plastic";
-                  if (entry.type === "Glass") barClass = "bar-glass";
-                  if (entry.type === "Paper") barClass = "bar-paper";
-                  return <Cell key={index} className={barClass} />;
-                })}
+                {Array.isArray(data) &&
+                  data.map((entry, index) => {
+                    let barClass = "";
+                    if (entry.type === "Plastic") barClass = "bar-plastic";
+                    if (entry.type === "Glass") barClass = "bar-glass";
+                    if (entry.type === "Paper") barClass = "bar-paper";
+                    return <Cell key={index} className={barClass} />;
+                  })}
               </Bar>
             </BarChart>
           </div>
