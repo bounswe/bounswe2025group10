@@ -3,13 +3,13 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { toBoolean } from "@/util/helper.js";
-import { useEffect } from "react";
 
 // Create Auth context
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 // Hook to use Auth context
 export const useAuth = () => {
@@ -25,7 +25,9 @@ export function AuthProvider({ children }) {
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
-  const [token, setToken] = useState(() => localStorage.getItem(ACCESS_TOKEN_KEY));
+  const [token, setToken] = useState(() =>
+    localStorage.getItem(ACCESS_TOKEN_KEY)
+  );
   const [isAdmin, setIsAdmin] = useState(() =>
     toBoolean(localStorage.getItem(ADMIN_KEY))
   );
@@ -44,7 +46,9 @@ export function AuthProvider({ children }) {
 
   const safeJson = async (response) => {
     const text = await response.text();
-    const isJson = response.headers.get("content-type")?.includes("application/json");
+    const isJson = response.headers
+      .get("content-type")
+      ?.includes("application/json");
     return isJson && text ? JSON.parse(text) : null;
   };
 
@@ -88,7 +92,8 @@ export function AuthProvider({ children }) {
         });
 
         const data = await safeJson(response);
-        if (!response.ok) throw new Error(data?.message ?? `HTTP ${response.status}`);
+        if (!response.ok)
+          throw new Error(data?.message ?? `HTTP ${response.status}`);
 
         return { success: true, message: "Account created successfully!" };
       } catch (err) {
@@ -104,13 +109,26 @@ export function AuthProvider({ children }) {
     navigate("/login", { replace: true });
   }, [navigate, saveToken]);
 
+  // When the application loads, read the token and admin flag from localStorage
   useEffect(() => {
-    if (!token) {
+    const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const storedAdmin = toBoolean(localStorage.getItem(ADMIN_KEY));
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAdmin(storedAdmin);
+    }
+  }, []);
+
+  // Update localStorage whenever the token or isAdmin changes
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+      localStorage.setItem(ADMIN_KEY, isAdmin);
+    } else {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(ADMIN_KEY);
     }
-    // run once only
-  }, []);   
+  }, [token, isAdmin]);
 
   const value = {
     isAdmin,
