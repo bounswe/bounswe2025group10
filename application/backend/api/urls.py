@@ -21,11 +21,13 @@ urlpatterns = [
     
     # POST: Authenticate a user and receive an access token
     path('login/', login_views.LoginView.as_view(), name='login'),
-    
-    # POST: Upload a new profile picture for the authenticated user
-    path('me/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
-    
-    # POST: Create a new JWT token pair (access and refresh tokens)
+    # Profile picture upload endpoint
+    path('api/profile/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
+    # User profile update endpoint
+    path('api/profile/<str:username>/bio/', profile_views.user_bio, name='user-bio'),
+    # Public profile picture retrieval endpoint
+    path('api/profile/<str:username>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
+    # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     
     # POST: Refresh an expired JWT access token using a valid refresh token
