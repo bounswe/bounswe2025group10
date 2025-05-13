@@ -70,7 +70,7 @@ export default function MainPage() {
         },
       });
 
-      // Güncel veriyi tekrar çek
+      // Refetch the updated data
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/get/`, {
         headers: {
           Authorization: `Bearer ${token}`,
