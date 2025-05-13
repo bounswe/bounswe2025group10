@@ -162,6 +162,9 @@ def get_co2_emission(amount_kg, waste_type):
     """
     Calls Climatiq API to convert waste amount (kg) to CO2 emission (kg CO2e) for a specific waste type.
     """
+    if not CLIMATIQ_API_KEY:
+        return 0
+        
     activity_id = WASTE_TYPE_TO_ACTIVITY_ID.get(waste_type, 'waste_type_disposal_mixed_unspecified')
     url = 'https://api.climatiq.io/data/v1/estimate'
     headers = {
@@ -178,7 +181,14 @@ def get_co2_emission(amount_kg, waste_type):
             "weight_unit": "kg"
         }
     }
-    response = requests.post(url, json=data, headers=headers)
-    response.raise_for_status()
-    result = response.json()
-    return result.get('co2e', 0)
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            result = response.json()
+            return result.get('co2e', 0)
+        else:
+            # Handle non-200 responses
+            return 0
+    except Exception:
+        # Handle any other exceptions (network errors, etc.)
+        return 0

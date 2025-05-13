@@ -25,6 +25,9 @@ class TipViewsTests(TestCase):
             Tips.objects.create(title="Test Tip 3", text="Test tip description 3", like_count=10, dislike_count=1),
             Tips.objects.create(title="Test Tip 4", text="Test tip description 4", like_count=3, dislike_count=0)
         ]
+        
+        # Store the initial count for later assertions
+        self.initial_tip_count = Tips.objects.count()
 
     def test_get_all_tips_success(self):
         """Test successful retrieval of all tips"""
@@ -33,7 +36,7 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Tips retrieved successfully')
-        self.assertEqual(len(response.data['data']), 4)
+        self.assertEqual(len(response.data['data']), self.initial_tip_count)
         # Tips should be ordered by most recent (highest id) first
         self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
         self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
@@ -45,12 +48,20 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Recent tips retrieved successfully')
-        # Should return exactly 3 tips
-        self.assertEqual(len(response.data['data']), 3)
-        # Tips should be ordered by most recent (highest id) first
-        self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
-        self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
-        self.assertEqual(response.data['data'][2]['title'], "Test Tip 2")
+        # Should return up to 3 tips, or fewer if we have less than 3 tips total
+        expected_count = min(3, self.initial_tip_count)
+        self.assertEqual(len(response.data['data']), expected_count)
+        
+        # If we have tips, check the order
+        if self.initial_tip_count > 0:
+            # Tips should be ordered by most recent (highest id) first
+            self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
+            
+        if self.initial_tip_count > 1:
+            self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
+            
+        if self.initial_tip_count > 2:
+            self.assertEqual(response.data['data'][2]['title'], "Test Tip 2")
 
     def test_get_recent_tips_empty_db(self):
         """Test getting tips when database is empty"""
@@ -76,7 +87,7 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Tip created successfully')
-        self.assertEqual(Tips.objects.count(), 5)
+        self.assertEqual(Tips.objects.count(), self.initial_tip_count + 1)
         latest_tip = Tips.objects.latest('id')
         self.assertEqual(latest_tip.title, 'New Test Tip')
         self.assertEqual(latest_tip.text, 'New test tip description')
@@ -92,7 +103,7 @@ class TipViewsTests(TestCase):
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Tips.objects.count(), 4)  # No new tip should be created
+        self.assertEqual(Tips.objects.count(), self.initial_tip_count)  # No new tip should be created
 
     def test_create_tip_missing_fields(self):
         """Test tip creation with missing required fields"""
@@ -106,7 +117,7 @@ class TipViewsTests(TestCase):
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Tips.objects.count(), 4)  # No new tip should be created
+        self.assertEqual(Tips.objects.count(), self.initial_tip_count)  # No new tip should be created
 
     def test_create_tip_empty_fields(self):
         """Test tip creation with empty fields"""
@@ -120,7 +131,7 @@ class TipViewsTests(TestCase):
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Tips.objects.count(), 4)  # No new tip should be created
+        self.assertEqual(Tips.objects.count(), self.initial_tip_count)  # No new tip should be created
 
     def test_like_tip_authenticated(self):
         """Test liking a tip when authenticated"""

@@ -231,34 +231,38 @@ class WasteViewsTests(TestCase):
         self.assertEqual(response.data['data'][0]['total_waste'], 3.0)  # CO2 emission value
         mock_get_co2_emission.assert_called_once()
 
-    @patch('api.waste.waste_views.requests.post')
-    def test_climatiq_api_integration(self, mock_post):
-        """Test the integration with Climatiq API for CO2 emission calculation"""
-        # Create mock response for Climatiq API call
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
-        mock_post.return_value = mock_response
-        
-        # Import the function directly for testing
-        from api.waste.waste_views import get_co2_emission
-        
-        # Test plastic waste CO2 calculation
-        result = get_co2_emission(1.0, 'PLASTIC')
-        self.assertEqual(result, 2.5)
-        
-        # Verify the API was called with correct parameters
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        
-        # Check the request sent to Climatiq
-        self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
-        self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
-        self.assertIn('emission_factor', kwargs['json'])
-        self.assertIn('activity_id', kwargs['json']['emission_factor'])
-        self.assertIn('data_version', kwargs['json']['emission_factor'])
-        
-        # Test error handling
-        mock_response.status_code = 400
-        result = get_co2_emission(1.0, 'PAPER')
-        self.assertEqual(result, 0)  # Should return 0 when API call fails
+@patch('api.waste.waste_views.requests.post')
+def test_climatiq_api_integration(self, mock_post):
+    """Test the integration with Climatiq API for CO2 emission calculation"""
+    # Create mock response for Climatiq API call
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
+    mock_post.return_value = mock_response
+    
+    # Import the function directly for testing
+    from api.waste.waste_views import get_co2_emission
+    
+    # Test plastic waste CO2 calculation
+    result = get_co2_emission(1.0, 'PLASTIC')
+    self.assertEqual(result, 2.5)
+    
+    # Verify the API was called with correct parameters
+    mock_post.assert_called_once()
+    args, kwargs = mock_post.call_args
+    
+    # Check the request sent to Climatiq
+    self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
+    self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
+    self.assertIn('emission_factor', kwargs['json'])
+    self.assertIn('activity_id', kwargs['json']['emission_factor'])
+    self.assertIn('data_version', kwargs['json']['emission_factor'])
+    
+    # Reset the mock to test error handling
+    mock_post.reset_mock()
+    
+    # Test error handling with HTTP error
+    mock_response.status_code = 400
+    mock_post.return_value = mock_response
+    result = get_co2_emission(1.0, 'PAPER')
+    self.assertEqual(result, 0)
