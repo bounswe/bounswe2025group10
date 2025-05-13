@@ -124,7 +124,7 @@ export default function MainPage() {
               </select>
             </div>
             <div className="card p-4">
-              <label className="form-label" htmlFor="waste-quantity">Waste Quantity</label>
+              <label className="form-label" htmlFor="waste-quantity">Waste Quantity(grams)</label>
               <input
                 id="waste-quantity"
                 type="number"
