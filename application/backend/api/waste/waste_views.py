@@ -8,7 +8,6 @@ from ..models import UserWastes, Waste, Users
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
-import os
 
 
 @api_view(['POST'])
@@ -148,7 +147,7 @@ def get_top_users(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-CLIMATIQ_API_KEY = os.environ.get('CLIMATIQ_API_KEY')
+CLIMATIQ_API_KEY = '3QMDVSHM8X6FQ5B97P8PBKPXHW'
 
 # Map waste types to Climatiq activity IDs
 WASTE_TYPE_TO_ACTIVITY_ID = {
