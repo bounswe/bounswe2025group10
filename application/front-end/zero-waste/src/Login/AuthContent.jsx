@@ -109,7 +109,7 @@ export function AuthProvider({ children }) {
     navigate("/login", { replace: true });
   }, [navigate, saveToken]);
 
-  // Uygulama yüklendiğinde localStorage'tan token ve admin flag'ini oku
+  // When the application loads, read the token and admin flag from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     const storedAdmin = toBoolean(localStorage.getItem(ADMIN_KEY));
@@ -119,7 +119,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // token veya isAdmin değiştiğinde localStorage güncelle
+  // Update localStorage whenever the token or isAdmin changes
   useEffect(() => {
     if (token) {
       localStorage.setItem(ACCESS_TOKEN_KEY, token);
