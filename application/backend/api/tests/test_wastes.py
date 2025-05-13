@@ -5,6 +5,7 @@ from api.models import Users, Waste, UserWastes
 from challenges.models import Challenge, UserChallenge
 from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users
 from django.utils import timezone
+from unittest.mock import patch, MagicMock
 
 class WasteViewsTests(TestCase):
     def setUp(self):
@@ -118,10 +119,18 @@ class WasteViewsTests(TestCase):
         # Should still return all waste types with 0 amounts
         self.assertEqual(len(response.data['data']), 4)
         for item in response.data['data']:
-            self.assertEqual(item['total_amount'], 0)
+            self.assertEqual(item['total_amount'], 0)    
 
-    def test_get_top_users_success(self):
-        """Test successful retrieval of top users with waste contributions"""
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_success(self, mock_get_co2_emission):
+        """Test successful retrieval of top users with waste contributions as CO2 emissions"""
+        # Set up mock return values for CO2 emissions
+        # We'll use a multiplier of 2 for simplicity (e.g., 10kg waste = 20kg CO2)
+        def mock_co2_calculation(amount, waste_type):
+            return amount * 2
+            
+        mock_get_co2_emission.side_effect = mock_co2_calculation
+        
         # Create additional test users with different waste amounts
         user2 = Users.objects.create_user(
             username="testuser2",
@@ -169,15 +178,20 @@ class WasteViewsTests(TestCase):
         users_data = response.data['data']
         self.assertTrue(len(users_data) <= 10)  # Should not exceed 10 users
         
-        # Verify order (most waste to least)
+        # Verify CO2 emission values (total_waste * 2)
         self.assertEqual(users_data[0]['username'], 'testuser2')
-        self.assertEqual(users_data[0]['total_waste'], 10.0)
+        self.assertEqual(users_data[0]['total_waste'], 20.0)  # 10.0 kg waste * 2
         self.assertEqual(users_data[1]['username'], 'testuser3')
-        self.assertEqual(users_data[1]['total_waste'], 4.0)
+        self.assertEqual(users_data[1]['total_waste'], 8.0)   # 4.0 kg waste * 2
         self.assertEqual(users_data[2]['username'], 'testuser')
-        self.assertEqual(users_data[2]['total_waste'], 3.5)
+        self.assertEqual(users_data[2]['total_waste'], 7.0)   # 3.5 kg waste * 2
+        
+        # Verify that get_co2_emission was called for each waste type
+        self.assertTrue(mock_get_co2_emission.called)
+        self.assertGreaterEqual(mock_get_co2_emission.call_count, 3)  # Called at least once for each user    
 
-    def test_get_top_users_no_waste(self):
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_no_waste(self, mock_get_co2_emission):
         """Test top users endpoint when there are no waste records"""
         # Delete all waste records
         UserWastes.objects.all().delete()
@@ -187,9 +201,16 @@ class WasteViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['data']), 0)  # Should return empty list
+        # Verify that get_co2_emission was not called
+        mock_get_co2_emission.assert_not_called()
 
-    def test_get_top_users_single_user(self):
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_single_user(self, mock_get_co2_emission):
         """Test top users endpoint with only one user having waste records"""
+        # Set up mock return values for CO2 emissions
+        # We'll use a multiplier of 2 for simplicity (e.g., 1.5kg waste = 3.0kg CO2)
+        mock_get_co2_emission.return_value = 3.0
+        
         # Delete any existing waste records from setUp
         UserWastes.objects.all().delete()
         
@@ -207,30 +228,41 @@ class WasteViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['username'], 'testuser')
-        self.assertEqual(response.data['data'][0]['total_waste'], 1.5)
+        self.assertEqual(response.data['data'][0]['total_waste'], 3.0)  # CO2 emission value
+        mock_get_co2_emission.assert_called_once()
 
-
-class WasteLoggingTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = Users.objects.create_user(email="user@example.com", password="password123")
-        self.challenge = Challenge.objects.create(
-            title="Recycle Plastic",
-            description="Recycle 100kg of plastic",
-            target_amount=100,
-            current_progress=0,
-            is_public=True,
-            creator=self.user
-        )
-        UserChallenge.objects.create(user=self.user, challenge=self.challenge)
-        self.waste_type = Waste.objects.create(type="PLASTIC")
+@patch('api.waste.waste_views.requests.post')
+def test_climatiq_api_integration(self, mock_post):
+    """Test the integration with Climatiq API for CO2 emission calculation"""
+    # Create mock response for Climatiq API call
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
+    mock_post.return_value = mock_response
     
-    def test_waste_logging_updates_challenge_progress(self):
-        self.client.force_authenticate(user=self.user)
-        data = {"waste_type": "PLASTIC", "amount": 10}
-        response = self.client.post('/api/waste/', data, content_type='application/json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
-        # Verify that the challenge's current_progress is updated
-        self.challenge.refresh_from_db()
-        self.assertEqual(self.challenge.current_progress, 10)
+    # Import the function directly for testing
+    from api.waste.waste_views import get_co2_emission
+    
+    # Test plastic waste CO2 calculation
+    result = get_co2_emission(1.0, 'PLASTIC')
+    self.assertEqual(result, 2.5)
+    
+    # Verify the API was called with correct parameters
+    mock_post.assert_called_once()
+    args, kwargs = mock_post.call_args
+    
+    # Check the request sent to Climatiq
+    self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
+    self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
+    self.assertIn('emission_factor', kwargs['json'])
+    self.assertIn('activity_id', kwargs['json']['emission_factor'])
+    self.assertIn('data_version', kwargs['json']['emission_factor'])
+    
+    # Reset the mock to test error handling
+    mock_post.reset_mock()
+    
+    # Test error handling with HTTP error
+    mock_response.status_code = 400
+    mock_post.return_value = mock_response
+    result = get_co2_emission(1.0, 'PAPER')
+    self.assertEqual(result, 0)

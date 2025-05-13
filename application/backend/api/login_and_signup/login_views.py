@@ -16,7 +16,6 @@ class SignUpView(generics.GenericAPIView):
 
     def post(self, request: Request):
         data = request.data
-        print(data)
         serializer = self.serializer_class(data=data)
 
         if serializer.is_valid():
