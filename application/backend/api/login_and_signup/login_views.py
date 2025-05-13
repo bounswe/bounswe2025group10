@@ -50,12 +50,14 @@ class LoginView(APIView):
                     "message": "Login successful.",
                     "token": tokens,
                     "isAdmin": True,
+                    "username": user.username,
                 }
             else:
                 response = {
                     "message": "Login successful.",
                     "token": tokens,
                     "isAdmin": False,
+                    "username": user.username,
                 }
             return Response(data=response, status=status.HTTP_200_OK)
         

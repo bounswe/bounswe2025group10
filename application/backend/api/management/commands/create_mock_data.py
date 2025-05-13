@@ -26,9 +26,33 @@ def generate_mock_data(
 ):
     # USERS
     users = []
+    # Create a specific test user
+    test_user = Users(
+        username="test_user",
+        email="test@gmail.com",
+        password=make_password("test123"),
+        isAdmin=False,
+        profile_image=fake.image_url(),
+        bio="Test user for development and testing purposes.",
+    )
+    test_user.save()
+    users.append(test_user)
+    
+    # Create test user posts
+    test_user_posts = []
+    for i in range(3):
+        post = Posts(
+            text=f"Test post {i+1} from test_user",
+            image=fake.image_url(),
+            creator=test_user,
+            date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+        )
+        post.save()
+        test_user_posts.append(post)
 
-    generated_usernames = set()
-    generated_emails = set()
+    # Create random users
+    generated_usernames = set(["test_user"])  # Already used
+    generated_emails = set(["test@gmail.com"])  # Already used
     while len(users) < num_users:
         username = fake.user_name()
         email = fake.email()
