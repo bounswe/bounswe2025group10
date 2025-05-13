@@ -1,7 +1,8 @@
 from django.test import TestCase
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
 from api.models import Users, Waste, UserWastes
+from challenges.models import Challenge, UserChallenge
 from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users
 from django.utils import timezone
 from unittest.mock import patch, MagicMock

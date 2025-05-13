@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from ..models import UserWastes, Waste, Users
+from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
 
@@ -23,7 +24,21 @@ def create_user_waste(request):
     
     try:
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            # Save the waste record
+            waste_record = serializer.save(user=request.user)
+
+            # Get the logged waste amount
+            logged_amount = waste_record.amount
+
+            # Get the challenges the user is participating in
+            user_challenges = UserChallenge.objects.filter(user=request.user)
+
+            # Update the current_progress of each challenge
+            for user_challenge in user_challenges:
+                challenge = user_challenge.challenge
+                challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
+                challenge.save()
+
             return Response({
                 'message': 'Waste recorded successfully',
                 'data': serializer.data

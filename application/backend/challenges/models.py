@@ -6,7 +6,7 @@ class Challenge(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     target_amount = models.FloatField(blank=True, null=True)
-    current_progress = models.FloatField(blank=True, null=True)
+    current_progress = models.FloatField(default=0)
     is_public = models.BooleanField(default=False)
     reward = models.ForeignKey(Achievements, models.DO_NOTHING, blank=True, null=True)
     creator = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)
