@@ -84,29 +84,28 @@ def upload_profile_picture(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @api_view(['GET', 'PUT'])
 @permission_classes([AllowAny])
-def user_bio(request, user_id):
+def user_bio(request, username):
     """
-    GET  /api/profile/<user_id>/bio/   → public: returns { user_id, bio }
-    PUT  /api/profile/<user_id>/bio/   → allows the *owner* (authenticated) to update their bio
+    GET  /api/profile/<username>/bio/   → public: returns { username, bio }
+    PUT  /api/profile/<username>/bio/   → allows the *owner* (authenticated) to update their bio
     """
     try:
-        user = Users.objects.get(id=user_id)
+        user = Users.objects.get(username=username)
     except Users.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        return Response({'user_id': user.id, 'bio': user.bio}, status=status.HTTP_200_OK)
+        return Response({'username': user.username, 'bio': user.bio}, status=status.HTTP_200_OK)
 
     # PUT
     if not request.user or not request.user.is_authenticated:
         return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
-    if request.user.id != user_id:
+    if request.user.username != username:
         return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
-    new_bio = request.data.get('bio', None)
+    new_bio = request.data.get('bio')
     if new_bio is None:
         return Response({'error': 'No bio provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -117,12 +116,12 @@ def user_bio(request, user_id):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def download_profile_picture_public(request, user_id):
+def download_profile_picture_public(request, username):
     """
-    GET /api/profile/<user_id>/picture/ → streams back the user's profile_image file (if any)
+    GET /api/profile/<username>/picture/ → streams back the user's profile_image file
     """
     try:
-        user = Users.objects.get(id=user_id)
+        user = Users.objects.get(username=username)
     except Users.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
