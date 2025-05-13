@@ -13,6 +13,7 @@ from challenges.models import Challenge, UserChallenge
 
 fake = Faker()
 
+@transaction.atomic
 def generate_mock_data(
     num_users=10,
     num_posts=10,
@@ -168,7 +169,7 @@ def generate_mock_data(
         challenge.save()
         challenges.append(challenge) 
 
-        # USER CHALLENGES
+    # USER CHALLENGES
     for challenge in challenges:
         if challenge.is_public:
             # For public challenges, any user can join
@@ -188,6 +189,7 @@ def generate_mock_data(
                 joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             )
             user_challenge.save()
+
     # REPORTS
     # Only create reports if we have comments to report
     if comments:
