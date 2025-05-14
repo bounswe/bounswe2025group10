@@ -8,8 +8,6 @@
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { getPreEmitDiagnostics } from "typescript";
-import { OperationCanceledException } from "typescript";
 import { useAuth } from "../Login/AuthContent";
 import PostCard from "./PostCard";
 
@@ -125,9 +123,9 @@ catch (error) {
             {posts.map((post) => (
               <PostCard
                 key={post.id}
-                image={post.image}
-                title={post.title}
-                description={post.description}
+                image={null}
+                title={post.description}
+                description={post.content.content}
                 onDelete={() => deletePost(post.id)}
               />
             ))}

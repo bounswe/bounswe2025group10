@@ -3,28 +3,51 @@ import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useAuth } from "../Login/AuthContent";
 import ChallengeCard from "./ChallengeCard";
+import { useState } from "react";
 
 function ChallengePanel({ children }) {
   const { token } = useAuth();
-
-    // ▸▸ MOCK CHALLENGES ──────────────────────────────
-    const mockChallenges = [
-      {
-        challengeId: 1,
-        name: "Plastic‑Free Week",
-        duration: "7 days"
-      },
-      {
-        challengeId: 2,
-        name: "Zero‑Waste Lunch",
-        duration: "5 days"
-      },
-      {
-        challengeId: 3,
-        name: "Composting Sprint",
-        duration: "14 days"
+  const apiUrl = import.meta.env.VITE_API_URL; //get api 
+  const [challenges,setChallenges]=useState([])
+    // ▸▸ CHALLENGES ──────────────────────────────
+    const getChallenges= async ()=>{
+      try {
+        const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+      
+        const data = await response.json();
+        console.log(data);
+        setChallenges(data.results.filter(item => item.content_type === "challenges"));
+      } catch (error) {
+        console.error("Failed to fetch admin reports:", error);
       }
-    ];
+    }
+      getChallenges() //get comments
+        
+     //deletes given post given 
+    const deleteChallenge=async (challenge_id)=>{
+      try {
+        const response = await fetch(`${apiUrl}/api/admin/reports/${challenge_id}/moderate/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: "delete_media" })
+        });
+      
+        const data = await response.json();
+        console.log(data);
+    }
+    catch (error) {
+      console.error("Error deleting challenge:", error);
+    }
+    }
     // ────────────────────────────────────────────────
   
   return (
@@ -88,13 +111,13 @@ function ChallengePanel({ children }) {
           </div>
           {/* Centered mock challenges list */}
           <div className="d-flex flex-column align-items-center">
-            {mockChallenges.map((ch) => (
+            {challenges.map((ch) => (
               <ChallengeCard
-                key={ch.challengeId}
-                challengeId={ch.challengeId}
-                name={ch.name}
-                duration={ch.duration}
-                onDelete={(id) => console.log(`Delete challenge ${id}`)}
+                key={ch.id}
+                challengeId={ch.id}
+                name={ch.content}
+                duration={ch.content.date}
+                onDelete={(id) => deleteChallenge(ch.id)}
               />
             ))}
           </div>
