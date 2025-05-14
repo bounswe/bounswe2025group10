@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.conf import settings
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -41,6 +42,8 @@ class Users(AbstractUser):
     profile_id = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.CharField(max_length=255, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
+    total_points = models.FloatField(default=0)
+    total_co2 = models.FloatField(default=0)
 
     # Keep Django’s staff/superuser flags in sync if you need them
     is_staff = models.BooleanField(default=False)
@@ -50,6 +53,19 @@ class Users(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+
+    @property
+    def profile_image_url(self):
+        """
+        Returns the full URL for the profile image if it exists.
+        If the image is already a full URL, returns it as is.
+        If it's a relative path, prepends the MEDIA_URL.
+        """
+        if not self.profile_image:
+            return None
+        if self.profile_image.startswith(('http://', 'https://')):
+            return self.profile_image
+        return f"{settings.MEDIA_URL}{self.profile_image}"
 
     def __str__(self):
         return self.username
@@ -78,15 +94,18 @@ class Posts(models.Model):
     date = models.DateTimeField(blank=True, null=True)
     text = models.TextField(blank=True, null=True)
     image = models.CharField(max_length=255, blank=True, null=True)
+    like_count = models.IntegerField(blank=True, null=True, default=0)
+    dislike_count = models.IntegerField(blank=True, null=True, default=0)
 
     class Meta:
         db_table = 'Posts'
 
 
 class Tips(models.Model):
+    title = models.CharField(max_length=255, default = "")
     text = models.TextField()
-    like_count = models.IntegerField(blank=True, null=True, default= 0)
-    dislike_count = models.IntegerField(blank=True, null=True, default= 0)
+    like_count = models.IntegerField(blank=True, null=True, default=0)
+    dislike_count = models.IntegerField(blank=True, null=True, default=0)
 
     class Meta:
         db_table = 'Tips'
@@ -131,6 +150,30 @@ class UserWastes(models.Model):
         db_table = 'UserWastes'
         ordering = ['-date']
 
+class PostLikes(models.Model):
+    REACTION_CHOICES = [
+        ('LIKE', 'Like'),
+        ('DISLIKE', 'Dislike'),
+    ]
+    
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    post = models.ForeignKey('Posts', on_delete=models.CASCADE)
+    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'PostLikes'
+        unique_together = (('user', 'post'),)  # Prevent multiple reactions from the same user on the same post
+
+class SavedPosts(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    post = models.ForeignKey('Posts', on_delete=models.CASCADE)
+    date_saved = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'SavedPosts'
+        unique_together = (('user', 'post'),)  # Prevent saving the same post multiple times
+        
 # Report logs for all kinds of media and users
 class Report(models.Model):
     REPORT_REASON_CHOICES = [

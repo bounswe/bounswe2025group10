@@ -128,9 +128,11 @@ class LoginViewTests(TestCase):
         resp = self.view(req)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["message"], "Login successful.")
+        self.assertEqual(resp.data["username"], self.user.username)
         tokens = resp.data["token"]
         self.assertIn("access", tokens)
         self.assertIn("refresh", tokens)
+        
 
     def test_login_failure(self):
         data = {"email": "login@example.com", "password": "wrongpass"}

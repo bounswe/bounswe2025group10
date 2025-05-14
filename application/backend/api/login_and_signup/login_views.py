@@ -16,7 +16,6 @@ class SignUpView(generics.GenericAPIView):
 
     def post(self, request: Request):
         data = request.data
-        print(data)
         serializer = self.serializer_class(data=data)
 
         if serializer.is_valid():
@@ -28,7 +27,6 @@ class SignUpView(generics.GenericAPIView):
             }
             return Response(data = response, status=status.HTTP_201_CREATED)
         import sys
-        print("SIGNUP VALIDATION ERRORS:", serializer.errors, file=sys.stderr, flush=True)
         return Response(data = serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # User authentication view
@@ -51,12 +49,14 @@ class LoginView(APIView):
                     "message": "Login successful.",
                     "token": tokens,
                     "isAdmin": True,
+                    "username": user.username,
                 }
             else:
                 response = {
                     "message": "Login successful.",
                     "token": tokens,
                     "isAdmin": False,
+                    "username": user.username,
                 }
             return Response(data=response, status=status.HTTP_200_OK)
         
