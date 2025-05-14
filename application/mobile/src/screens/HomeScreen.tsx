@@ -154,7 +154,12 @@ export const HomeScreen: React.FC = () => {
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <View style={styles.tipItem}>
-                <Text style={styles.tipText}>{item.text}</Text>
+                <Text style={styles.tipTitle}>{item.title}</Text>
+                <Text style={styles.tipDescription}>{item.description}</Text>
+                <View style={styles.tipStatsRow}>
+                  <Text style={styles.tipStat}>👍 {item.like_count}</Text>
+                  <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
+                </View>
               </View>
             )}
           />
@@ -170,6 +175,26 @@ export const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  tipTitle: {
+    ...typography.h2,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  tipDescription: {
+    ...typography.body,
+    color: colors.gray,
+    marginBottom: spacing.xs,
+  },
+  tipStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12, // If your React Native version doesn't support 'gap', use marginLeft on tipStat instead
+  },
+  tipStat: {
+    ...typography.body,
+    color: colors.gray,
+    marginLeft: spacing.sm,
+  },
   container: {
     ...commonStyles.container,
     padding: spacing.md,

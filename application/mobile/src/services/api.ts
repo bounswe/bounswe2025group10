@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
+import { Platform } from 'react-native';
 
 // Types
 export interface LoginCredentials {
@@ -26,26 +27,73 @@ export interface AuthResponse {
 }
 
 // API Configuration
-const API_URL = 'http://10.0.2.2:8000'; // Android emulator localhost
+const getBaseUrl = () => {
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8000'; // Android emulator
+    } else if (Platform.OS === 'ios') {
+      return 'http://localhost:8000'; // iOS simulator
+    }
+  }
+  return 'http://your-production-url.com'; // Production URL
+};
+
+const API_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Add token to requests if it exists
 api.interceptors.request.use(
   async (config) => {
-    const token = await storage.getToken();
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = await storage.getToken();
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      console.log('Making request to:', config.url, 'with headers:', config.headers);
+      return config;
+    } catch (error) {
+      console.error('Error in request interceptor:', error);
+      return Promise.reject(error);
     }
-    return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Response error:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url
+      });
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Request setup error:', error.message);
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Authentication Services
@@ -89,7 +137,8 @@ export const wasteService = {
 
 export const tipService = {
   getTips: async (): Promise<any> => {
-    const response = await api.get('/api/tips/');
+    // Fetch 3 random tips from the backend
+    const response = await api.get('/api/tips/get_recent_tips');
     return response.data;
   },
 };

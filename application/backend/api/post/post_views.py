@@ -1,7 +1,11 @@
+import os
+from datetime import datetime
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
 from .post_serializer import PostSerializer
 from ..models import Posts, Comments, PostLikes, SavedPosts
 from django.utils import timezone
@@ -11,22 +15,69 @@ from django.db import transaction
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def create_post(request):
     """
     Create a new post.
     
-    Required POST data:
+    Request should include:
     - text: str (optional if image is provided)
-    - image: str (optional if text is provided)
+    - image: File object (optional if text is provided)
     """
-    try:        # Validate that at least text or image is provided
-        if not request.data.get('text') and not request.data.get('image'):
+    try:
+        # Validate that at least text or image is provided
+        if not request.data.get('text') and 'image' not in request.FILES:
             return Response(
                 {'error': 'At least text or image must be provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        serializer = PostSerializer(data=request.data, context={'request': request})
+        # Handle image upload if provided
+        image_path = None
+        if 'image' in request.FILES:
+            image = request.FILES['image']
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+            if image.content_type not in allowed_types:
+                return Response({
+                    'error': 'Invalid file type. Only JPEG and PNG files are allowed.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate file size (max 5MB)
+            if image.size > 5 * 1024 * 1024:
+                return Response({
+                    'error': 'File too large. Maximum size is 5MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create post-specific directory
+            post_directory = os.path.join('posts', str(request.user.id))
+            full_directory = os.path.join(settings.MEDIA_ROOT, post_directory)
+            os.makedirs(full_directory, exist_ok=True)
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_extension = os.path.splitext(image.name)[1].lower()
+            filename = f'post_{timestamp}{file_extension}'
+            
+            # Full path for the new file
+            filepath = os.path.join(post_directory, filename)
+            full_filepath = os.path.join(settings.MEDIA_ROOT, filepath)
+            
+            # Save the file
+            with open(full_filepath, 'wb+') as destination:
+                for chunk in image.chunks():
+                    destination.write(chunk)
+                    
+            image_path = filepath.replace('\\', '/')  # Use forward slashes for URLs
+        
+        # Prepare data for serializer
+        post_data = {
+            'text': request.data.get('text', ''),
+            'image': image_path
+        }
+        
+        serializer = PostSerializer(data=post_data, context={'request': request})
         
         if serializer.is_valid():
             # Set the creator to the current user and the date to now
