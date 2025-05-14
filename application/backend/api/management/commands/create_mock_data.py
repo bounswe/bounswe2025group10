@@ -10,6 +10,9 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 
 from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report
+
+from ...models import TipLikes
+
 from challenges.models import Challenge, UserChallenge
 
 fake = Faker()
@@ -103,16 +106,14 @@ def generate_mock_data(
                                             tzinfo=timezone.get_current_timezone()),
             )
             comment.save()
-            comments.append(comment)
-
-    # TIPS
+            comments.append(comment)    # TIPS
     tips = []
     for i in range(num_tips):
         tip = Tips(
             title=fake.sentence(nb_words=random.randint(2, 4)),
             text=fake.text(),
-            like_count=random.randint(0, 100),
-            dislike_count=random.randint(0, 20),
+            like_count=0,  # Initialize to 0, will be updated based on actual likes
+            dislike_count=0,  # Initialize to 0, will be updated based on actual dislikes
         )
         tip.save()
         tips.append(tip)
@@ -137,6 +138,35 @@ def generate_mock_data(
                 )
                 user_waste.save()
                 user_wastes.append(user_waste)
+                
+    # TIP LIKES AND DISLIKES
+    for tip in tips:
+        # Randomly select users who will react to this tip
+        reacting_users = random.sample(
+            users, 
+            random.randint(0, min(len(users), 30))  # Maximum 30 users per tip or all users if less
+        )
+        
+        for user in reacting_users:
+            # Decide if the user will like or dislike
+            reaction_type = random.choice(['LIKE', 'DISLIKE'])  # 50% chance of like, 50% dislike
+            
+            tip_like = TipLikes(
+                user=user,
+                tip=tip,
+                reaction_type=reaction_type,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            )
+            tip_like.save()
+            
+            # Update tip counters
+            if reaction_type == 'LIKE':
+                tip.like_count += 1
+            else:
+                tip.dislike_count += 1
+        
+        # Save the updated counts
+        tip.save()
 
     # ACHIEVEMENTS
     achievements = []
