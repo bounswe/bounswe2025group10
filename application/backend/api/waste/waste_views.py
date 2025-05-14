@@ -59,8 +59,11 @@ def create_user_waste(request):
                 # Refresh the challenge instance to get the updated value
                 challenge.refresh_from_db()
 
-                # Challenge is completed
-                if challenge.current_progress >= challenge.target_amount:
+
+                # Distribute achievements if challenge is completed
+                challenge.refresh_from_db()
+                if challenge.current_progress > challenge.target_amount:
+
                     challenge.current_progress = challenge.target_amount
 
                     # fetch all users that are participating in the challenge
