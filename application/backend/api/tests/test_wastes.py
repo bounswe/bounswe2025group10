@@ -119,8 +119,7 @@ class WasteViewsTests(TestCase):
         # Should still return all waste types with 0 amounts
         self.assertEqual(len(response.data['data']), 4)
         for item in response.data['data']:
-            self.assertEqual(item['total_amount'], 0)    
-
+            self.assertEqual(item['total_amount'], 0)
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_success(self, mock_get_co2_emission):
         """Test successful retrieval of top users with waste contributions as CO2 emissions"""
@@ -165,12 +164,11 @@ class WasteViewsTests(TestCase):
             amount=4.0,
             date=timezone.now()
         )
-        
-        # Original test user has 3.5 total (1.5 + 2.0 from setUp)
+          # Original test user has 3.5 total (1.5 + 2.0 from setUp)
         
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Top users retrieved successfully')
         
@@ -178,17 +176,34 @@ class WasteViewsTests(TestCase):
         users_data = response.data['data']
         self.assertTrue(len(users_data) <= 10)  # Should not exceed 10 users
         
-        # Verify CO2 emission values (total_waste * 2)
+        # Verify CO2 emission values with 4 decimal places format
         self.assertEqual(users_data[0]['username'], 'testuser2')
-        self.assertEqual(users_data[0]['total_waste'], 20.0)  # 10.0 kg waste * 2
+        self.assertEqual(users_data[0]['total_waste'], "20.0000")  # 10.0 kg waste * 2, formatted to 4 decimals
         self.assertEqual(users_data[1]['username'], 'testuser3')
-        self.assertEqual(users_data[1]['total_waste'], 8.0)   # 4.0 kg waste * 2
+        self.assertEqual(users_data[1]['total_waste'], "8.0000")   # 4.0 kg waste * 2, formatted to 4 decimals
         self.assertEqual(users_data[2]['username'], 'testuser')
-        self.assertEqual(users_data[2]['total_waste'], 7.0)   # 3.5 kg waste * 2
+        self.assertEqual(users_data[2]['total_waste'], "7.0000")   # 3.5 kg waste * 2, formatted to 4 decimals
+        
+        # Verify that points are included in the response
+        point_coefficients = {
+            'PLASTIC': 0.03,  # 3 points per 100g
+            'PAPER': 0.02,    # 2 points per 100g
+            'GLASS': 0.015,   # 1.5 points per 100g
+            'METAL': 0.04,    # 4 points per 100g
+        }
+        
+        # Calculate expected points for each user
+        user2_points = 5.0 * point_coefficients['PLASTIC'] + 5.0 * point_coefficients['PAPER']  # 0.15 + 0.10 = 0.25
+        user3_points = 4.0 * point_coefficients['GLASS']  # 0.06
+        testuser_points = 1.5 * point_coefficients['PLASTIC'] + 2.0 * point_coefficients['PAPER']  # 0.045 + 0.04 = 0.085
+        
+        self.assertEqual(users_data[0]['points'], user2_points)
+        self.assertEqual(users_data[1]['points'], user3_points)
+        self.assertEqual(users_data[2]['points'], testuser_points)
         
         # Verify that get_co2_emission was called for each waste type
         self.assertTrue(mock_get_co2_emission.called)
-        self.assertGreaterEqual(mock_get_co2_emission.call_count, 3)  # Called at least once for each user    
+        self.assertGreaterEqual(mock_get_co2_emission.call_count, 3)  # Called at least once for each user
 
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_no_waste(self, mock_get_co2_emission):
@@ -203,13 +218,14 @@ class WasteViewsTests(TestCase):
         self.assertEqual(len(response.data['data']), 0)  # Should return empty list
         # Verify that get_co2_emission was not called
         mock_get_co2_emission.assert_not_called()
-
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_single_user(self, mock_get_co2_emission):
-        """Test top users endpoint with only one user having waste records"""
-        # Set up mock return values for CO2 emissions
-        # We'll use a multiplier of 2 for simplicity (e.g., 1.5kg waste = 3.0kg CO2)
-        mock_get_co2_emission.return_value = 3.0
+        """Test top users endpoint with only one user having waste records"""        # Set up mock return values for CO2 emissions
+        # We'll use a fixed value of 3.0 for simplicity
+        def mock_co2_calculation(amount, waste_type):
+            return 3.0
+            
+        mock_get_co2_emission.side_effect = mock_co2_calculation
         
         # Delete any existing waste records from setUp
         UserWastes.objects.all().delete()
@@ -228,7 +244,12 @@ class WasteViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['username'], 'testuser')
-        self.assertEqual(response.data['data'][0]['total_waste'], 3.0)  # CO2 emission value
+        self.assertEqual(response.data['data'][0]['total_waste'], "3.0000")  # CO2 emission value with 4 decimal places
+        
+        # Verify points are included in the response
+        expected_points = 1.5 * 0.03  # 1.5kg of PLASTIC * 0.03 points per 100g = 0.045 points
+        self.assertEqual(response.data['data'][0]['points'], expected_points)
+        
         mock_get_co2_emission.assert_called_once()
 
 @patch('api.waste.waste_views.requests.post')
