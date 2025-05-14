@@ -13,7 +13,10 @@ interface Post {
   creator_profile_image?: string;
   like_count: number;
   dislike_count: number;
+  image_url?: string;
 }
+
+const BASE_URL = 'https://134-209-253-215.sslip.io';
 
 export const CommunityScreen = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -87,26 +90,37 @@ export const CommunityScreen = () => {
     fetchPosts();
   }, []);
 
-  const renderItem = ({ item }: { item: Post }) => (
-    <View style={styles.postItem}>
-      <View style={styles.postHeader}>
-        {item.creator_profile_image ? (
-          <Image source={{ uri: item.creator_profile_image }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder} />
-        )}
-        <Text style={styles.username}>{item.creator_username}</Text>
+  const renderItem = ({ item }: { item: Post }) => {
+    // Prefer image_url from backend, fallback to previous logic
+    const imageUrl = item.image_url || (
+      item.image
+        ? item.image.startsWith('http')
+          ? item.image
+          : `${BASE_URL}${item.image.startsWith('/') ? '' : '/'}${item.image}`
+        : null
+    );
+
+    return (
+      <View style={styles.postItem}>
+        <View style={styles.postHeader}>
+          {item.creator_profile_image ? (
+            <Image source={{ uri: item.creator_profile_image }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder} />
+          )}
+          <Text style={styles.username}>{item.creator_username}</Text>
+        </View>
+        {item.text ? <Text style={styles.postText}>{item.text}</Text> : null}
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.postImage} />
+        ) : null}
+        <View style={styles.statsRow}>
+          <Text style={styles.stat}>👍 {item.like_count}</Text>
+          <Text style={styles.stat}>👎 {item.dislike_count}</Text>
+        </View>
       </View>
-      {item.text ? <Text style={styles.postText}>{item.text}</Text> : null}
-      {item.image ? (
-        <Image source={{ uri: item.image }} style={styles.postImage} />
-      ) : null}
-      <View style={styles.statsRow}>
-        <Text style={styles.stat}>👍 {item.like_count}</Text>
-        <Text style={styles.stat}>👎 {item.dislike_count}</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
