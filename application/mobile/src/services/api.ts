@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { storage } from '../utils/storage';
 
 // Types
 export interface LoginCredentials {
@@ -35,13 +36,17 @@ const api = axios.create({
 });
 
 // Add token to requests if it exists
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem('access_token');
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
+api.interceptors.request.use(
+  async (config) => {
+    const token = await storage.getToken();
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Authentication Services
 export const authService = {
@@ -67,6 +72,24 @@ export const authService = {
 
   fakeLogin: async (): Promise<AuthResponse> => {
     const response = await axios.post(`${API_URL}/fake-login/`);
+    return response.data;
+  },
+};
+
+export const wasteService = {
+  getUserWastes: async (): Promise<any> => {
+    const response = await api.get('/api/waste/get/');
+    return response.data;
+  },
+  addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
+    const response = await api.post('/api/waste/', { waste_type, amount });
+    return response.data;
+  },
+};
+
+export const tipService = {
+  getTips: async (): Promise<any> => {
+    const response = await api.get('/api/tips/');
     return response.data;
   },
 };
