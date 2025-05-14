@@ -86,6 +86,7 @@ def get_user_info(request):
     Requires valid JWT token in Authorization header
     """
     data = {
+        "id": request.user.id,
         "username": request.user.username,
         "is_authenticated": True
     }

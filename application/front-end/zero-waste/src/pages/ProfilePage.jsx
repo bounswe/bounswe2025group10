@@ -27,6 +27,7 @@ export default function ProfilePage() {
 
   /* ────────────────────────────────── 1.  Load BIO + AVATAR */
   useEffect(() => {
+
     if (!token || !username) return;
   
     const fetchProfile = async () => {
@@ -47,9 +48,11 @@ export default function ProfilePage() {
         showToast("Could not load profile", "error");
       }
     };
+
   
     fetchProfile();
   }, [apiUrl, token, username, avatarLoaded]);
+
 
   /* ────────────────────────────────── 2.  Load POSTS */
   useEffect(() => {
@@ -112,10 +115,12 @@ export default function ProfilePage() {
         });
         if (!res.ok) throw new Error("avatar");
 
+
         const { url } = await res.json();                 // returns { url: "/media/..." }
         // bust browser cache by appending a random query string
         setAvatarLoaded(false);
         const avatarUrl = apiUrl.replace(/\/$/, "") + url + `?t=${Date.now()}`;
+
 
         setProfile((p) => ({ ...p, avatar: avatarUrl }));
         setAvatarFile(null);
@@ -170,7 +175,9 @@ export default function ProfilePage() {
               <Image
                 roundedCircle
                 src={avatarSrc}
+
                 key={avatarSrc}
+
                 alt="avatar"
                 width={128}
                 height={128}

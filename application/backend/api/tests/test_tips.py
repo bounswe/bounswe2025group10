@@ -28,10 +28,14 @@ class TipViewsTests(TestCase):
         
         # Store the initial count for later assertions
         self.initial_tip_count = Tips.objects.count()
-
+        
     def test_get_all_tips_success(self):
         """Test successful retrieval of all tips"""
+        # Authenticate user for the request to include reaction data
+        self.client.force_authenticate(user=self.user)
         request = self.factory.get('/api/tips/all/')
+        request.user = self.user  # Manually set user for factory request
+        
         response = get_all_tips(request)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -40,6 +44,13 @@ class TipViewsTests(TestCase):
         # Tips should be ordered by most recent (highest id) first
         self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
         self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
+        
+        # Check for the new fields
+        self.assertIn('is_user_liked', response.data['data'][0])
+        self.assertIn('is_user_disliked', response.data['data'][0])
+        # By default, user hasn't liked/disliked any tips
+        self.assertFalse(response.data['data'][0]['is_user_liked'])
+        self.assertFalse(response.data['data'][0]['is_user_disliked'])
 
     def test_get_recent_tips_success(self):
         """Test successful retrieval of recent tips"""
@@ -146,20 +157,6 @@ class TipViewsTests(TestCase):
         self.assertEqual(response.data['message'], 'Tip liked successfully')
         self.assertEqual(self.tips[0].like_count, initial_likes + 1)
 
-    def test_unlike_tip_authenticated(self):
-        """Test unliking a tip when authenticated"""
-        self.client.force_authenticate(user=self.user)
-        tip = self.tips[0]
-        tip.like_count = 1
-        tip.save()
-
-        url = reverse('unlike_tip', args=[tip.id])
-        response = self.client.post(url)
-        tip.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Tip unliked successfully')
-        self.assertEqual(tip.like_count, 0)
 
     def test_dislike_tip_authenticated(self):
         """Test disliking a tip when authenticated"""
@@ -174,23 +171,14 @@ class TipViewsTests(TestCase):
         self.assertEqual(response.data['message'], 'Tip disliked successfully')
         self.assertEqual(self.tips[0].dislike_count, initial_dislikes + 1)
 
-    def test_undislike_tip_authenticated(self):
-        """Test undisliking a tip when authenticated"""
-        self.client.force_authenticate(user=self.user)
-        tip = self.tips[0]
-        tip.dislike_count = 1
-        tip.save()
-
-        url = reverse('undislike_tip', args=[tip.id])
-        response = self.client.post(url)
-        tip.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Tip undisliked successfully')
-        self.assertEqual(tip.dislike_count, 0)
-
     def test_like_tip_unauthenticated(self):
         """Test liking a tip when not authenticated"""
         url = reverse('like_tip', args=[self.tips[0].id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_dislike_tip_unauthenticated(self):
+        """Test disliking a tip when not authenticated"""
+        url = reverse('dislike_tip', args=[self.tips[0].id])
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

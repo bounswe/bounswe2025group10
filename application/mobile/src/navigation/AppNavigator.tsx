@@ -9,15 +9,32 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
+import { Image } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const iconMap: Record<string, any> = {
+  Home: require('../assets/home.png'),
+  Community: require('../assets/community.png'),
+  Challenges: require('../assets/challenge.png'),
+  Profile: require('../assets/profile.png'),
+};
+
 const MainTabs = () => (
   <Tab.Navigator
-    screenOptions={{
+    screenOptions={({ route }) => ({
       headerShown: false,
-    }}
+      tabBarIcon: ({ color, size, focused }) => (
+        <Image
+          source={iconMap[route.name]}
+          style={{ width: size, height: size }}
+          resizeMode="contain"
+        />
+      ),
+      tabBarActiveTintColor: '#228B22',
+      tabBarInactiveTintColor: 'gray',
+    })}
   >
     <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
     <Tab.Screen name="Community" component={CommunityScreen} options={{ tabBarLabel: 'Community' }} />

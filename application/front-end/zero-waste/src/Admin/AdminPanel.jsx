@@ -121,6 +121,7 @@ catch (error) {
 
           {/* Mock posts - centered */}
           <div className="d-flex flex-column align-items-center">
+
           {posts.map((post) => (
             <PostCard
               key={post.id}
@@ -130,6 +131,7 @@ catch (error) {
               onDelete={() => deletePost(post.id)}
             />
           ))}
+
           </div>
 
           {/* Nested children (if any) */}
