@@ -125,7 +125,7 @@ def get_top_users(request):
                 total_co2 += get_co2_emission(amount, waste_type)
             user_emissions.append({
                 'user': user,
-                'co2': total_co2
+                'co2': f"{total_co2:.4f}",  # Format to 4 decimal places
             })
         # Sort users by CO2 emission descending and take top 10
         top_users = sorted(user_emissions, key=lambda x: x['co2'], reverse=True)[:10]
