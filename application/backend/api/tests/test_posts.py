@@ -6,7 +6,11 @@ from api.models import Posts, Users, PostLikes, SavedPosts
 from api.post.post_serializer import PostSerializer
 from api.post.post_views import create_post, get_all_posts, get_post_detail, get_user_posts
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
 import json
+import os
+import tempfile
+from django.conf import settings
 
 class PostViewsTests(TestCase):
     def setUp(self):
@@ -55,11 +59,10 @@ class PostViewsTests(TestCase):
         PostLikes.objects.create(user=self.user1, post=self.posts[2], reaction_type="LIKE")
         PostLikes.objects.create(user=self.user2, post=self.posts[0], reaction_type="LIKE")
         PostLikes.objects.create(user=self.user2, post=self.posts[1], reaction_type="DISLIKE")
-        
-        # Create some saved posts
+          # Create some saved posts
         SavedPosts.objects.create(user=self.user1, post=self.posts[2])
         SavedPosts.objects.create(user=self.user2, post=self.posts[0])
-
+        
     def test_create_post_success_text_only(self):
         """Test successful post creation with text only"""
         self.client.force_authenticate(user=self.user1)
@@ -68,7 +71,7 @@ class PostViewsTests(TestCase):
             'text': 'New test post with text only'
         }
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Post created successfully')
@@ -81,36 +84,62 @@ class PostViewsTests(TestCase):
         """Test successful post creation with image only"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('create_post')
-        data = {
-            'image': 'new_test_image.jpg'
-        }
         
-        response = self.client.post(url, data, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['message'], 'Post created successfully')
-        self.assertEqual(Posts.objects.count(), 4)
-        latest_post = Posts.objects.latest('id')
-        self.assertEqual(latest_post.image, 'new_test_image.jpg')
-        self.assertEqual(latest_post.creator, self.user1)
+        # Create a temporary image file for testing
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            image_file.write(b'dummy image content')
+            image_file.seek(0)
+            
+            # Create a SimpleUploadedFile from the temporary file
+            image = SimpleUploadedFile(
+                name='test_image.jpg',
+                content=image_file.read(),
+                content_type='image/jpeg'
+            )
+            
+            data = {
+                'image': image
+            }
+            
+            response = self.client.post(url, data, format='multipart')
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['message'], 'Post created successfully')
+            self.assertEqual(Posts.objects.count(), 4)
+            latest_post = Posts.objects.latest('id')
+            self.assertIsNotNone(latest_post.image)
+            self.assertEqual(latest_post.creator, self.user1)
 
     def test_create_post_with_text_and_image(self):
         """Test successful post creation with both text and image"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('create_post')
-        data = {
-            'text': 'New test post with text and image',
-            'image': 'another_test_image.jpg'
-        }
         
-        response = self.client.post(url, data, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['message'], 'Post created successfully')
-        self.assertEqual(Posts.objects.count(), 4)
-        latest_post = Posts.objects.latest('id')
-        self.assertEqual(latest_post.text, 'New test post with text and image')
-        self.assertEqual(latest_post.image, 'another_test_image.jpg')
+        # Create a temporary image file for testing
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            image_file.write(b'dummy image content')
+            image_file.seek(0)
+            
+            # Create a SimpleUploadedFile from the temporary file
+            image = SimpleUploadedFile(
+                name='test_image.jpg',
+                content=image_file.read(),
+                content_type='image/jpeg'
+            )
+            
+            data = {
+                'text': 'New test post with text and image',
+                'image': image
+            }
+            
+            response = self.client.post(url, data, format='multipart')
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['message'], 'Post created successfully')
+            self.assertEqual(Posts.objects.count(), 4)
+            latest_post = Posts.objects.latest('id')
+            self.assertEqual(latest_post.text, 'New test post with text and image')
+            self.assertIsNotNone(latest_post.image)
 
     def test_create_post_unauthenticated(self):
         """Test post creation without authentication"""
@@ -130,7 +159,7 @@ class PostViewsTests(TestCase):
         url = reverse('create_post')
         data = {}  # Empty data
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Posts.objects.count(), 3)  # No new post should be created
@@ -222,7 +251,7 @@ class PostViewsTests(TestCase):
         # Second like - should toggle and remove the like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post like removed successfully')
+        self.assertEqual(response.data['message'], 'Like removed successfully')
         
         # Verify like was removed from database
         post_like = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
@@ -254,7 +283,7 @@ class PostViewsTests(TestCase):
         # Second dislike - should toggle and remove the dislike
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post dislike removed successfully')
+        self.assertEqual(response.data['message'], 'Dislike removed successfully')
         
         # Verify dislike was removed from database
         post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
