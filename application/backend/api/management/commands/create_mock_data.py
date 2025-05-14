@@ -1,7 +1,4 @@
-from dataclasses import replace
-
 from django.core.management.base import BaseCommand
-from django.db.models.signals import post_init
 from faker import Faker
 import random
 from django.utils import timezone
@@ -209,7 +206,7 @@ def generate_mock_data(
         achievement.save()
         achievements.append(achievement)
 
-        # USER ACHIEVEMENTS
+    # USER ACHIEVEMENTS
     user_achievements = []
     for user in users:
         sampled_achievements = random.sample(achievements, random.randint(0, num_achievements))
@@ -225,19 +222,26 @@ def generate_mock_data(
     # CHALLENGES
     challenges = []
     for i in range(num_challenges):
+        challenge_title = fake.sentence(nb_words=2)
+        completion_achievement = Achievements(
+            title=f"Completed {challenge_title}",
+            description=f"Given for completing '{challenge_title}' challenge.",
+            icon=fake.image_url(),
+        )
+        completion_achievement.save()
         challenge = Challenge(
-            title=fake.sentence(),
+            title=challenge_title,
             description=fake.text(),
             target_amount=random.uniform(max_challenge_target_amount // 10, max_challenge_target_amount),
             current_progress=random.uniform(0, 100),
             is_public=random.choice([True, False]),
-            reward=random.choice(achievements),
+            reward=completion_achievement,
             creator=random.choice(users),
         )
         challenge.save()
         challenges.append(challenge)
 
-        # USER CHALLENGES
+    # USER CHALLENGES
     for challenge in challenges:
         if challenge.is_public:
             # For public challenges, any user can join
@@ -259,7 +263,6 @@ def generate_mock_data(
             user_challenge.save()
 
     # REPORTS
-
     comment_ct = ContentType.objects.get_for_model(Comments)
     post_ct = ContentType.objects.get_for_model(Posts)
     challenge_ct = ContentType.objects.get_for_model(Challenge)

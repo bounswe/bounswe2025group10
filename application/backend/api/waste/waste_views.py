@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import UserWastes, Waste, Users
+from ..models import UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
+from django.utils import timezone
 
 
 # Point coefficients for different waste types
@@ -53,7 +54,30 @@ def create_user_waste(request):
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
-                challenge.save()
+                challenge.save() # Save the F expression to the database
+
+                # Refresh the challenge instance to get the updated value
+                challenge.refresh_from_db()
+
+                # Challenge is completed
+                if challenge.current_progress >= challenge.target_amount:
+                    challenge.current_progress = challenge.target_amount
+
+                    # fetch all users that are participating in the challenge
+                    users_in_challenge = UserChallenge.objects.filter(challenge=challenge).values_list('user', flat=True)
+                    for user in users_in_challenge:
+                        user_instance = Users.objects.get(id=user)
+
+                        # assert that challenge.reward exists
+                        if challenge.reward is None:
+                            raise ObjectDoesNotExist("Challenge reward does not exist. The reward achievement should be automatically generated in our new API, so this is likely a server issue.")
+
+                        # Check if the achievement already exists for the user
+                        if not UserAchievements.objects.filter(user=user_instance, achievement=challenge.reward).exists():
+                            # Create achievement for the user
+                            UserAchievements.objects.create(user=user_instance, achievement=challenge.reward, earned_at=timezone.now())
+
+                    challenge.save()
 
             # Refresh user object to get actual values after F() expressions
             request.user.refresh_from_db()
