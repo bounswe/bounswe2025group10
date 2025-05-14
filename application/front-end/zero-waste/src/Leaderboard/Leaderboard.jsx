@@ -72,6 +72,7 @@ export default function LeaderboardPage() {
             return {
               username: userData.username,
               score: userData.total_waste,
+              points: Math.round(userData.points || 0), // Round points to integer
               profileImage: profileImage,
               isCurrentUser: currentUserData && userData.username === currentUserData.username
             };
@@ -110,6 +111,7 @@ export default function LeaderboardPage() {
             position: currentUserIndex + 1,
             username: currentUserEntryData.username,
             score: currentUserEntryData.total_waste,
+            points: Math.round(currentUserEntryData.points || 0), // Round points to integer
             profileImage: currentUserImage
           });
         } else {
@@ -210,12 +212,8 @@ export default function LeaderboardPage() {
                   <th className="fw-bold text-center">#</th>
                   <th className="fw-bold text-center">Profile</th>
                   <th className="fw-bold text-center">Username</th>
-                  <th className="fw-bold text-center">
-                    Points
-                    <div style={{ fontSize: "0.8em", fontWeight: "normal" }}>
-                      (Avoided CO2 emissions)
-                    </div>
-                  </th>
+                  <th className="fw-bold text-center">Avoided CO2 emissions</th>
+                  <th className="fw-bold text-center">Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,6 +259,7 @@ export default function LeaderboardPage() {
                       </td>
                       <td>{u.username}</td>
                       <td>{u.score}</td>
+                      <td>{u.points}</td>
                     </tr>
                   );
                 })}
@@ -292,6 +291,7 @@ export default function LeaderboardPage() {
                     <th className="fw-bold text-center">#</th>
                     <th className="fw-bold text-center">Profile</th>
                     <th className="fw-bold text-center">Username</th>
+                    <th className="fw-bold text-center">Avoided CO2 emissions</th>
                     <th className="fw-bold text-center">Points</th>
                   </tr>
                 </thead>
@@ -334,6 +334,7 @@ export default function LeaderboardPage() {
                     </td>
                     <td>{userRank.username}</td>
                     <td>{userRank.score}</td>
+                    <td>{userRank.points}</td>
                   </tr>
                 </tbody>
               </table>
