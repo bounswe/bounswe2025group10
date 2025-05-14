@@ -46,7 +46,6 @@ def generate_mock_data(
     for i in range(3):
         post = Posts(
             text=f"Test post {i + 1} from test_user",
-
             image=fake.image_url(),
             creator=test_user,
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
@@ -102,7 +101,7 @@ def generate_mock_data(
             comment.save()
             comments.append(comment)
 
-     # TIPS
+    # TIPS
     tips = []
     for i in range(num_tips):
         tip = Tips(
@@ -116,7 +115,7 @@ def generate_mock_data(
     # Generate Wastes (The 4 canonical types)
     for key, _ in Waste.WASTE_TYPES:
         Waste.objects.get_or_create(type=key)
-    wastes = list(Waste.objects.all()) 
+    wastes = list(Waste.objects.all())
 
     # USER WASTES
     user_wastes = []
@@ -143,7 +142,7 @@ def generate_mock_data(
             icon=fake.image_url(),
         )
         achievement.save()
-        achievements.append(achievement) 
+        achievements.append(achievement)
 
         # USER ACHIEVEMENTS
     user_achievements = []
@@ -158,10 +157,7 @@ def generate_mock_data(
             user_achievement.save()
             user_achievements.append(user_achievement)
 
-    UserAchievements.objects.bulk_create(user_achievements) 
-
-
- # CHALLENGES
+    # CHALLENGES
     challenges = []
     for i in range(num_challenges):
         challenge = Challenge(
@@ -174,7 +170,7 @@ def generate_mock_data(
             creator=random.choice(users),
         )
         challenge.save()
-        challenges.append(challenge) 
+        challenges.append(challenge)
 
         # USER CHALLENGES
     for challenge in challenges:
@@ -198,33 +194,6 @@ def generate_mock_data(
             user_challenge.save()
 
     # REPORTS
-
-    # Only create reports if we have comments to report
-    if comments:
-        # Save comments to ensure they all have valid IDs
-        if any(not getattr(comment, 'id', None) for comment in comments):
-            Comments.objects.bulk_create([c for c in comments if not getattr(c, 'id', None)])
-            # Refresh comments list with saved objects that have valid IDs
-            comments = list(Comments.objects.all())
-        
-        # Now create reports
-        comment_ct = ContentType.objects.get_for_model(Comments)
-        reports = []
-        for _ in range(min(num_reports, len(comments))):  # Don't try to create more reports than comments
-            comment = random.choice(comments)
-            report = Report(
-                content_type=comment_ct,
-                object_id=comment.id,  # This should now be valid
-                reporter=random.choice(users),
-                reason=random.choice(Report.REPORT_REASON_CHOICES)[0],
-                description=fake.sentence(),
-                date_reported=fake.date_time_this_year(),
-            )
-            reports.append(report)
-        
-        if reports:
-            Report.objects.bulk_create(reports)
-
 
     comment_ct = ContentType.objects.get_for_model(Comments)
     post_ct = ContentType.objects.get_for_model(Posts)
