@@ -4,6 +4,7 @@ import { useAuth } from "../Login/AuthContent";
 import "./MainPage.css";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import Navbar from "../components/Navbar";
+import WeatherWidget from "./WeatherWidget";
 import axios from "axios";
 
 export default function MainPage() {
@@ -100,12 +101,17 @@ export default function MainPage() {
     <div className="main-bg min-vh-100 d-flex flex-column">
       <Navbar active="Main Page" />
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Input Section */}
-        <section className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-4">
+      <main className="container mx-auto px-4 py-4">
+        {/* Header Section with Weather */}
+        <div className="d-flex justify-content-between align-items-center mb-6">
+          <h1 className="text-3xl font-bold tracking-tight mb-0">
             Log Your Waste
           </h1>
+          <WeatherWidget />
+        </div>
+
+        {/* Input Section */}
+        <section className="mb-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="card p-4">
               <label className="form-label" htmlFor="waste-type">Waste Type</label>
