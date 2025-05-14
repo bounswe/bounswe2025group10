@@ -11,10 +11,14 @@ import { Card, Button, Row, Col, Badge } from "react-bootstrap";
  */
 export default function UserCard({
   username,
-  flaggedPosts = 0,
-  flaggedComments = 0,
+  flaggedPosts,
+  flaggedComments,
   onDelete,
 }) {
+  // Ensure undefined values are safely treated as zero
+  const safeFlaggedPosts = flaggedPosts ?? 0;
+  const safeFlaggedComments = flaggedComments ?? 0;
+
   return (
     <Card
       className="shadow-sm border-0 mb-3"
@@ -28,15 +32,15 @@ export default function UserCard({
 
             <div className="small text-muted">
               Flagged Posts&nbsp;
-              <Badge bg={flaggedPosts ? "warning" : "secondary"}>
-                {flaggedPosts}
+              <Badge bg={safeFlaggedPosts ? "warning" : "secondary"}>
+                {safeFlaggedPosts}
               </Badge>
             </div>
 
             <div className="small text-muted mt-1">
               Flagged Comments&nbsp;
-              <Badge bg={flaggedComments ? "warning" : "secondary"}>
-                {flaggedComments}
+              <Badge bg={safeFlaggedComments ? "warning" : "secondary"}>
+                {safeFlaggedComments}
               </Badge>
             </div>
           </Col>
