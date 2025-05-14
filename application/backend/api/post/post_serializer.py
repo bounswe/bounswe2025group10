@@ -7,16 +7,14 @@ class PostSerializer(serializers.ModelSerializer):
     creator_username = serializers.ReadOnlyField(source='creator.username')
     creator_profile_image = serializers.ReadOnlyField(source='creator.profile_image_url')
     is_saved = serializers.SerializerMethodField()
-
     is_user_liked = serializers.SerializerMethodField()
     is_user_disliked = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Posts
-        fields = ['id', 'text', 'image', 'image_url' 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
-        read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'image_url' 'is_user_liked', 'is_user_disliked']
-
-    image_url = serializers.SerializerMethodField()
+        fields = ['id', 'text', 'image', 'image_url', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
+        read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'image_url', 'is_user_liked', 'is_user_disliked']
     
     def get_image_url(self, obj):
         request = self.context.get('request')
