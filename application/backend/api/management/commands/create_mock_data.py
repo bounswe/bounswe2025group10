@@ -1,7 +1,4 @@
-from dataclasses import replace
-
 from django.core.management.base import BaseCommand
-from django.db.models.signals import post_init
 from faker import Faker
 import random
 from django.utils import timezone
@@ -9,7 +6,7 @@ from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 
-from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes
+from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes, PostLikes
 
 from challenges.models import Challenge, UserChallenge
 
@@ -88,6 +85,8 @@ def generate_mock_data(
             image=fake.image_url(),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            like_count=0,
+            dislike_count=0
         )
         post.save()
         posts.append(post)
@@ -164,9 +163,37 @@ def generate_mock_data(
                 tip.like_count += 1
             else:
                 tip.dislike_count += 1
+          # Save the updated counts
+        tip.save()
+
+    # POST LIKES AND DISLIKES
+    for post in posts + test_user_posts:
+        # Randomly select users who will react to this post
+        reacting_users = random.sample(
+            users, 
+            random.randint(0, min(len(users), 30))  # Maximum 30 users per post or all users if less
+        )
+        
+        for user in reacting_users:
+            # Decide if the user will like or dislike
+            reaction_type = random.choice(['LIKE', 'DISLIKE'])  # 50% chance of like, 50% dislike
+            
+            post_like = PostLikes(
+                user=user,
+                post=post,
+                reaction_type=reaction_type,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            )
+            post_like.save()
+            
+            # Update post counters
+            if reaction_type == 'LIKE':
+                post.like_count += 1
+            else:
+                post.dislike_count += 1
         
         # Save the updated counts
-        tip.save()
+        post.save()
 
     # ACHIEVEMENTS
     achievements = []
@@ -179,7 +206,7 @@ def generate_mock_data(
         achievement.save()
         achievements.append(achievement)
 
-        # USER ACHIEVEMENTS
+    # USER ACHIEVEMENTS
     user_achievements = []
     for user in users:
         sampled_achievements = random.sample(achievements, random.randint(0, num_achievements))
@@ -195,19 +222,26 @@ def generate_mock_data(
     # CHALLENGES
     challenges = []
     for i in range(num_challenges):
+        challenge_title = fake.sentence(nb_words=2)
+        completion_achievement = Achievements(
+            title=f"Completed {challenge_title}",
+            description=f"Given for completing '{challenge_title}' challenge.",
+            icon=fake.image_url(),
+        )
+        completion_achievement.save()
         challenge = Challenge(
-            title=fake.sentence(),
+            title=challenge_title,
             description=fake.text(),
             target_amount=random.uniform(max_challenge_target_amount // 10, max_challenge_target_amount),
             current_progress=random.uniform(0, 100),
             is_public=random.choice([True, False]),
-            reward=random.choice(achievements),
+            reward=completion_achievement,
             creator=random.choice(users),
         )
         challenge.save()
         challenges.append(challenge)
 
-        # USER CHALLENGES
+    # USER CHALLENGES
     for challenge in challenges:
         if challenge.is_public:
             # For public challenges, any user can join
@@ -229,7 +263,6 @@ def generate_mock_data(
             user_challenge.save()
 
     # REPORTS
-
     comment_ct = ContentType.objects.get_for_model(Comments)
     post_ct = ContentType.objects.get_for_model(Posts)
     challenge_ct = ContentType.objects.get_for_model(Challenge)
@@ -264,12 +297,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         generate_mock_data(
             num_users=100,
-            num_posts=1000,
+            num_posts=100,
             num_max_comments_per_post=7,
             num_tips=10,
-            num_max_wastes_per_user=50,
+            num_max_wastes_per_user=30,
             num_achievements=10,
-            num_challenges=200,
+            num_challenges=50,
             max_challenge_target_amount=50,
             reported_content_percent=0.05,
         )

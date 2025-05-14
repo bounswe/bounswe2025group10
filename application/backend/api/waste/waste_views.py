@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import UserWastes, Waste, Users
+from ..models import UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
+from django.utils import timezone
 
 
 # Point coefficients for different waste types
@@ -53,7 +54,33 @@ def create_user_waste(request):
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
-                challenge.save()
+                challenge.save() # Save the F expression to the database
+
+                # Refresh the challenge instance to get the updated value
+                challenge.refresh_from_db()
+
+
+                # Distribute achievements if challenge is completed
+                challenge.refresh_from_db()
+                if challenge.current_progress > challenge.target_amount:
+
+                    challenge.current_progress = challenge.target_amount
+
+                    # fetch all users that are participating in the challenge
+                    users_in_challenge = UserChallenge.objects.filter(challenge=challenge).values_list('user', flat=True)
+                    for user in users_in_challenge:
+                        user_instance = Users.objects.get(id=user)
+
+                        # assert that challenge.reward exists
+                        if challenge.reward is None:
+                            raise ObjectDoesNotExist("Challenge reward does not exist. The reward achievement should be automatically generated in our new API, so this is likely a server issue.")
+
+                        # Check if the achievement already exists for the user
+                        if not UserAchievements.objects.filter(user=user_instance, achievement=challenge.reward).exists():
+                            # Create achievement for the user
+                            UserAchievements.objects.create(user=user_instance, achievement=challenge.reward, earned_at=timezone.now())
+
+                    challenge.save()
 
             # Refresh user object to get actual values after F() expressions
             request.user.refresh_from_db()
@@ -128,28 +155,79 @@ def get_user_wastes(request):
 def get_top_users(request):
     """
     Get top 10 users with most total waste contributions (as points and CO2 emission).
-    Returns a list of users with their total CO2 emissions.
+    Returns:
+     - A list of top 10 users with their total CO2 emissions and points
+     - Current user's stats and standing in the leaderboard (if authenticated)
     """
     try:
-        # Get top 10 users who have waste records, sorted by total CO2
-        users_with_waste = Users.objects.filter(
+        # Get all users who have waste records, sorted by total points
+        all_users_with_waste = Users.objects.filter(
             id__in=UserWastes.objects.values('user_id')
-        ).order_by('-total_points')[:10]
+        ).order_by('-total_points')
         
-        # Prepare response data
-        response_data = []
-        for user in users_with_waste:
-            response_data.append({
+        # For leaderboard: get top 10 users
+        top_users = all_users_with_waste[:10]
+          # Prepare response data for top users
+        top_users_data = []
+        for index, user in enumerate(top_users):
+            # Get the profile image URL with absolute URI
+            profile_picture = None
+            if user.profile_image:
+                if user.profile_image.startswith(('http://', 'https://')):
+                    profile_picture = user.profile_image
+                else:
+                    from django.conf import settings
+                    profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{user.profile_image}"
+            
+            top_users_data.append({
+                'rank': index + 1,
                 'username': user.username,
                 'total_waste': f"{user.total_co2:.4f}",  # CO2 emission formatted to 4 decimals
-                'profile_picture': user.profile_image_url,
+                'profile_picture': profile_picture,
                 'points': user.total_points,
             })
+        
+        # Prepare response
+        response_data = {
+            'top_users': top_users_data
+        }
+        
+        # Add current user info if authenticated
+        if request.user.is_authenticated:
+            try:
+                # Find user's position in the leaderboard
+                user_rank = None
+                for index, user in enumerate(all_users_with_waste):
+                    if user.id == request.user.id:
+                        user_rank = index + 1
+                        break
+                
+                # Get profile image URL with absolute URI for current user
+                profile_picture = None
+                if request.user.profile_image:
+                    if request.user.profile_image.startswith(('http://', 'https://')):
+                        profile_picture = request.user.profile_image
+                    else:
+                        from django.conf import settings
+                        profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{request.user.profile_image}"
+                
+                # Get user stats
+                user_stats = {
+                    'username': request.user.username,
+                    'total_waste': f"{request.user.total_co2:.4f}",
+                    'profile_picture': profile_picture,
+                    'points': request.user.total_points,
+                    'rank': user_rank if user_rank else 'Not ranked'
+                }
+                
+                response_data['current_user'] = user_stats
+            except Exception as e:
+                # If there's an error getting current user info, continue without it
+                response_data['current_user'] = {'error': 'Could not retrieve current user data'}
             
         return Response({
             'message': 'Top users retrieved successfully',
-            'data': response_data
-        }, status=status.HTTP_200_OK)
+            'data': response_data        }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
             'error': str(e)

@@ -12,6 +12,7 @@ import Challenges from "./pages/Challenges.jsx";
 import Profile from "./pages/ProfilePage.jsx"
 import Community from "./pages/Community.jsx";
 import Tips from "./pages/Tips.jsx";
+import Leaderboard from "./Leaderboard/Leaderboard";
 
 export default function App() {
   return (
@@ -22,7 +23,7 @@ export default function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/tips" element={<Tips />} />
         {/*<Route path="/achievements" element={<Achievements />} />*/}
-        {/*<Route path="/leaderboard" element={<Leaderboard />} />*/}
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile /> }></Route>

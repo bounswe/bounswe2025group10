@@ -188,7 +188,7 @@ def like_post(request, post_id):
     This endpoint will:
     1. Create a like record if one doesn't exist
     2. Update the like if the user previously disliked the post
-    3. Return error if the user already liked the post
+    3. Remove the like if the user already liked the post (toggle behavior)
     """
     try:
         post = get_object_or_404(Posts, pk=post_id)
@@ -199,10 +199,18 @@ def like_post(request, post_id):
             
             if user_reaction:
                 if user_reaction.reaction_type == 'LIKE':
-                    return Response(
-                        {'error': 'You already liked this post'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # User already liked this post, so remove the like (toggle behavior)
+                    user_reaction.delete()
+                    
+                    # Update post counter
+                    if post.like_count > 0:
+                        post.like_count -= 1
+                        post.save()
+                    
+                    return Response({
+                        'message': 'Like removed successfully',
+                        'data': PostSerializer(post, context={'request': request}).data
+                    }, status=status.HTTP_200_OK)
                 
                 # User previously disliked, so update to like and adjust counts
                 user_reaction.reaction_type = 'LIKE'
@@ -237,45 +245,6 @@ def like_post(request, post_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def unlike_post(request, post_id):
-    """
-    Remove a like from a post.
-    """
-    try:
-        post = get_object_or_404(Posts, pk=post_id)
-        
-        # Check if user previously liked this post
-        with transaction.atomic():
-            user_reaction = PostLikes.objects.filter(
-                user=request.user,
-                post=post,
-                reaction_type='LIKE'
-            ).first()
-            
-            if not user_reaction:
-                return Response(
-                    {'error': 'You have not liked this post yet'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-              # Remove the like and decrement the count
-            user_reaction.delete()
-            post.like_count = max(0, post.like_count - 1)
-            post.save()
-        
-        serializer = PostSerializer(post, context={'request': request})
-        return Response({
-            'message': 'Post unliked successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def dislike_post(request, post_id):
     """
     Dislike a post.
@@ -283,7 +252,7 @@ def dislike_post(request, post_id):
     This endpoint will:
     1. Create a dislike record if one doesn't exist
     2. Update the dislike if the user previously liked the post
-    3. Return error if the user already disliked the post
+    3. Remove the dislike if the user already disliked the post (toggle behavior)
     """
     try:
         post = get_object_or_404(Posts, pk=post_id)
@@ -294,10 +263,18 @@ def dislike_post(request, post_id):
             
             if user_reaction:
                 if user_reaction.reaction_type == 'DISLIKE':
-                    return Response(
-                        {'error': 'You already disliked this post'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # User already disliked this post, so remove the dislike (toggle behavior)
+                    user_reaction.delete()
+                    
+                    # Update post counter
+                    if post.dislike_count > 0:
+                        post.dislike_count -= 1
+                        post.save()
+                    
+                    return Response({
+                        'message': 'Dislike removed successfully',
+                        'data': PostSerializer(post, context={'request': request}).data
+                    }, status=status.HTTP_200_OK)
                 
                 # User previously liked, so update to dislike and adjust counts
                 user_reaction.reaction_type = 'DISLIKE'
@@ -321,45 +298,6 @@ def dislike_post(request, post_id):
         serializer = PostSerializer(post, context={'request': request})
         return Response({
             'message': 'Post disliked successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def undislike_post(request, post_id):
-    """
-    Remove a dislike from a post.
-    """
-    try:
-        post = get_object_or_404(Posts, pk=post_id)
-        
-        # Check if user previously disliked this post
-        with transaction.atomic():
-            user_reaction = PostLikes.objects.filter(
-                user=request.user,
-                post=post,
-                reaction_type='DISLIKE'
-            ).first()
-            
-            if not user_reaction:
-                return Response(
-                    {'error': 'You have not disliked this post yet'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-              # Remove the dislike and decrement the count
-            user_reaction.delete()
-            post.dislike_count = max(0, post.dislike_count - 1)
-            post.save()
-        
-        serializer = PostSerializer(post, context={'request': request})
-        return Response({
-            'message': 'Dislike removed successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
     
