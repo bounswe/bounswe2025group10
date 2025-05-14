@@ -105,6 +105,7 @@ def generate_mock_data(
     tips = []
     for i in range(num_tips):
         tip = Tips(
+            title=fake.sentence(nb_words=random.randint(2, 4)),
             text=fake.text(),
             like_count=random.randint(0, 100),
             dislike_count=random.randint(0, 20),
