@@ -56,18 +56,11 @@ urlpatterns = [
     
     # GET: Retrieve all posts created by the currently authenticated user
     path("api/posts/user/", post_views.get_user_posts, name="get_user_posts"),
-    
-    # POST: Like a specific post (adds user's like reaction)
+      # POST: Like a specific post (adds user's like reaction or removes it if already liked)
     path("api/posts/<int:post_id>/like/", post_views.like_post, name="like_post"),
     
-    # POST: Remove a user's like from a specific post
-    path("api/posts/<int:post_id>/unlike/", post_views.unlike_post, name="unlike_post"),
-    
-    # POST: Dislike a specific post (adds user's dislike reaction)
+    # POST: Dislike a specific post (adds user's dislike reaction or removes it if already disliked)
     path("api/posts/<int:post_id>/dislike/", post_views.dislike_post, name="dislike_post"),
-    
-    # POST: Remove a user's dislike from a specific post
-    path("api/posts/<int:post_id>/undislike/", post_views.undislike_post, name="undislike_post"),
     
     # GET: Get the current user's reaction (like/dislike) to a specific post
     path("api/posts/<int:post_id>/reaction/", post_views.get_user_reaction, name="get_user_reaction"),
