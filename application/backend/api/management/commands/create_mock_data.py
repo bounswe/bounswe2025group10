@@ -1,14 +1,10 @@
-from dataclasses import replace
-
 from django.core.management.base import BaseCommand
-from django.db.models.signals import post_init
 from faker import Faker
 import random
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
-from grpc.framework.interfaces.base.utilities import completion
 
 from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report
 from challenges.models import Challenge, UserChallenge
@@ -171,6 +167,7 @@ def generate_mock_data(
             description=f"Given for completing '{challenge_title}' challenge.",
             icon=fake.image_url(),
         )
+        completion_achievement.save()
         challenge = Challenge(
             title=challenge_title,
             description=fake.text(),
