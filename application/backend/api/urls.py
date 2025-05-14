@@ -111,7 +111,7 @@ urlpatterns = [
     # GET: Retrieve all available tips
     path("api/tips/all/", tip_views.get_all_tips, name="get_all_tips"),
     
-    # POST: Create a new tip (requires admin or moderator privileges)
+    # POST: Create a new tip
     path("api/tips/create/", tip_views.create_tip, name="create_tip"),
     
     # POST: Like a specific tip
