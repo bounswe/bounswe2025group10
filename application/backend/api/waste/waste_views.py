@@ -111,6 +111,13 @@ def get_top_users(request):
     Get top 10 users with most total waste contributions (as CO2 emission).
     Returns a list of users with their total CO2 emissions.
     """
+
+    point_coefficients ={
+        'PLASTIC': 0.03, # 3 points per 100g
+        'PAPER': 0.02, # 2 points per 100g
+        'GLASS': 0.015, # 1.5 points per 100g
+        'METAL': 0.04, # 4 points per 100g
+    }
     try:
         # Get all users who have waste records
         users_with_waste = Users.objects.filter(userwastes__isnull=False).distinct()
@@ -126,6 +133,7 @@ def get_top_users(request):
             user_emissions.append({
                 'user': user,
                 'co2': f"{total_co2:.4f}",  # Format to 4 decimal places
+                'points': amount * point_coefficients.get(waste_type, 0),  # Calculate points
             })
         # Sort users by CO2 emission descending and take top 10
         top_users = sorted(user_emissions, key=lambda x: x['co2'], reverse=True)[:10]
