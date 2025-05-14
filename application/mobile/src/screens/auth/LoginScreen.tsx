@@ -32,16 +32,49 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await login(email, password);
-      console.log('Login response:', response);
+      console.log('Attempting login with email:', email);
+      
+      // First try to get the token
+      const response = await authService.login({ email, password });
+      console.log('Login response received:', response);
+      
       if (!response || !response.token) {
-        Alert.alert('Error', 'Invalid credentials');
+        console.error('Invalid response format:', response);
+        Alert.alert('Error', 'Invalid server response');
+        return;
+      }
+
+      // Then try to login with the context
+      const loginResult = await login(email, password);
+      console.log('Context login result:', loginResult);
+      
+      if (!loginResult) {
+        Alert.alert('Error', 'Failed to complete login process');
       }
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.error || 'An error occurred during login'
-      );
+      console.error('Login error:', error);
+      
+      let errorMessage = 'An error occurred during login';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Server error response:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+        errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        errorMessage = 'No response from server. Please check your internet connection.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Request setup error:', error.message);
+        errorMessage = error.message || errorMessage;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
