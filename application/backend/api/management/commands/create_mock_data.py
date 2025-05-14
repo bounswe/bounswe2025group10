@@ -294,12 +294,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         generate_mock_data(
             num_users=100,
-            num_posts=1000,
+            num_posts=100,
             num_max_comments_per_post=7,
             num_tips=10,
-            num_max_wastes_per_user=50,
+            num_max_wastes_per_user=30,
             num_achievements=10,
-            num_challenges=200,
+            num_challenges=50,
             max_challenge_target_amount=50,
             reported_content_percent=0.05,
         )
