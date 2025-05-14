@@ -5,6 +5,7 @@ import { authService, AuthResponse } from '../services/api';
 interface UserData {
   email: string;
   username: string;
+  profile_picture?: string; // URL or relative path to profile picture
 }
 
 interface AuthContextType {

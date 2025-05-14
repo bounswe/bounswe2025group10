@@ -35,10 +35,10 @@ const getBaseUrl = () => {
       return 'http://localhost:8000'; // iOS simulator
     }
   }
-  return 'http://your-production-url.com'; // Production URL
+  return 'https://134-209-253-215.sslip.io'; // Production URL
 };
 
-const API_URL = getBaseUrl();
+export const API_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_URL,
@@ -126,7 +126,7 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<any> => {
-    const response = await api.get('/api/waste/get/');
+    const response = await api.get('/api/waste/get');
     return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
@@ -137,8 +137,26 @@ export const wasteService = {
 
 export const tipService = {
   getTips: async (): Promise<any> => {
-    // Fetch 3 random tips from the backend
-    const response = await api.get('/api/tips/get_recent_tips');
+    const response = await api.get('/api/tips/');
+    return response.data;
+  },
+};
+
+export const achievementService = {
+  getUserAchievements: async (): Promise<any> => {
+    const response = await api.get('/api/challenges/enrolled/');
+    return response.data;
+  },
+};
+
+export const profileService = {
+  uploadProfilePicture: async (formData: FormData): Promise<any> => {
+    // Ensure headers for multipart/form-data; axios will set correct boundary when content-type is undefined or set multipart/form-data
+    const response = await api.post('/api/profile/profile-picture/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };
