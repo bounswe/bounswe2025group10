@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Challenge, UserChallenge
+from .models import Challenge, UserChallenge, Achievements
 from django.utils import timezone
 
 class ChallengeSerializer(serializers.ModelSerializer):
@@ -15,6 +15,17 @@ class ChallengeSerializer(serializers.ModelSerializer):
             'reward', 
             'creator'
             ]
+
+    def create(self, validated_data):
+        if not validated_data.get('reward'):
+            title = validated_data.get('title', 'Unnamed Challenge')
+            if title.lower().endswith(' challenge'):
+                title = title[:-9]
+            description = f"Given for completing '{title}' challenge."
+            reward = Achievements.objects.create(name=title, description=description)
+            validated_data['reward'] = reward
+
+        return super().create(validated_data)
         
 
 class ChallengeParticipationSerializer(serializers.ModelSerializer):
