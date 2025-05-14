@@ -8,6 +8,9 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from ..comment.comment_serializer import CommentSerializer
 from django.db import transaction
+import os
+from django.conf import settings
+from datetime import datetime
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -17,31 +20,74 @@ def create_post(request):
     
     Required POST data:
     - text: str (optional if image is provided)
-    - image: str (optional if text is provided)
+    - image: file (optional if text is provided)
     """
-    try:        # Validate that at least text or image is provided
-        if not request.data.get('text') and not request.data.get('image'):
+    try:
+        # Validate that at least text or image is provided
+        text = request.data.get('text')
+        image = request.FILES.get('image')
+        
+        if not text and not image:
             return Response(
                 {'error': 'At least text or image must be provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        serializer = PostSerializer(data=request.data, context={'request': request})
-        
-        if serializer.is_valid():
-            # Set the creator to the current user and the date to now
-            serializer.save(creator=request.user, date=timezone.now())
-            
-            return Response({
-                'message': 'Post created successfully',
-                'data': serializer.data
-            }, status=status.HTTP_201_CREATED)
-            
-        return Response(
-            {'error': serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST
+        # Create a new post object but don't save it to DB yet
+        new_post = Posts(
+            creator=request.user,
+            date=timezone.now(),
+            text=text
         )
-    
+        
+        # Handle the image file if provided
+        if image:
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
+            if image.content_type not in allowed_types:
+                return Response({
+                    'error': 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate file size (max 10MB)
+            if image.size > 10 * 1024 * 1024:
+                return Response({
+                    'error': 'File too large. Maximum size is 10MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create posts directory
+            posts_directory = os.path.join('posts', str(request.user.id))
+            full_directory = os.path.join(settings.MEDIA_ROOT, posts_directory)
+            os.makedirs(full_directory, exist_ok=True)
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_extension = os.path.splitext(image.name)[1].lower()
+            filename = f'post_{timestamp}{file_extension}'
+            
+            # Full path for the new file
+            filepath = os.path.join(posts_directory, filename)
+            full_filepath = os.path.join(settings.MEDIA_ROOT, filepath)
+            
+            # Save the file
+            with open(full_filepath, 'wb+') as destination:
+                for chunk in image.chunks():
+                    destination.write(chunk)
+            
+            # Store the relative path to the image in the post
+            new_post.image = filepath.replace('\\', '/')  # Use forward slashes for URLs
+        
+        # Save the post to the database
+        new_post.save()
+        
+        # Serialize the post for the response
+        serializer = PostSerializer(new_post, context={'request': request})
+        
+        return Response({
+            'message': 'Post created successfully',
+            'data': serializer.data
+        }, status=status.HTTP_201_CREATED)
+            
     except Exception as e:
         return Response(
             {'error': str(e)},
