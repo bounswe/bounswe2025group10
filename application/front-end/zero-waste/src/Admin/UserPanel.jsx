@@ -114,8 +114,8 @@ function UserPanel({ children }) {
           <div className="d-flex flex-column align-items-center">
             {users.map((u) => (
               <UserCard
-                key={u.username}
-                username={u.username}
+                key={u.id}
+                username={u.object_id}
                 flaggedPosts={u.flaggedPosts}
                 flaggedComments={u.flaggedComments}
                 onDelete={(user) => deleteUser(u.id)}

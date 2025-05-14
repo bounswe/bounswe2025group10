@@ -10,13 +10,14 @@ import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useAuth } from "../Login/AuthContent";
 import PostCard from "./PostCard";
+import { useState } from "react";
 
 function AdminPanel({ children }) {
 
   const token = localStorage.getItem("accessToken"); // reserved for real API calls later
   const apiUrl = import.meta.env.VITE_API_URL; //get api 
   
-  const posts=[]
+  const [posts,setPosts]=useState([])
   const getPosts= async ()=>{
   try {
     const response = await fetch(`${apiUrl}/api/admin/reports/`, {
@@ -29,7 +30,7 @@ function AdminPanel({ children }) {
   
     const data = await response.json();
     console.log(data);
-    const posts = data.results.filter(item => item.content_type === "posts");
+    setPosts(data.results.filter(item => item.content_type === "posts"));
   } catch (error) {
     console.error("Failed to fetch admin reports:", error);
   }
@@ -120,15 +121,17 @@ catch (error) {
 
           {/* Mock posts - centered */}
           <div className="d-flex flex-column align-items-center">
-            {posts.map((post) => (
-              <PostCard
-                key={post.id}
-                image={null}
-                title={post.description}
-                description={post.content.content}
-                onDelete={() => deletePost(post.id)}
-              />
-            ))}
+
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              image={post.content?.image || "https://via.placeholder.com/400x300?text=No+Image"}
+              title={`Report: ${post.reason}`}
+              description={post.content?.text ?? "No description provided."}
+              onDelete={() => deletePost(post.id)}
+            />
+          ))}
+
           </div>
 
           {/* Nested children (if any) */}

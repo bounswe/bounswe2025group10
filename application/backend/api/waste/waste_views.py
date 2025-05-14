@@ -8,6 +8,7 @@ from ..models import UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
+from django.utils import timezone
 
 
 # Point coefficients for different waste types
@@ -53,10 +54,16 @@ def create_user_waste(request):
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
+                challenge.save() # Save the F expression to the database
+
+                # Refresh the challenge instance to get the updated value
+                challenge.refresh_from_db()
+
 
                 # Distribute achievements if challenge is completed
                 challenge.refresh_from_db()
                 if challenge.current_progress > challenge.target_amount:
+
                     challenge.current_progress = challenge.target_amount
 
                     # fetch all users that are participating in the challenge
@@ -68,10 +75,12 @@ def create_user_waste(request):
                         if challenge.reward is None:
                             raise ObjectDoesNotExist("Challenge reward does not exist. The reward achievement should be automatically generated in our new API, so this is likely a server issue.")
 
-                        # Create achievement for the user
-                        UserAchievements.objects.create(user=user_instance, challenge=challenge.reward)
+                        # Check if the achievement already exists for the user
+                        if not UserAchievements.objects.filter(user=user_instance, achievement=challenge.reward).exists():
+                            # Create achievement for the user
+                            UserAchievements.objects.create(user=user_instance, achievement=challenge.reward, earned_at=timezone.now())
 
-                challenge.save()
+                    challenge.save()
 
             # Refresh user object to get actual values after F() expressions
             request.user.refresh_from_db()

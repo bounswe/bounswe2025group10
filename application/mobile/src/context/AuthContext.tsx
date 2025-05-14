@@ -2,21 +2,41 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
 import { authService, AuthResponse } from '../services/api';
 
+interface UserData {
+  email: string;
+  username: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
+  userData: UserData | null;
   login: (email: string, password: string) => Promise<AuthResponse | null>;
   logout: () => Promise<void>;
+  fetchUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await authService.getUserInfo();
+      setUserData(response.data || response); // Try both possibilities
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
       const token = await storage.getToken();
       setIsAuthenticated(!!token);
+      if (token) {
+        await fetchUserData();
+      }
     };
     checkAuth();
   }, []);
@@ -28,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await storage.setToken(response.token.access);
         await storage.setRefreshToken(response.token.refresh);
         setIsAuthenticated(true);
+        await fetchUserData();
         return response;
       }
       return null;
@@ -39,10 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     await storage.clearTokens();
     setIsAuthenticated(false);
+    setUserData(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userData, login, logout, fetchUserData }}>
       {children}
     </AuthContext.Provider>
   );

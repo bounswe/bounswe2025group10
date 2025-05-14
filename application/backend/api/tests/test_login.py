@@ -182,6 +182,7 @@ class GetUserInfoTests(TestCase):
         resp = get_user_info(req)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data, {
+            "id": self.user.id,
             "username": self.user.username,
             "is_authenticated": True
         })

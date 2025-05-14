@@ -6,7 +6,8 @@ from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 
-from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report
+from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes, PostLikes
+
 from challenges.models import Challenge, UserChallenge
 
 fake = Faker()
@@ -84,6 +85,8 @@ def generate_mock_data(
             image=fake.image_url(),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            like_count=0,
+            dislike_count=0
         )
         post.save()
         posts.append(post)
@@ -101,14 +104,15 @@ def generate_mock_data(
             )
             comment.save()
             comments.append(comment)
-
+            
     # TIPS
     tips = []
     for i in range(num_tips):
         tip = Tips(
+            title=fake.sentence(nb_words=random.randint(2, 4)),
             text=fake.text(),
-            like_count=random.randint(0, 100),
-            dislike_count=random.randint(0, 20),
+            like_count=0,  # Initialize to 0, will be updated based on actual likes
+            dislike_count=0,  # Initialize to 0, will be updated based on actual dislikes
         )
         tip.save()
         tips.append(tip)
@@ -133,6 +137,63 @@ def generate_mock_data(
                 )
                 user_waste.save()
                 user_wastes.append(user_waste)
+                
+    # TIP LIKES AND DISLIKES
+    for tip in tips:
+        # Randomly select users who will react to this tip
+        reacting_users = random.sample(
+            users, 
+            random.randint(0, min(len(users), 30))  # Maximum 30 users per tip or all users if less
+        )
+        
+        for user in reacting_users:
+            # Decide if the user will like or dislike
+            reaction_type = random.choice(['LIKE', 'DISLIKE'])  # 50% chance of like, 50% dislike
+            
+            tip_like = TipLikes(
+                user=user,
+                tip=tip,
+                reaction_type=reaction_type,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            )
+            tip_like.save()
+            
+            # Update tip counters
+            if reaction_type == 'LIKE':
+                tip.like_count += 1
+            else:
+                tip.dislike_count += 1
+          # Save the updated counts
+        tip.save()
+
+    # POST LIKES AND DISLIKES
+    for post in posts + test_user_posts:
+        # Randomly select users who will react to this post
+        reacting_users = random.sample(
+            users, 
+            random.randint(0, min(len(users), 30))  # Maximum 30 users per post or all users if less
+        )
+        
+        for user in reacting_users:
+            # Decide if the user will like or dislike
+            reaction_type = random.choice(['LIKE', 'DISLIKE'])  # 50% chance of like, 50% dislike
+            
+            post_like = PostLikes(
+                user=user,
+                post=post,
+                reaction_type=reaction_type,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            )
+            post_like.save()
+            
+            # Update post counters
+            if reaction_type == 'LIKE':
+                post.like_count += 1
+            else:
+                post.dislike_count += 1
+        
+        # Save the updated counts
+        post.save()
 
     # ACHIEVEMENTS
     achievements = []
@@ -236,12 +297,12 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         generate_mock_data(
             num_users=100,
-            num_posts=1000,
+            num_posts=100,
             num_max_comments_per_post=7,
             num_tips=10,
-            num_max_wastes_per_user=50,
+            num_max_wastes_per_user=30,
             num_achievements=10,
-            num_challenges=200,
+            num_challenges=50,
             max_challenge_target_amount=50,
             reported_content_percent=0.05,
         )

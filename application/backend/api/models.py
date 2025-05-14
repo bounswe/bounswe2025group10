@@ -93,9 +93,22 @@ class Posts(models.Model):
     creator = models.ForeignKey('Users', models.DO_NOTHING)
     date = models.DateTimeField(blank=True, null=True)
     text = models.TextField(blank=True, null=True)
-    image = models.CharField(max_length=255, blank=True, null=True)
+    image = models.CharField(max_length=255, blank=True, null=True)  # Store relative path to image
     like_count = models.IntegerField(blank=True, null=True, default=0)
     dislike_count = models.IntegerField(blank=True, null=True, default=0)
+
+    @property
+    def image_url(self):
+        """
+        Returns the full URL for the post image if it exists.
+        If the image is already a full URL, returns it as is.
+        If it's a relative path, prepends the MEDIA_URL.
+        """
+        if not self.image:
+            return None
+        if self.image.startswith(('http://', 'https://')):
+            return self.image
+        return f"{settings.MEDIA_URL}{self.image}"
 
     class Meta:
         db_table = 'Posts'
@@ -195,3 +208,18 @@ class Report(models.Model):
     class Meta:
         db_table = 'Reports'
 
+
+class TipLikes(models.Model):
+    REACTION_CHOICES = [
+        ('LIKE', 'Like'),
+        ('DISLIKE', 'Dislike'),
+    ]
+    
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    tip = models.ForeignKey('Tips', on_delete=models.CASCADE)
+    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'TipLikes'
+        unique_together = (('user', 'tip'),)  

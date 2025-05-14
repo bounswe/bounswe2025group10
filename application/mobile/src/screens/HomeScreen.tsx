@@ -1,62 +1,139 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, FlatList, Alert, Dimensions } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
+import { wasteService, tipService } from '../services/api';
+import { BarChart } from 'react-native-chart-kit';
 
-const DUMMY_TIPS = [
-  'Choose reusable products instead of single-use plastics.',
-  'Bring your own bag when grocery shopping.',
-  'Compost food scraps to reduce landfill waste.'
-];
+const chartConfig = {
+  backgroundGradientFrom: '#eafbe6',
+  backgroundGradientTo: '#eafbe6',
+  color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  barPercentage: 0.7,
+  decimalPlaces: 0,
+};
 
 export const HomeScreen: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, userData } = useAuth();
   const [wasteType, setWasteType] = useState('');
   const [wasteQuantity, setWasteQuantity] = useState('');
-  // Placeholder user info
-  const username = 'Username';
+  const [wasteData, setWasteData] = useState<any[]>([]);
+  const [loadingWaste, setLoadingWaste] = useState(true);
+  const [tips, setTips] = useState<any[]>([]);
+  const [loadingTips, setLoadingTips] = useState(true);
   const profilePic = null; // Replace with actual image URI if available
+
+  // Reusable fetch function
+  const fetchWasteData = async () => {
+    setLoadingWaste(true);
+    try {
+      const response = await wasteService.getUserWastes();
+      setWasteData(response.data);
+    } catch (error) {
+      console.error('Error fetching waste data:', error);
+    } finally {
+      setLoadingWaste(false);
+    }
+  };
+
+  const fetchTips = async () => {
+    setLoadingTips(true);
+    try {
+      const response = await tipService.getTips();
+      setTips(response.data);
+    } catch (error) {
+      console.error('Error fetching tips:', error);
+    } finally {
+      setLoadingTips(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWasteData();
+    fetchTips();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
   };
 
-  const handleAddWaste = () => {
-    // TODO: Connect to backend
-    setWasteType('');
-    setWasteQuantity('');
+  const handleAddWaste = async () => {
+    if (!wasteType || !wasteQuantity) return;
+    const typeToSend = wasteType.toUpperCase();
+    const amountToSend = parseFloat(wasteQuantity);
+    console.log('Adding waste:', { waste_type: typeToSend, amount: amountToSend });
+    try {
+      await wasteService.addUserWaste(typeToSend, amountToSend);
+      setWasteType('');
+      setWasteQuantity('');
+      await fetchWasteData();
+    } catch (error: any) {
+      console.error('Error adding waste:', error);
+      let message = 'Unknown error';
+      if (error.response && error.response.data) {
+        message = JSON.stringify(error.response.data);
+      } else if (error.message) {
+        message = error.message;
+      }
+      Alert.alert('Error', `Failed to add waste entry.\n${message}`);
+    }
   };
+
+  // Prepare data for BarChart
+  const barLabels = wasteData.map((item) => item.waste_type);
+  const barData = wasteData.map((item) => item.total_amount);
+  const screenWidth = Dimensions.get('window').width - 32; // padding
 
   return (
     <View style={styles.container}>
       {/* User Info Row */}
+      <View style={{ height: 26 }} />
       <View style={styles.userInfoRow}>
-        <Image
-          source={profilePic ? { uri: profilePic } : require('../assets/profile_placeholder.png')}
-          style={styles.profilePic}
-        />
-        <Text style={styles.username}>{username}</Text>
+        <Text style={styles.username}>{"Hello, " + userData?.username || 'Loading...'}</Text>
       </View>
-
-      {/* Progress Chart Placeholder */}
+      <View style={{ height: 26 }} />
+      {/* Progress Chart */}
       <View style={styles.chartContainer}>
         <Text style={styles.sectionTitle}>Your Progress</Text>
         <View style={styles.chartPlaceholder}>
-          <Text style={{ color: colors.gray }}>[Progress Chart Here]</Text>
+          {loadingWaste ? (
+            <Text style={{ color: colors.gray }}>[Loading waste data...]</Text>
+          ) : (
+            <BarChart
+              data={{
+                labels: barLabels,
+                datasets: [
+                  {
+                    data: barData,
+                  },
+                ],
+              }}
+              width={screenWidth}
+              height={180}
+              yAxisLabel={''}
+              yAxisSuffix={''}
+              chartConfig={chartConfig}
+              verticalLabelRotation={0}
+              fromZero
+              style={{ borderRadius: 12 }}
+            />
+          )}
         </View>
+        <View style={{ height: 46 }} />
       </View>
 
       {/* Waste Logging Inputs */}
       <View style={styles.logRow}>
         <TextInput
           style={styles.input}
-          placeholder="Log the waste type (e.g. Plastic)"
+          placeholder="Waste type"
           value={wasteType}
           onChangeText={setWasteType}
         />
         <TextInput
           style={styles.input}
-          placeholder="Log the waste quantity (e.g. 2)"
+          placeholder="Waste quantity"
           value={wasteQuantity}
           onChangeText={setWasteQuantity}
           keyboardType="numeric"
@@ -69,15 +146,24 @@ export const HomeScreen: React.FC = () => {
       {/* Latest Tips */}
       <View style={styles.tipsContainer}>
         <Text style={styles.sectionTitle}>Latest Tips</Text>
-        <FlatList
-          data={DUMMY_TIPS}
-          keyExtractor={(item, idx) => idx.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.tipItem}>
-              <Text style={styles.tipText}>{item}</Text>
-            </View>
-          )}
-        />
+        {loadingTips ? (
+          <Text style={styles.tipText}>Loading tips...</Text>
+        ) : (
+          <FlatList
+            data={tips}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.tipItem}>
+                <Text style={styles.tipTitle}>{item.title}</Text>
+                <Text style={styles.tipDescription}>{item.description}</Text>
+                <View style={styles.tipStatsRow}>
+                  <Text style={styles.tipStat}>👍 {item.like_count}</Text>
+                  <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
+                </View>
+              </View>
+            )}
+          />
+        )}
       </View>
 
       {/* Logout Button */}
@@ -89,6 +175,26 @@ export const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  tipTitle: {
+    ...typography.h2,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  tipDescription: {
+    ...typography.body,
+    color: colors.gray,
+    marginBottom: spacing.xs,
+  },
+  tipStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12, // If your React Native version doesn't support 'gap', use marginLeft on tipStat instead
+  },
+  tipStat: {
+    ...typography.body,
+    color: colors.gray,
+    marginLeft: spacing.sm,
+  },
   container: {
     ...commonStyles.container,
     padding: spacing.md,

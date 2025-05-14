@@ -1,7 +1,11 @@
+import os
+from datetime import datetime
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
 from .post_serializer import PostSerializer
 from ..models import Posts, Comments, PostLikes, SavedPosts
 from django.utils import timezone
@@ -11,22 +15,69 @@ from django.db import transaction
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def create_post(request):
     """
     Create a new post.
     
-    Required POST data:
+    Request should include:
     - text: str (optional if image is provided)
-    - image: str (optional if text is provided)
+    - image: File object (optional if text is provided)
     """
-    try:        # Validate that at least text or image is provided
-        if not request.data.get('text') and not request.data.get('image'):
+    try:
+        # Validate that at least text or image is provided
+        if not request.data.get('text') and 'image' not in request.FILES:
             return Response(
                 {'error': 'At least text or image must be provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        serializer = PostSerializer(data=request.data, context={'request': request})
+        # Handle image upload if provided
+        image_path = None
+        if 'image' in request.FILES:
+            image = request.FILES['image']
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+            if image.content_type not in allowed_types:
+                return Response({
+                    'error': 'Invalid file type. Only JPEG and PNG files are allowed.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate file size (max 5MB)
+            if image.size > 5 * 1024 * 1024:
+                return Response({
+                    'error': 'File too large. Maximum size is 5MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create post-specific directory
+            post_directory = os.path.join('posts', str(request.user.id))
+            full_directory = os.path.join(settings.MEDIA_ROOT, post_directory)
+            os.makedirs(full_directory, exist_ok=True)
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_extension = os.path.splitext(image.name)[1].lower()
+            filename = f'post_{timestamp}{file_extension}'
+            
+            # Full path for the new file
+            filepath = os.path.join(post_directory, filename)
+            full_filepath = os.path.join(settings.MEDIA_ROOT, filepath)
+            
+            # Save the file
+            with open(full_filepath, 'wb+') as destination:
+                for chunk in image.chunks():
+                    destination.write(chunk)
+                    
+            image_path = filepath.replace('\\', '/')  # Use forward slashes for URLs
+        
+        # Prepare data for serializer
+        post_data = {
+            'text': request.data.get('text', ''),
+            'image': image_path
+        }
+        
+        serializer = PostSerializer(data=post_data, context={'request': request})
         
         if serializer.is_valid():
             # Set the creator to the current user and the date to now
@@ -137,7 +188,7 @@ def like_post(request, post_id):
     This endpoint will:
     1. Create a like record if one doesn't exist
     2. Update the like if the user previously disliked the post
-    3. Return error if the user already liked the post
+    3. Remove the like if the user already liked the post (toggle behavior)
     """
     try:
         post = get_object_or_404(Posts, pk=post_id)
@@ -148,10 +199,18 @@ def like_post(request, post_id):
             
             if user_reaction:
                 if user_reaction.reaction_type == 'LIKE':
-                    return Response(
-                        {'error': 'You already liked this post'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # User already liked this post, so remove the like (toggle behavior)
+                    user_reaction.delete()
+                    
+                    # Update post counter
+                    if post.like_count > 0:
+                        post.like_count -= 1
+                        post.save()
+                    
+                    return Response({
+                        'message': 'Like removed successfully',
+                        'data': PostSerializer(post, context={'request': request}).data
+                    }, status=status.HTTP_200_OK)
                 
                 # User previously disliked, so update to like and adjust counts
                 user_reaction.reaction_type = 'LIKE'
@@ -186,45 +245,6 @@ def like_post(request, post_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def unlike_post(request, post_id):
-    """
-    Remove a like from a post.
-    """
-    try:
-        post = get_object_or_404(Posts, pk=post_id)
-        
-        # Check if user previously liked this post
-        with transaction.atomic():
-            user_reaction = PostLikes.objects.filter(
-                user=request.user,
-                post=post,
-                reaction_type='LIKE'
-            ).first()
-            
-            if not user_reaction:
-                return Response(
-                    {'error': 'You have not liked this post yet'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-              # Remove the like and decrement the count
-            user_reaction.delete()
-            post.like_count = max(0, post.like_count - 1)
-            post.save()
-        
-        serializer = PostSerializer(post, context={'request': request})
-        return Response({
-            'message': 'Post unliked successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def dislike_post(request, post_id):
     """
     Dislike a post.
@@ -232,7 +252,7 @@ def dislike_post(request, post_id):
     This endpoint will:
     1. Create a dislike record if one doesn't exist
     2. Update the dislike if the user previously liked the post
-    3. Return error if the user already disliked the post
+    3. Remove the dislike if the user already disliked the post (toggle behavior)
     """
     try:
         post = get_object_or_404(Posts, pk=post_id)
@@ -243,10 +263,18 @@ def dislike_post(request, post_id):
             
             if user_reaction:
                 if user_reaction.reaction_type == 'DISLIKE':
-                    return Response(
-                        {'error': 'You already disliked this post'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # User already disliked this post, so remove the dislike (toggle behavior)
+                    user_reaction.delete()
+                    
+                    # Update post counter
+                    if post.dislike_count > 0:
+                        post.dislike_count -= 1
+                        post.save()
+                    
+                    return Response({
+                        'message': 'Dislike removed successfully',
+                        'data': PostSerializer(post, context={'request': request}).data
+                    }, status=status.HTTP_200_OK)
                 
                 # User previously liked, so update to dislike and adjust counts
                 user_reaction.reaction_type = 'DISLIKE'
@@ -270,45 +298,6 @@ def dislike_post(request, post_id):
         serializer = PostSerializer(post, context={'request': request})
         return Response({
             'message': 'Post disliked successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def undislike_post(request, post_id):
-    """
-    Remove a dislike from a post.
-    """
-    try:
-        post = get_object_or_404(Posts, pk=post_id)
-        
-        # Check if user previously disliked this post
-        with transaction.atomic():
-            user_reaction = PostLikes.objects.filter(
-                user=request.user,
-                post=post,
-                reaction_type='DISLIKE'
-            ).first()
-            
-            if not user_reaction:
-                return Response(
-                    {'error': 'You have not disliked this post yet'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-              # Remove the dislike and decrement the count
-            user_reaction.delete()
-            post.dislike_count = max(0, post.dislike_count - 1)
-            post.save()
-        
-        serializer = PostSerializer(post, context={'request': request})
-        return Response({
-            'message': 'Dislike removed successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
     

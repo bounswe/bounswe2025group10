@@ -6,7 +6,9 @@ from api.models import Posts, Users, PostLikes, SavedPosts
 from api.post.post_serializer import PostSerializer
 from api.post.post_views import create_post, get_all_posts, get_post_detail, get_user_posts
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
 import json
+import os
 
 class PostViewsTests(TestCase):
     def setUp(self):
@@ -55,11 +57,10 @@ class PostViewsTests(TestCase):
         PostLikes.objects.create(user=self.user1, post=self.posts[2], reaction_type="LIKE")
         PostLikes.objects.create(user=self.user2, post=self.posts[0], reaction_type="LIKE")
         PostLikes.objects.create(user=self.user2, post=self.posts[1], reaction_type="DISLIKE")
-        
-        # Create some saved posts
+          # Create some saved posts
         SavedPosts.objects.create(user=self.user1, post=self.posts[2])
         SavedPosts.objects.create(user=self.user2, post=self.posts[0])
-
+        
     def test_create_post_success_text_only(self):
         """Test successful post creation with text only"""
         self.client.force_authenticate(user=self.user1)
@@ -68,50 +69,65 @@ class PostViewsTests(TestCase):
             'text': 'New test post with text only'
         }
         
-        response = self.client.post(url, data, format='json')
-        
+        response = self.client.post(url, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Post created successfully')
         self.assertEqual(Posts.objects.count(), 4)
         latest_post = Posts.objects.latest('id')
         self.assertEqual(latest_post.text, 'New test post with text only')
         self.assertEqual(latest_post.creator, self.user1)
-
     def test_create_post_success_image_only(self):
         """Test successful post creation with image only"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('create_post')
+        
+        # Create a test image file (using PNG format to match allowed types)
+        image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDAT\x08\xd7c\x90\xfb\xcf\x00\x00\x02\\\x01\x1e.}d\x87\x00\x00\x00\x00IEND\xaeB`\x82'
+        image = SimpleUploadedFile(
+            name='test_image.png',
+            content=image_content,
+            content_type='image/png'
+        )
+        
         data = {
-            'image': 'new_test_image.jpg'
+            'image': image
         }
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Post created successfully')
         self.assertEqual(Posts.objects.count(), 4)
         latest_post = Posts.objects.latest('id')
-        self.assertEqual(latest_post.image, 'new_test_image.jpg')
+        self.assertIsNotNone(latest_post.image)
         self.assertEqual(latest_post.creator, self.user1)
-
     def test_create_post_with_text_and_image(self):
         """Test successful post creation with both text and image"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('create_post')
+        
+        # Create a test image file
+        image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDAT\x08\xd7c\x90\xfb\xcf\x00\x00\x02\\\x01\x1e.}d\x87\x00\x00\x00\x00IEND\xaeB`\x82'
+        image = SimpleUploadedFile(
+            name='test_image.png',
+            content=image_content,
+            content_type='image/png'
+        )
+        
         data = {
             'text': 'New test post with text and image',
-            'image': 'another_test_image.jpg'
+            'image': image
         }
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Post created successfully')
         self.assertEqual(Posts.objects.count(), 4)
         latest_post = Posts.objects.latest('id')
         self.assertEqual(latest_post.text, 'New test post with text and image')
-        self.assertEqual(latest_post.image, 'another_test_image.jpg')
-
+        self.assertIsNotNone(latest_post.image)
+    
     def test_create_post_unauthenticated(self):
         """Test post creation without authentication"""
         url = reverse('create_post')
@@ -119,7 +135,7 @@ class PostViewsTests(TestCase):
             'text': 'This post should not be created'
         }
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Posts.objects.count(), 3)  # No new post should be created
@@ -130,7 +146,7 @@ class PostViewsTests(TestCase):
         url = reverse('create_post')
         data = {}  # Empty data
         
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Posts.objects.count(), 3)  # No new post should be created
@@ -199,11 +215,13 @@ class PostViewsTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
+        
     def test_like_post_success(self):
-        """Test successful liking a post"""
+        """Test successful liking and toggling a post like"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('like_post', kwargs={'post_id': self.posts[0].id})
+        
+        # First like - should add a like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Post liked successfully')
@@ -216,19 +234,11 @@ class PostViewsTests(TestCase):
         # Verify post like count was incremented
         post = Posts.objects.get(pk=self.posts[0].id)
         self.assertEqual(post.like_count, 1)
-
-    def test_unlike_post_success(self):
-        """Test successful unliking a post"""
-        # First like the post
-        PostLikes.objects.create(user=self.user1, post=self.posts[0], reaction_type="LIKE")
-        self.posts[0].like_count = 1
-        self.posts[0].save()
         
-        self.client.force_authenticate(user=self.user1)
-        url = reverse('unlike_post', kwargs={'post_id': self.posts[0].id})
+        # Second like - should toggle and remove the like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post unliked successfully')
+        self.assertEqual(response.data['message'], 'Like removed successfully')
         
         # Verify like was removed from database
         post_like = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
@@ -237,6 +247,63 @@ class PostViewsTests(TestCase):
         # Verify post like count was decremented
         post = Posts.objects.get(pk=self.posts[0].id)
         self.assertEqual(post.like_count, 0)
+
+    def test_dislike_post_success(self):
+        """Test successful disliking and toggling a post dislike"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('dislike_post', kwargs={'post_id': self.posts[0].id})
+        
+        # First dislike - should add a dislike
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Post disliked successfully')
+        
+        # Verify dislike was created in database
+        post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNotNone(post_dislike)
+        self.assertEqual(post_dislike.reaction_type, 'DISLIKE')
+        
+        # Verify post dislike count was incremented
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.dislike_count, 1)
+        
+        # Second dislike - should toggle and remove the dislike
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Dislike removed successfully')
+        
+        # Verify dislike was removed from database
+        post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNone(post_dislike)
+        
+        # Verify post dislike count was decremented
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.dislike_count, 0)
+
+    def test_like_after_dislike_post(self):
+        """Test liking a post that was previously disliked"""
+        # First dislike the post
+        PostLikes.objects.create(user=self.user1, post=self.posts[0], reaction_type="DISLIKE")
+        self.posts[0].dislike_count = 1
+        self.posts[0].save()
+        
+        self.client.force_authenticate(user=self.user1)
+        like_url = reverse('like_post', kwargs={'post_id': self.posts[0].id})
+        
+        # Like the post - should replace dislike with like
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Post liked successfully')
+        
+        # Verify reaction was updated in database
+        post_reaction = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNotNone(post_reaction)
+        self.assertEqual(post_reaction.reaction_type, 'LIKE')
+        
+        # Verify post counts were updated correctly
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.like_count, 1)
+        self.assertEqual(post.dislike_count, 0)
 
     def test_save_post_success(self):
         """Test successful saving a post"""

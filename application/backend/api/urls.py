@@ -57,18 +57,11 @@ urlpatterns = [
     
     # GET: Retrieve all posts created by the currently authenticated user
     path("api/posts/user/", post_views.get_user_posts, name="get_user_posts"),
-    
-    # POST: Like a specific post (adds user's like reaction)
+      # POST: Like a specific post (adds user's like reaction or removes it if already liked)
     path("api/posts/<int:post_id>/like/", post_views.like_post, name="like_post"),
     
-    # POST: Remove a user's like from a specific post
-    path("api/posts/<int:post_id>/unlike/", post_views.unlike_post, name="unlike_post"),
-    
-    # POST: Dislike a specific post (adds user's dislike reaction)
+    # POST: Dislike a specific post (adds user's dislike reaction or removes it if already disliked)
     path("api/posts/<int:post_id>/dislike/", post_views.dislike_post, name="dislike_post"),
-    
-    # POST: Remove a user's dislike from a specific post
-    path("api/posts/<int:post_id>/undislike/", post_views.undislike_post, name="undislike_post"),
     
     # GET: Get the current user's reaction (like/dislike) to a specific post
     path("api/posts/<int:post_id>/reaction/", post_views.get_user_reaction, name="get_user_reaction"),
@@ -112,20 +105,15 @@ urlpatterns = [
     # GET: Retrieve all available tips
     path("api/tips/all/", tip_views.get_all_tips, name="get_all_tips"),
     
-    # POST: Create a new tip (requires admin or moderator privileges)
+    # POST: Create a new tip
     path("api/tips/create/", tip_views.create_tip, name="create_tip"),
     
     # POST: Like a specific tip
     path("api/tips/<int:tip_id>/like/", tip_views.like_tip, name="like_tip"),
     
-    # POST: Remove a like from a specific tip
-    path("api/tips/<int:tip_id>/unlike/", tip_views.unlike_tip, name="unlike_tip"),
-    
     # POST: Dislike a specific tip
     path("api/tips/<int:tip_id>/dislike/", tip_views.dislike_tip, name="dislike_tip"),
     
-    # POST: Remove a dislike from a specific tip
-    path("api/tips/<int:tip_id>/undislike/", tip_views.undislike_tip, name="undislike_tip"),
     
     # Admin and Moderation Endpoints
     # ----------------------------------------
