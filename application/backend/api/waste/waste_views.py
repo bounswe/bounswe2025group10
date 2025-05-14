@@ -53,9 +53,13 @@ def create_user_waste(request):
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
+                challenge.save() # Save the F expression to the database
+
+                # Refresh the challenge instance to get the updated value
+                challenge.refresh_from_db()
 
                 # Challenge is completed
-                if challenge.current_progress > challenge.target_amount:
+                if challenge.current_progress >= challenge.target_amount:
                     challenge.current_progress = challenge.target_amount
 
                     # fetch all users that are participating in the challenge
@@ -70,7 +74,7 @@ def create_user_waste(request):
                         # Create achievement for the user
                         UserAchievements.objects.create(user=user_instance, challenge=challenge.reward)
 
-                challenge.save()
+                    challenge.save()
 
             # Refresh user object to get actual values after F() expressions
             request.user.refresh_from_db()
