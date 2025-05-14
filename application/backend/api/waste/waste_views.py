@@ -8,6 +8,7 @@ from ..models import UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
+from django.utils import timezone
 
 
 # Point coefficients for different waste types
@@ -71,8 +72,10 @@ def create_user_waste(request):
                         if challenge.reward is None:
                             raise ObjectDoesNotExist("Challenge reward does not exist. The reward achievement should be automatically generated in our new API, so this is likely a server issue.")
 
-                        # Create achievement for the user
-                        UserAchievements.objects.create(user=user_instance, challenge=challenge.reward)
+                        # Check if the achievement already exists for the user
+                        if not UserAchievements.objects.filter(user=user_instance, achievement=challenge.reward).exists():
+                            # Create achievement for the user
+                            UserAchievements.objects.create(user=user_instance, achievement=challenge.reward, earned_at=timezone.now())
 
                     challenge.save()
 
