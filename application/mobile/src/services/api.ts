@@ -27,18 +27,8 @@ export interface AuthResponse {
 }
 
 // API Configuration
-const getBaseUrl = () => {
-  if (__DEV__) {
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8000'; // Android emulator
-    } else if (Platform.OS === 'ios') {
-      return 'http://localhost:8000'; // iOS simulator
-    }
-  }
-  return 'http://your-production-url.com'; // Production URL
-};
-
-const API_URL = getBaseUrl();
+// Use the deployed backend for all requests
+const API_URL = 'https://134-209-253-215.sslip.io';
 
 const api = axios.create({
   baseURL: API_URL,
