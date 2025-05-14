@@ -54,7 +54,8 @@ def create_user_waste(request):
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
 
-                # Challenge is completed
+                # Distribute achievements if challenge is completed
+                challenge.refresh_from_db()
                 if challenge.current_progress > challenge.target_amount:
                     challenge.current_progress = challenge.target_amount
 
