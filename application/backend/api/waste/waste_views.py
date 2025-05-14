@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import UserWastes, Waste, Users
+from ..models import UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
@@ -53,6 +53,23 @@ def create_user_waste(request):
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
+
+                # Challenge is completed
+                if challenge.current_progress > challenge.target_amount:
+                    challenge.current_progress = challenge.target_amount
+
+                    # fetch all users that are participating in the challenge
+                    users_in_challenge = UserChallenge.objects.filter(challenge=challenge).values_list('user', flat=True)
+                    for user in users_in_challenge:
+                        user_instance = Users.objects.get(id=user)
+
+                        # assert that challenge.reward exists
+                        if challenge.reward is None:
+                            raise ObjectDoesNotExist("Challenge reward does not exist. The reward achievement should be automatically generated in our new API, so this is likely a server issue.")
+
+                        # Create achievement for the user
+                        UserAchievements.objects.create(user=user_instance, challenge=challenge.reward)
+
                 challenge.save()
 
             # Refresh user object to get actual values after F() expressions
