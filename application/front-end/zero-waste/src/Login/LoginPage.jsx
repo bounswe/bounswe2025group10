@@ -1,63 +1,49 @@
+/* src/pages/LoginPage.jsx
+   — cleaned-up version —
+*/
 import "../App.css";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContent";
-import Alert from "./Alert";
-import React from "react";
+import { showToast } from "../util/toast.js";
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const { login }   = useAuth();
+  const navigate     = useNavigate();
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
 
-  const [msg, setMsg] = useState('');
-  const [type, setType] = useState('success');
-  const showAlert = (message, type = 'info') => {
-      setMsg(message);
-       setType(type);
-       setTimeout(() => setMsg(''), 3000);
-     };
-  
-     const handleSubmit = async (e) => {
-      e.preventDefault();
-    
-      // 1️⃣ Wait for login() to finish
-      const success = await login(email, password);
-    
-      if (success) {
-        // 2️⃣ Show success alert
-        showAlert("Login successful!", "success");
-        // 3️⃣ Navigate after a short delay (so user sees the message)
-        setTimeout(() => navigate("/"), 1500);
-      } else {
-        // 4️⃣ Only show the failure alert on error
-        showAlert("Login has failed", "warning");
-        // no navigation here
-      }
-    };
+  // ───────────────────────── handleSubmit ─────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Wait for the login() promise to resolve
+    const { success, isAdmin, message } = await login(email, password);
+
+    if (success) {
+      showToast("Login successful! Redirecting…", "success", 2000);
+
+      // Give the toast a moment, then redirect
+      const target = isAdmin ? "/adminPage" : "/";
+      setTimeout(() => navigate(target), 1500);
+    } else {
+      showToast(`Login failed: ${message ?? "unknown error"}`, "error", 3000);
+    }
+  };
+  // ────────────────────────────────────────────────────────────────
 
   return (
-    <>
-    {msg && (
-        <div
-          className="position-fixed top-0 start-50 translate-middle-x mt-3"
-          style={{ zIndex: 1050, width: "400px" }}
-        >
-          <Alert message={msg} type={type} onClose={() => setMsg("")} />
-        </div>
-      )}
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-success bg-opacity-10">
-      <div
-        className="card border-success shadow-lg rounded-4 p-5 w-100"
-        style={{ maxWidth: "400px" }}
-      >
-        {/* Header with a zero-waste welcome */}
+      <div className="card border-success shadow-lg rounded-4 p-5 col-12 col-md-6 col-lg-4 mx-auto">
+        {/* Heading */}
         <div className="text-center mb-4">
           <h1 className="h3 fw-bold text-success mb-1">Sign In</h1>
-          <p className="text-muted mb-0">Welcome back to the Zero Waste Community 🌿</p>
+          <p className="text-muted mb-0">
+            Welcome back to the Zero-Waste Community 🌿
+          </p>
         </div>
 
+        {/* Login form */}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="email" className="form-label text-success">
@@ -94,7 +80,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center">
+        {/* Sign-up link */}
+        <div className="text-center mt-3">
           <p className="small text-muted">
             Don’t have an account?{" "}
             <Link to="/signup" className="link-success fw-semibold">
@@ -104,6 +91,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

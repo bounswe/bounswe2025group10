@@ -19,10 +19,12 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        python manage.py runserver 0.0.0.0:8000"
     develop:
       watch:
         - action: sync

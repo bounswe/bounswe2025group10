@@ -1,31 +1,38 @@
 /**
  * @vitest-environment jsdom
  */
+
 import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import ProtectedUserRoute from "../../Login/ProtectedUserRoute";
 
+///////////////////////////////////////////////////////////////////////////
+// mock <AuthContent />
+///////////////////////////////////////////////////////////////////////////
+// ❶  Import *and* mock – importing lets us access the same fn instance later
+import { useAuth } from "../../Login/AuthContent";
 
-/* ❶ shared token that tests can mutate */
-let mockToken;
+vi.mock("../../Login/AuthContent", () => ({
+  useAuth: vi.fn(),
+}));
 
-
-/* ---------- helpers ---------- */
+///////////////////////////////////////////////////////////////////////////
+// helper
+///////////////////////////////////////////////////////////////////////////
 const renderWithToken = (token) => {
-    mockToken=token
-  /* mock useAuth for this render */
-  vi.mock("../../Login/AuthContent", () => ({
-    useAuth: () => ({ token: mockToken }),
-  }));
+  // ❷  Tell the stub what to return for this render
+  useAuth.mockReturnValue({
+    token,
+    isAuthenticated: Boolean(token),
+  });
 
-  render (
+  render(
     <MemoryRouter initialEntries={["/secret"]}>
       <Routes>
         <Route element={<ProtectedUserRoute />}>
-          {/* protected area */}
           <Route path="/secret" element={<div>SECRET PAGE</div>} />
         </Route>
         <Route path="/login" element={<div>LOGIN PAGE</div>} />
@@ -34,10 +41,21 @@ const renderWithToken = (token) => {
   );
 };
 
-/* ---------- tests ---------- */
+///////////////////////////////////////////////////////////////////////////
+// tests
+///////////////////////////////////////////////////////////////////////////
 describe("<ProtectedUserRoute />", () => {
-  it("shows protected content when token exists", () => {
-    renderWithToken("abc123");
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("doesn’t show protected content when invalid token", () => {
+    renderWithToken(null);
+    expect(screen.queryByText("SECRET PAGE")).not.toBeInTheDocument();
+  });
+
+  it("shows protected content when valid token", () => {
+    renderWithToken("valid-token");
     expect(screen.getByText("SECRET PAGE")).toBeInTheDocument();
   });
 

@@ -1,87 +1,145 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert } from "react-bootstrap";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { useNavigate } from "react-router-dom";
+import { toBoolean } from "@/util/helper.js";
 
-const AuthContext = createContext(undefined);
+// Create Auth context
+export const AuthContext = createContext(null);
 
+// Hook to use Auth context
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
   return ctx;
 };
 
-export const AuthProvider = ({ children }) => {
+const ACCESS_TOKEN_KEY = "accessToken";
+const ADMIN_KEY = "isAdmin";
+
+export function AuthProvider({ children }) {
+  const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
-  const [user, setUser] = useState("");
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() =>
+    localStorage.getItem(ACCESS_TOKEN_KEY)
+  );
+  const [isAdmin, setIsAdmin] = useState(() =>
+    toBoolean(localStorage.getItem(ADMIN_KEY))
+  );
 
-  const login = async (email, password) => {
-    try {
-      const response = await fetch("http://134.209.253.215:8000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+  const saveToken = useCallback((newToken, isAdminFlag) => {
+    setToken(newToken);
+    setIsAdmin(isAdminFlag);
+    if (newToken) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, newToken);
+      localStorage.setItem(ADMIN_KEY, isAdminFlag);
+    } else {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_KEY);
+    }
+  }, []);
 
-      const data = await response.json();
+  const safeJson = async (response) => {
+    const text = await response.text();
+    const isJson = response.headers
+      .get("content-type")
+      ?.includes("application/json");
+    return isJson && text ? JSON.parse(text) : null;
+  };
 
-      if (response.ok && data.token) {
-        localStorage.setItem("token", data.token); // ✅ Save to localStorage
-        setToken(data.token);
-        setUser(email);
-        return true;
-      } else {
-        return false;
+  const login = useCallback(
+    async (email, password) => {
+      if (!email || !password) {
+        return { success: false, message: "Missing email or password" };
       }
-    } catch (err) {
-      console.error("Login error:", err.message);
-      return false;
+      try {
+        const res = await fetch(`${apiUrl}/login/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+
+        const access = data?.token?.access;
+        if (!access) throw new Error("Missing access token");
+
+        saveToken(access, data.isAdmin ?? false);
+        return { success: true, isAdmin: data.isAdmin ?? false };
+      } catch (err) {
+        console.error("Login failed:", err);
+        return { success: false, message: err.message };
+      }
+    },
+    [apiUrl, saveToken]
+  );
+
+  const signup = useCallback(
+    async (email, username, password) => {
+      try {
+        const response = await fetch(`${apiUrl}/signup/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username, password }),
+        });
+
+        const data = await safeJson(response);
+        if (!response.ok)
+          throw new Error(data?.message ?? `HTTP ${response.status}`);
+
+        return { success: true, message: "Account created successfully!" };
+      } catch (err) {
+        console.error("Signup failed:", err);
+        return { success: false, message: err.message };
+      }
+    },
+    [apiUrl]
+  );
+
+  const logout = useCallback(() => {
+    saveToken(null, null);
+    navigate("/login", { replace: true });
+  }, [navigate, saveToken]);
+
+  // When the application loads, read the token and admin flag from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const storedAdmin = toBoolean(localStorage.getItem(ADMIN_KEY));
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAdmin(storedAdmin);
     }
+  }, []);
+
+  // Update localStorage whenever the token or isAdmin changes
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+      localStorage.setItem(ADMIN_KEY, isAdmin);
+    } else {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_KEY);
+    }
+  }, [token, isAdmin]);
+
+  const value = {
+    isAdmin,
+    token,
+    isAuthenticated: Boolean(token),
+    login,
+    signup,
+    logout,
   };
-
- 
-
-  const signup= async (email,username, _password) => {
-    
-
-    try {
-      const response = await fetch("http://134.209.253.215:8000/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, username, _password }),
-      });
-
-      const data = await response.json();
-
-      
-      return data
-
-    } catch (err) {
-      console.error("Signup error:", err.message);
-      return false
-    }
-    //return true if sign up is succesful
-    if(data && data.response==="ok"){
-      console.log("true")
-      return true
-      
-    }
-    //else return false
-    console.log("false")
-    return false
-    
-    
-  };
-
-  const logout = () => setUser(null);
-
-  const value = { token, login, signup, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-export default AuthProvider
+}
+
+export default AuthProvider;

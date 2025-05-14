@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0004_create_initial_tips'),
+        ('api', '0003_create_waste_types'),
     ]
 
     operations = [
