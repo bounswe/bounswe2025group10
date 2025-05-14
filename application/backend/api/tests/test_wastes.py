@@ -3,9 +3,10 @@ from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
 from api.models import Users, Waste, UserWastes
 from challenges.models import Challenge, UserChallenge
-from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users
+from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users, point_coefficients
 from django.utils import timezone
 from unittest.mock import patch, MagicMock
+from django.db.models import F
 
 class WasteViewsTests(TestCase):
     def setUp(self):
@@ -183,23 +184,24 @@ class WasteViewsTests(TestCase):
         
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-        
-        # Verify response structure
+          # Verify response structure
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Top users retrieved successfully')
         
-        users_data = response.data['data']
-        self.assertTrue(len(users_data) <= 10)
+        # Check data format
+        self.assertIn('top_users', response.data['data'])
+        top_users = response.data['data']['top_users']
+        self.assertTrue(len(top_users) <= 10)
         
         # Verify user2 (highest contributor)
-        self.assertEqual(users_data[0]['username'], 'testuser2')
-        self.assertEqual(users_data[0]['total_waste'], "20.0000")
-        self.assertEqual(users_data[0]['points'], 0.25)  # (5*0.03 + 5*0.02)
+        self.assertEqual(top_users[0]['username'], 'testuser2')
+        self.assertEqual(top_users[0]['total_waste'], "20.0000")
+        self.assertEqual(top_users[0]['points'], 0.25)  # (5*0.03 + 5*0.02)
         
         # Verify user3 (second highest)
-        self.assertEqual(users_data[1]['username'], 'testuser3')
-        self.assertEqual(users_data[1]['total_waste'], "8.0000")
-        self.assertEqual(users_data[1]['points'], 0.06)  # 4*0.015
+        self.assertEqual(top_users[1]['username'], 'testuser3')
+        self.assertEqual(top_users[1]['total_waste'], "8.0000")
+        self.assertEqual(top_users[1]['points'], 0.06)  # 4*0.015
 
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_no_waste(self, mock_get_co2_emission):
@@ -209,9 +211,9 @@ class WasteViewsTests(TestCase):
         
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['data']), 0)  # Should return empty list
+        self.assertIn('top_users', response.data['data'])
+        self.assertEqual(len(response.data['data']['top_users']), 0)  # Should return empty list
         # Verify that get_co2_emission was not called
         mock_get_co2_emission.assert_not_called()
 
@@ -250,18 +252,78 @@ class WasteViewsTests(TestCase):
         # Test the endpoint
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-        
-        # Verify response
+          # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['data']), 1)
+        self.assertIn('top_users', response.data['data'])
+        top_users = response.data['data']['top_users']
+        self.assertEqual(len(top_users), 1)
         
-        user_data = response.data['data'][0]
+        user_data = top_users[0]
         self.assertEqual(user_data['username'], 'testuser')
         self.assertEqual(user_data['total_waste'], "3.0000")  # 1.5 * 2 from mock
         self.assertEqual(user_data['points'], 0.045)  # 1.5 * 0.03
         
         # Verify that the mock was called with correct parameters
         mock_get_co2_emission.assert_called_with(amount, 'PLASTIC')
+
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_with_unranked_user(self, mock_get_co2_emission):
+        """Test get_top_users with an authenticated user who has no waste records"""
+        # Clear all existing waste records and reset user totals
+        UserWastes.objects.all().delete()
+        Users.objects.all().update(total_points=0, total_co2=0)
+        
+        # Set up mock CO2 calculation
+        def mock_co2_calculation(amount, waste_type):
+            return amount * 2
+        mock_get_co2_emission.side_effect = mock_co2_calculation
+        
+        # Create a few users with waste records
+        for i in range(1, 5):
+            user = Users.objects.create_user(
+                username=f"user{i}",
+                email=f"user{i}@example.com",
+                password="password"
+            )
+            
+            # Add waste records
+            waste = UserWastes.objects.create(
+                user=user,
+                waste=self.plastic,
+                amount=i,
+                date=timezone.now()
+            )
+            
+            # Calculate and update totals
+            co2 = i * 2  # From mock
+            points = i * point_coefficients.get('PLASTIC', 0)
+            user.total_co2 = co2
+            user.total_points = points
+            user.save()
+        
+        # Make sure our test user has no waste records
+        UserWastes.objects.filter(user=self.user).delete()
+        self.user.total_co2 = 0
+        self.user.total_points = 0
+        self.user.save()
+        
+        # Test the endpoint with authentication
+        request = self.factory.get('/api/waste/leaderboard/')
+        force_authenticate(request, user=self.user)
+        response = get_top_users(request)
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify current_user is present
+        self.assertIn('current_user', response.data['data'])
+        current_user = response.data['data']['current_user']
+        
+        # Fix indentation of assertion
+        self.assertEqual(current_user['rank'], 'Not ranked')
+        self.assertEqual(current_user['total_waste'], "0.0000")
+        self.assertEqual(current_user['points'], 0)
 
 @patch('api.waste.waste_views.requests.post')
 def test_climatiq_api_integration(self, mock_post):
