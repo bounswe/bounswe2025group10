@@ -127,14 +127,14 @@ def get_user_wastes(request):
 @permission_classes([AllowAny])
 def get_top_users(request):
     """
-    Get top 10 users with most total waste contributions (as CO2 emission).
+    Get top 10 users with most total waste contributions (as points and CO2 emission).
     Returns a list of users with their total CO2 emissions.
     """
     try:
         # Get top 10 users who have waste records, sorted by total CO2
         users_with_waste = Users.objects.filter(
             id__in=UserWastes.objects.values('user_id')
-        ).order_by('-total_co2')[:10]
+        ).order_by('-total_points')[:10]
         
         # Prepare response data
         response_data = []
