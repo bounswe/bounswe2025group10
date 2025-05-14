@@ -222,7 +222,7 @@ class PostViewsTests(TestCase):
         # Second like - should toggle and remove the like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post like removed successfully')
+        self.assertEqual(response.data['message'], 'Like removed successfully')
         
         # Verify like was removed from database
         post_like = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
@@ -254,7 +254,7 @@ class PostViewsTests(TestCase):
         # Second dislike - should toggle and remove the dislike
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post dislike removed successfully')
+        self.assertEqual(response.data['message'], 'Dislike removed successfully')
         
         # Verify dislike was removed from database
         post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()

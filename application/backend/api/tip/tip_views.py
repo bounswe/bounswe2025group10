@@ -157,7 +157,7 @@ def dislike_tip(request, tip_id):
                     tip.save()
                 
                 return Response({
-                    'message': 'Disike removed successfully',
+                    'message': 'Dislike removed successfully',
                     'data': TipSerializer(tip).data
                 }, status=status.HTTP_200_OK)
             else:
