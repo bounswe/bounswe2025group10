@@ -195,3 +195,18 @@ class Report(models.Model):
     class Meta:
         db_table = 'Reports'
 
+
+class TipLikes(models.Model):
+    REACTION_CHOICES = [
+        ('LIKE', 'Like'),
+        ('DISLIKE', 'Dislike'),
+    ]
+    
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    tip = models.ForeignKey('Tips', on_delete=models.CASCADE)
+    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'TipLikes'
+        unique_together = (('user', 'tip'),)  

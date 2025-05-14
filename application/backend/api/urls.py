@@ -117,14 +117,9 @@ urlpatterns = [
     # POST: Like a specific tip
     path("api/tips/<int:tip_id>/like/", tip_views.like_tip, name="like_tip"),
     
-    # POST: Remove a like from a specific tip
-    path("api/tips/<int:tip_id>/unlike/", tip_views.unlike_tip, name="unlike_tip"),
-    
     # POST: Dislike a specific tip
     path("api/tips/<int:tip_id>/dislike/", tip_views.dislike_tip, name="dislike_tip"),
     
-    # POST: Remove a dislike from a specific tip
-    path("api/tips/<int:tip_id>/undislike/", tip_views.undislike_tip, name="undislike_tip"),
     
     # Admin and Moderation Endpoints
     # ----------------------------------------
