@@ -27,34 +27,32 @@ export default function ProfilePage() {
 
   /* ────────────────────────────────── 1.  Load BIO + AVATAR */
   useEffect(() => {
-    console.log(username)
-    if (!token || !username) return;
 
+    if (!token || !username) return;
+  
     const fetchProfile = async () => {
       try {
         /* ---- bio ---- */
-        const resBio = await fetch(
-          `${apiUrl}/api/profile/${username}/bio/`
-        );
+        const resBio = await fetch(`${apiUrl}/api/profile/${username}/bio/`);
         if (!resBio.ok) throw new Error("bio");
-        console.log(resBio)
         const { bio } = await resBio.json();
-
-        /* ---- avatar ----
-           The avatar endpoint streams the file, so we can
-           just build its URL and let <img> fetch it itself. */
-        const avatarUrl = `${apiUrl}/api/profile/${username}/picture/`;
-
+  
+        /* ---- avatar ---- */
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // 3-second delay
+        const avatarUrl = `${apiUrl}/api/profile/${username}/picture/?t=${Date.now()}`; // bust cache
+  
         setProfile({ username, bio, avatar: avatarUrl });
-        setAvatarError(false);            // reset any previous error
+        setAvatarError(false); // reset error
         setBioDraft(bio);
       } catch (err) {
         showToast("Could not load profile", "error");
       }
     };
 
+  
     fetchProfile();
-  }, [apiUrl, token, username]);
+  }, [apiUrl, token, username, avatarLoaded]);
+
 
   /* ────────────────────────────────── 2.  Load POSTS */
   useEffect(() => {
@@ -117,9 +115,12 @@ export default function ProfilePage() {
         });
         if (!res.ok) throw new Error("avatar");
 
+
         const { url } = await res.json();                 // returns { url: "/media/..." }
         // bust browser cache by appending a random query string
+        setAvatarLoaded(false);
         const avatarUrl = apiUrl.replace(/\/$/, "") + url + `?t=${Date.now()}`;
+
 
         setProfile((p) => ({ ...p, avatar: avatarUrl }));
         setAvatarFile(null);
@@ -174,6 +175,9 @@ export default function ProfilePage() {
               <Image
                 roundedCircle
                 src={avatarSrc}
+
+                key={avatarSrc}
+
                 alt="avatar"
                 width={128}
                 height={128}

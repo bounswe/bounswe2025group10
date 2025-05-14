@@ -28,7 +28,7 @@ export default function UserCard({
         <Row className="align-items-center">
           {/* User name */}
           <Col xs>
-            <h5 className="fw-bold mb-1 text-success">{username}</h5>
+            <h5 className="fw-bold mb-1 text-success"> User id:{username}</h5>
 
             <div className="small text-muted">
               Flagged Posts&nbsp;

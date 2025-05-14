@@ -22,7 +22,9 @@ function ChallengePanel({ children }) {
       
         const data = await response.json();
         console.log(data);
-        setChallenges(data.results.filter(item => item.content_type === "challenges"));
+
+        setChallenges(data.results.filter(item => item.content_type === "challenge"));
+
       } catch (error) {
         console.error("Failed to fetch admin reports:", error);
       }
@@ -115,8 +117,10 @@ function ChallengePanel({ children }) {
               <ChallengeCard
                 key={ch.id}
                 challengeId={ch.id}
-                name={ch.content}
-                duration={ch.content.date}
+
+                name={ch.content.title}
+                duration={ch.content.current_progress}
+
                 onDelete={(id) => deleteChallenge(ch.id)}
               />
             ))}
