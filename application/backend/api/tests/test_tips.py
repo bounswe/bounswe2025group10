@@ -161,7 +161,7 @@ class TipViewsTests(TestCase):
         self.tips[0].refresh_from_db()
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Like removed successfully')
+        self.assertEqual(response.data['message'], 'Tip like removed successfully')
         self.assertEqual(self.tips[0].like_count, initial_likes)
 
 
@@ -184,7 +184,7 @@ class TipViewsTests(TestCase):
         self.tips[0].refresh_from_db()
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Dislike removed successfully')
+        self.assertEqual(response.data['message'], 'Tip dislike removed successfully')
         self.assertEqual(self.tips[0].dislike_count, initial_dislikes)
 
     def test_like_tip_unauthenticated(self):

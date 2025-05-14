@@ -42,45 +42,40 @@ def create_post(request):
         
         # Handle the image file if provided
         if image:
-            # Validate file type (handle both real files and test SimpleUploadedFile)
-            content_type = getattr(image, 'content_type', None)
-            if content_type:
-                allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
-                if content_type not in allowed_types:
-                    return Response({
-                        'error': 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Validate file size (max 10MB)
-                if image.size > 10 * 1024 * 1024:
-                    return Response({
-                        'error': 'File too large. Maximum size is 10MB.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Create posts directory
-                posts_directory = os.path.join('posts', str(request.user.id))
-                full_directory = os.path.join(settings.MEDIA_ROOT, posts_directory)
-                os.makedirs(full_directory, exist_ok=True)
-                
-                # Generate unique filename
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                file_extension = os.path.splitext(image.name)[1].lower()
-                filename = f'post_{timestamp}{file_extension}'
-                
-                # Full path for the new file
-                filepath = os.path.join(posts_directory, filename)
-                full_filepath = os.path.join(settings.MEDIA_ROOT, filepath)
-                
-                # Save the file
-                with open(full_filepath, 'wb+') as destination:
-                    for chunk in image.chunks():
-                        destination.write(chunk)
-                
-                # Store the relative path to the image in the post
-                new_post.image = filepath.replace('\\', '/')  # Use forward slashes for URLs
-            else:
-                # For test cases where content_type might not be available
-                new_post.image = str(image)
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
+            if image.content_type not in allowed_types:
+                return Response({
+                    'error': 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate file size (max 10MB)
+            if image.size > 10 * 1024 * 1024:
+                return Response({
+                    'error': 'File too large. Maximum size is 10MB.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create posts directory
+            posts_directory = os.path.join('posts', str(request.user.id))
+            full_directory = os.path.join(settings.MEDIA_ROOT, posts_directory)
+            os.makedirs(full_directory, exist_ok=True)
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            file_extension = os.path.splitext(image.name)[1].lower()
+            filename = f'post_{timestamp}{file_extension}'
+            
+            # Full path for the new file
+            filepath = os.path.join(posts_directory, filename)
+            full_filepath = os.path.join(settings.MEDIA_ROOT, filepath)
+            
+            # Save the file
+            with open(full_filepath, 'wb+') as destination:
+                for chunk in image.chunks():
+                    destination.write(chunk)
+            
+            # Store the relative path to the image in the post
+            new_post.image = filepath.replace('\\', '/')  # Use forward slashes for URLs
         
         # Save the post to the database
         new_post.save()
