@@ -25,7 +25,7 @@ export default function ChallengeCard({
               <strong>ID :</strong> {challengeId}
             </div>
             <div className="text-muted small">
-              <strong>Duration :</strong> {duration}
+              <strong>Challenge progress :</strong> {duration}
             </div>
           </Col>
 
