@@ -142,20 +142,27 @@ class TipViewsTests(TestCase):
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Tips.objects.count(), self.initial_tip_count)  # No new tip should be created
-
-    def test_like_tip_authenticated(self):
+        self.assertEqual(Tips.objects.count(), self.initial_tip_count)  # No new tip should be created    def test_like_tip_authenticated(self):
         """Test liking a tip when authenticated"""
         self.client.force_authenticate(user=self.user)
         url = reverse('like_tip', args=[self.tips[0].id])
         initial_likes = self.tips[0].like_count
 
+        # First like - should add a like
         response = self.client.post(url)
         self.tips[0].refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Tip liked successfully')
         self.assertEqual(self.tips[0].like_count, initial_likes + 1)
+        
+        # Second like - should toggle/remove the like
+        response = self.client.post(url)
+        self.tips[0].refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip like removed successfully')
+        self.assertEqual(self.tips[0].like_count, initial_likes)
 
 
     def test_dislike_tip_authenticated(self):
@@ -164,12 +171,21 @@ class TipViewsTests(TestCase):
         url = reverse('dislike_tip', args=[self.tips[0].id])
         initial_dislikes = self.tips[0].dislike_count
 
+        # First dislike - should add a dislike
         response = self.client.post(url)
         self.tips[0].refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Tip disliked successfully')
         self.assertEqual(self.tips[0].dislike_count, initial_dislikes + 1)
+        
+        # Second dislike - should toggle/remove the dislike
+        response = self.client.post(url)
+        self.tips[0].refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Tip dislike removed successfully')
+        self.assertEqual(self.tips[0].dislike_count, initial_dislikes)
 
     def test_like_tip_unauthenticated(self):
         """Test liking a tip when not authenticated"""

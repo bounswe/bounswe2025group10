@@ -199,11 +199,13 @@ class PostViewsTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
+        
     def test_like_post_success(self):
-        """Test successful liking a post"""
+        """Test successful liking and toggling a post like"""
         self.client.force_authenticate(user=self.user1)
         url = reverse('like_post', kwargs={'post_id': self.posts[0].id})
+        
+        # First like - should add a like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Post liked successfully')
@@ -216,19 +218,11 @@ class PostViewsTests(TestCase):
         # Verify post like count was incremented
         post = Posts.objects.get(pk=self.posts[0].id)
         self.assertEqual(post.like_count, 1)
-
-    def test_unlike_post_success(self):
-        """Test successful unliking a post"""
-        # First like the post
-        PostLikes.objects.create(user=self.user1, post=self.posts[0], reaction_type="LIKE")
-        self.posts[0].like_count = 1
-        self.posts[0].save()
         
-        self.client.force_authenticate(user=self.user1)
-        url = reverse('unlike_post', kwargs={'post_id': self.posts[0].id})
+        # Second like - should toggle and remove the like
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Post unliked successfully')
+        self.assertEqual(response.data['message'], 'Post like removed successfully')
         
         # Verify like was removed from database
         post_like = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
@@ -237,6 +231,63 @@ class PostViewsTests(TestCase):
         # Verify post like count was decremented
         post = Posts.objects.get(pk=self.posts[0].id)
         self.assertEqual(post.like_count, 0)
+
+    def test_dislike_post_success(self):
+        """Test successful disliking and toggling a post dislike"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('dislike_post', kwargs={'post_id': self.posts[0].id})
+        
+        # First dislike - should add a dislike
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Post disliked successfully')
+        
+        # Verify dislike was created in database
+        post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNotNone(post_dislike)
+        self.assertEqual(post_dislike.reaction_type, 'DISLIKE')
+        
+        # Verify post dislike count was incremented
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.dislike_count, 1)
+        
+        # Second dislike - should toggle and remove the dislike
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Post dislike removed successfully')
+        
+        # Verify dislike was removed from database
+        post_dislike = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNone(post_dislike)
+        
+        # Verify post dislike count was decremented
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.dislike_count, 0)
+
+    def test_like_after_dislike_post(self):
+        """Test liking a post that was previously disliked"""
+        # First dislike the post
+        PostLikes.objects.create(user=self.user1, post=self.posts[0], reaction_type="DISLIKE")
+        self.posts[0].dislike_count = 1
+        self.posts[0].save()
+        
+        self.client.force_authenticate(user=self.user1)
+        like_url = reverse('like_post', kwargs={'post_id': self.posts[0].id})
+        
+        # Like the post - should replace dislike with like
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Post liked successfully')
+        
+        # Verify reaction was updated in database
+        post_reaction = PostLikes.objects.filter(user=self.user1, post=self.posts[0]).first()
+        self.assertIsNotNone(post_reaction)
+        self.assertEqual(post_reaction.reaction_type, 'LIKE')
+        
+        # Verify post counts were updated correctly
+        post = Posts.objects.get(pk=self.posts[0].id)
+        self.assertEqual(post.like_count, 1)
+        self.assertEqual(post.dislike_count, 0)
 
     def test_save_post_success(self):
         """Test successful saving a post"""
