@@ -10,6 +10,15 @@ from django.db.models import Sum, F
 import requests
 
 
+# Point coefficients for different waste types
+point_coefficients = {
+    'PLASTIC': 0.03,  # 3 points per 100g
+    'PAPER': 0.02,    # 2 points per 100g
+    'GLASS': 0.015,   # 1.5 points per 100g
+    'METAL': 0.04,    # 4 points per 100g
+}
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_user_waste(request):
@@ -23,12 +32,19 @@ def create_user_waste(request):
     serializer = UserWasteSerializer(data=request.data)
     
     try:
-        if serializer.is_valid():
-            # Save the waste record
+        if serializer.is_valid():            # Save the waste record
             waste_record = serializer.save(user=request.user)
-
-            # Get the logged waste amount
             logged_amount = waste_record.amount
+            waste_type = waste_record.waste.type
+
+            # Calculate CO2 and points for this waste
+            co2_emission = get_co2_emission(logged_amount, waste_type)
+            points = logged_amount * point_coefficients.get(waste_type, 0)
+
+            # Update user's total points and CO2 using F() to prevent race conditions
+            request.user.total_points = F('total_points') + points
+            request.user.total_co2 = F('total_co2') + co2_emission
+            request.user.save()
 
             # Get the challenges the user is participating in
             user_challenges = UserChallenge.objects.filter(user=request.user)
@@ -38,6 +54,9 @@ def create_user_waste(request):
                 challenge = user_challenge.challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
                 challenge.save()
+
+            # Refresh user object to get actual values after F() expressions
+            request.user.refresh_from_db()
 
             return Response({
                 'message': 'Waste recorded successfully',
@@ -111,74 +130,20 @@ def get_top_users(request):
     Get top 10 users with most total waste contributions (as CO2 emission).
     Returns a list of users with their total CO2 emissions.
     """
-
-    point_coefficients = {
-        'PLASTIC': 0.03, # 3 points per 100g
-        'PAPER': 0.02, # 2 points per 100g
-        'GLASS': 0.015, # 1.5 points per 100g
-        'METAL': 0.04, # 4 points per 100g
-    }
-    try:        # Get all users who have waste records
-        users_with_waste = Users.objects.filter(id__in=UserWastes.objects.values('user_id')).distinct()
-        
-        # Use a dictionary to store user data while processing
-        user_data = {}
-        
-        # Get all waste records for all users at once to reduce DB queries
-        all_waste_records = UserWastes.objects.filter(
-            user__in=users_with_waste
-        ).values('user_id', 'waste__type').annotate(total=Sum('amount'))
-        
-        # Group waste records by user
-        user_waste_records = {}
-        for record in all_waste_records:
-            user_id = record['user_id']
-            if user_id not in user_waste_records:
-                user_waste_records[user_id] = []
-            user_waste_records[user_id].append(record)
-        
-        # Calculate emissions for each user
-        for user in users_with_waste:
-            user_id = user.id
-            if user_id not in user_waste_records:
-                continue
-                
-            waste_records = user_waste_records[user_id]
-            total_co2 = 0
-            total_points = 0
-            
-            # Calculate CO2 and points for each waste type
-            for entry in waste_records:
-                waste_type = entry['waste__type']
-                amount = entry['total'] or 0
-                co2 = get_co2_emission(amount, waste_type)
-                total_co2 += co2
-                # Calculate points correctly for each waste type
-                points = amount * point_coefficients.get(waste_type, 0)
-                total_points += points
-                
-            # Store as numeric values for proper sorting
-            user_data[user_id] = {
-                'user': user,
-                'co2_numeric': total_co2,  # Store as numeric for sorting
-                'co2': f"{total_co2:.4f}",  # Formatted string for display
-                'points': total_points,
-            }
-            
-        # Create list from dictionary values, sort by CO2 emission (numeric) and take top 10
-        user_emissions = list(user_data.values())
-        top_users = sorted(user_emissions, key=lambda x: x['co2_numeric'], reverse=True)[:10]
+    try:
+        # Get top 10 users who have waste records, sorted by total CO2
+        users_with_waste = Users.objects.filter(
+            id__in=UserWastes.objects.values('user_id')
+        ).order_by('-total_co2')[:10]
         
         # Prepare response data
         response_data = []
-        for entry in top_users:
-            user = entry['user']
-            co2_emission = entry['co2']  # Using formatted string for response
+        for user in users_with_waste:
             response_data.append({
                 'username': user.username,
-                'total_waste': co2_emission,  # CO2 emission formatted
+                'total_waste': f"{user.total_co2:.4f}",  # CO2 emission formatted to 4 decimals
                 'profile_picture': user.profile_image_url,
-                'points': entry['points'],
+                'points': user.total_points,
             })
             
         return Response({

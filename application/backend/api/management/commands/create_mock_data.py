@@ -46,6 +46,7 @@ def generate_mock_data(
             image=fake.image_url(),
             creator=test_user,
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            
         )
         post.save()
         test_user_posts.append(post)
@@ -66,6 +67,9 @@ def generate_mock_data(
             isAdmin=random.choice([True, False, False, False, False, False, False, False, False, False, False]),
             profile_image=fake.image_url(),
             bio=fake.text(),
+            total_points=random.randint(0, 100),
+            total_co2=random.uniform(0, 100),
+
         )
         user.save()
         users.append(user)

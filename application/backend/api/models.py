@@ -42,6 +42,8 @@ class Users(AbstractUser):
     profile_id = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.CharField(max_length=255, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
+    total_points = models.FloatField(default=0)
+    total_co2 = models.FloatField(default=0)
 
     # Keep Django’s staff/superuser flags in sync if you need them
     is_staff = models.BooleanField(default=False)
