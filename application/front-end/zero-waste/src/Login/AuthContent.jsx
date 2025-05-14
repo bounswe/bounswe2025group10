@@ -20,16 +20,20 @@ export const useAuth = () => {
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const ADMIN_KEY = "isAdmin";
+const USERNAME_KEY = "username";
 
 export function AuthProvider({ children }) {
   const apiUrl = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
-  const [token, setToken] = useState(() =>
-    localStorage.getItem(ACCESS_TOKEN_KEY)
-  );
+
+  const [token, setToken] = useState(() => localStorage.getItem(ACCESS_TOKEN_KEY));
+
   const [isAdmin, setIsAdmin] = useState(() =>
     toBoolean(localStorage.getItem(ADMIN_KEY))
+  );
+  const [username, setUsername] = useState(
+    () => localStorage.getItem(USERNAME_KEY) || ""
   );
 
   const saveToken = useCallback((newToken, isAdminFlag) => {
@@ -41,6 +45,7 @@ export function AuthProvider({ children }) {
     } else {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(ADMIN_KEY);
+      localStorage.removeItem(USERNAME_KEY);
     }
   }, []);
 
@@ -67,6 +72,9 @@ export function AuthProvider({ children }) {
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
 
+        setUsername(data.username) //set username
+        localStorage.setItem(USERNAME_KEY, data.username);
+        console.log(data.username)
         const access = data?.token?.access;
         if (!access) throw new Error("Missing access token");
 
@@ -106,6 +114,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     saveToken(null, null);
+    localStorage.removeItem(USERNAME_KEY);
     navigate("/login", { replace: true });
   }, [navigate, saveToken]);
 
@@ -137,6 +146,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    username,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

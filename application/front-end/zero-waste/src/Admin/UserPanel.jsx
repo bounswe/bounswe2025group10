@@ -3,16 +3,52 @@ import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useAuth } from "../Login/AuthContent";
 import UserCard from "./UserCard";
+import { useState } from "react";
 
 function UserPanel({ children }) {
+  const apiUrl = import.meta.env.VITE_API_URL; //get api 
   const { token } = useAuth();
+  const [users,setUsers]=useState([])
 
-  // ▸▸ MOCK USERS ──────────────────────────────
-  const mockUsers = [
-    { username: "green_guru", flaggedPosts: 2, flaggedComments: 5 },
-    { username: "eco_ninja",  flaggedPosts: 0, flaggedComments: 1 },
-    { username: "waste_warrior", flaggedPosts: 3, flaggedComments: 0 }
-  ];
+  // ▸▸ USERS ──────────────────────────────
+  const getUsers= async ()=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    
+      const data = await response.json();
+      console.log(data);
+      setUsers(data.results.filter(item => item.content_type === "users"));
+    } catch (error) {
+      console.error("Failed to fetch user reports:", error);
+    }
+  }
+    getUsers() //get comments
+      
+   //deletes given post given 
+  const deleteUser=async (user_id)=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/${user_id}/moderate/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "ban_user" })
+      });
+    
+      const data = await response.json();
+      console.log(data);
+  }
+  catch (error) {
+    console.error("Error deleting comment:", error);
+  }
+  }
   // ────────────────────────────────────────────
 
   return (
@@ -76,13 +112,13 @@ function UserPanel({ children }) {
           </div>
           {/* Centered mock user cards */}
           <div className="d-flex flex-column align-items-center">
-            {mockUsers.map((u) => (
+            {users.map((u) => (
               <UserCard
                 key={u.username}
                 username={u.username}
                 flaggedPosts={u.flaggedPosts}
                 flaggedComments={u.flaggedComments}
-                onDelete={(user) => console.log("Delete user", user)}
+                onDelete={(user) => deleteUser(u.id)}
               />
             ))}
           </div>

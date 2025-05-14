@@ -3,28 +3,52 @@ import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useAuth } from "../Login/AuthContent";
 import CommentCard from "./CommentCard";
+import { useState } from "react";
 
 function CommentPanel({ children }) {
   const { token } = useAuth();
+  const [comments,setComments]=useState([])
+  const apiUrl = import.meta.env.VITE_API_URL; //get api 
 
-  // ▸▸ MOCK COMMENTS ──────────────────────────────
-  const mockComments = [
-    {
-      commentId: 101,
-      username: "green_guru",
-      description: "Love this zero‑waste tip!"
-    },
-    {
-      commentId: 102,
-      username: "eco_ninja",
-      description: "Can you share more details on composting?"
-    },
-    {
-      commentId: 103,
-      username: "waste_warrior",
-      description: "Great challenge, I'm in!"
+  // ▸▸  COMMENTS ──────────────────────────────
+  const getComments= async ()=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    
+      const data = await response.json();
+      console.log(data);
+      setComments(data.results.filter(item => item.content_type === "comments"));
+    } catch (error) {
+      console.error("Failed to fetch admin reports:", error);
     }
-  ];
+  }
+    getComments() //get comments
+      
+   //deletes given post given 
+  const deleteComment=async (comment_id)=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/${comment_id}/moderate/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "delete_media" })
+      });
+    
+      const data = await response.json();
+      console.log(data);
+  }
+  catch (error) {
+    console.error("Error deleting comment:", error);
+  }
+  }
   // ────────────────────────────────────────────
 
   return (
@@ -88,13 +112,13 @@ function CommentPanel({ children }) {
           </div>
           {/* Centered mock comment cards */}
           <div className="d-flex flex-column align-items-center">
-            {mockComments.map((c) => (
+            {comments.map((c) => (
               <CommentCard
-                key={c.commentId}
-                commentId={c.commentId}
-                username={c.username}
+                key={c.id}
+                commentId={c.id}
+                username={c.author_id}
                 description={c.description}
-                onDelete={(id) => console.log("Delete comment", id)}
+                onDelete={(id) => deleteComment(c.id)}
               />
             ))}
           </div>
