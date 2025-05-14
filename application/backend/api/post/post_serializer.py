@@ -7,12 +7,11 @@ class PostSerializer(serializers.ModelSerializer):
     is_saved = serializers.SerializerMethodField()
     is_user_liked = serializers.SerializerMethodField()
     is_user_disliked = serializers.SerializerMethodField()
-    image_url = serializers.ReadOnlyField()
     
     class Meta:
         model = Posts
-        fields = ['id', 'text', 'image', 'image_url', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
-        read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked', 'image_url']
+        fields = ['id', 'text', 'image', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
+        read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
     
     def get_is_saved(self, obj):
         user = self.context.get('request').user if self.context.get('request') else None
