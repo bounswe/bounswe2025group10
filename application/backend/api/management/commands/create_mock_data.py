@@ -9,9 +9,7 @@ from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 
-from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report
-
-from ...models import TipLikes
+from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes
 
 from challenges.models import Challenge, UserChallenge
 
@@ -106,7 +104,9 @@ def generate_mock_data(
                                             tzinfo=timezone.get_current_timezone()),
             )
             comment.save()
-            comments.append(comment)    # TIPS
+            comments.append(comment)
+            
+    # TIPS
     tips = []
     for i in range(num_tips):
         tip = Tips(
