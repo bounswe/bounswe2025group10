@@ -22,7 +22,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
             if title.lower().endswith(' challenge'):
                 title = title[:-9]
             description = f"Given for completing '{title}' challenge."
-            reward = Achievements.objects.create(name=title, description=description)
+            reward = Achievements.objects.create(title=title, description=description)
             validated_data['reward'] = reward
 
         return super().create(validated_data)
