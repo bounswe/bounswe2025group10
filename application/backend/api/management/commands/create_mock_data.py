@@ -9,7 +9,7 @@ from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 
-from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes
+from api.models import Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste, UserWastes, Report, TipLikes, PostLikes
 
 from challenges.models import Challenge, UserChallenge
 
@@ -88,6 +88,8 @@ def generate_mock_data(
             image=fake.image_url(),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            like_count=0,
+            dislike_count=0
         )
         post.save()
         posts.append(post)
@@ -164,9 +166,37 @@ def generate_mock_data(
                 tip.like_count += 1
             else:
                 tip.dislike_count += 1
+          # Save the updated counts
+        tip.save()
+
+    # POST LIKES AND DISLIKES
+    for post in posts + test_user_posts:
+        # Randomly select users who will react to this post
+        reacting_users = random.sample(
+            users, 
+            random.randint(0, min(len(users), 30))  # Maximum 30 users per post or all users if less
+        )
+        
+        for user in reacting_users:
+            # Decide if the user will like or dislike
+            reaction_type = random.choice(['LIKE', 'DISLIKE'])  # 50% chance of like, 50% dislike
+            
+            post_like = PostLikes(
+                user=user,
+                post=post,
+                reaction_type=reaction_type,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+            )
+            post_like.save()
+            
+            # Update post counters
+            if reaction_type == 'LIKE':
+                post.like_count += 1
+            else:
+                post.dislike_count += 1
         
         # Save the updated counts
-        tip.save()
+        post.save()
 
     # ACHIEVEMENTS
     achievements = []
