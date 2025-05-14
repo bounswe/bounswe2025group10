@@ -13,6 +13,7 @@
     "axios": "^1.9.0",
     "bootstrap": "^5.3.5",
     "components": "^0.1.0",
+    "dayjs": "^1.11.13",
     "framer-motion": "^12.10.5",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",

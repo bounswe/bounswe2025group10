@@ -5,8 +5,9 @@ import SkeletonCard from "../components/SkeletonCard";
 import { useAuth } from "../Login/AuthContent";
 import { showToast } from "../util/toast.js";
 import Navbar from "../components/Navbar";
+import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export default function Challenges() {
     /** ------------------------------------------------------------------
@@ -19,10 +20,18 @@ export default function Challenges() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isCreating, setIsCreating] = useState(false);
-    const [newChallenge, setNewChallenge] = useState({ title: "", description: "" });
+    const [newChallenge, setNewChallenge] = useState({
+        title: "",
+        description: "",
+        target_amount: "",
+        is_public: true,
+    });
+    const [reportDescription, setReportDescription] = useState("");
+
+    const [showEnrolledOnly, setShowEnrolledOnly] = useState(false);
+    const [enrolledChallengeIds, setEnrolledChallengeIds] = useState([]);
 
     const [reportingId, setReportingId] = useState(null);
-    const [progressEdit, setProgressEdit] = useState({ id: null, value: "" });
 
     /** ------------------------------------------------------------------
      * Helpers
@@ -31,39 +40,14 @@ export default function Challenges() {
         setIsLoading(true);
         setError(null);
         try {
-            // 👉 Replace with real API; mock for now
-            // # TODO: GET from /api/challenges/
-            await new Promise((r) => setTimeout(r, 400));
-            const MOCK = [
-                {
-                    id: 1,
-                    title: "Recycle Five Plastic Bottles",
-                    description: "Collect at least five plastic bottles and recycle them.",
-                    target_amount: 5,
-                    unit: "bottle",
-                    difficulty: "Easy",
-                    progress: 2, // ← current user’s progress
-                },
-                {
-                    id: 2,
-                    title: "Compost Kitchen Scraps for a Week",
-                    description: "Compost all veggie & fruit scraps for seven days.",
-                    target_amount: 7,
-                    unit: "day",
-                    difficulty: "Medium",
-                    progress: 4,
-                },
-                {
-                    id: 3,
-                    title: "Car‑Free Day",
-                    description: "Avoid motorised vehicles for 24 hours.",
-                    target_amount: 1,
-                    unit: "day",
-                    difficulty: "Hard",
-                    progress: 0,
-                },
-            ];
-            setChallenges(MOCK);
+            const response = await axios.get(`${API_BASE}/api/challenges/`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            setChallenges(response.data.reverse());
+
+            if (token) {
+                await fetchEnrolledChallengeIds();
+            }
         } catch (err) {
             setError(err.message);
             showToast("Error fetching challenges: " + err.message, "error");
@@ -72,36 +56,42 @@ export default function Challenges() {
         }
     };
 
+
     const handleCreateChallenge = async () => {
-        if (
-          !newChallenge.title.trim() ||
-          !newChallenge.description.trim() ||
-          !newChallenge.target_amount ||
-          !newChallenge.unit.trim() ||
-          newChallenge.progress === null
-        ) {
-            showToast("All fields are required.", "error");
+        const { title, description, target_amount, is_public } = newChallenge;
+
+        if (!title.trim() || !description.trim() || !target_amount) {
+            showToast("All fields except visibility are required.", "error");
             return;
         }
+
         try {
-            // TODO: POST to /api/challenges/
-            /* await fetch(`${API_BASE}/api/challenges/`, {
-                 method: "POST",
-                 headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                 body: JSON.stringify(newChallenge),
-            }); */
-            setChallenges((prev) => [
-                ...prev,
-                { ...newChallenge, id: Date.now() },
-            ]);
+            const token = localStorage.getItem("accessToken");
+            await axios.post(
+              `${API_BASE}/api/challenges/`,
+              {
+                  title: title.trim(),
+                  description: description.trim(),
+                  target_amount: parseFloat(target_amount),
+                  is_public: Boolean(is_public),
+              },
+              {
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                  },
+              }
+            );
+
             showToast("Challenge created successfully!", "success");
-            setNewChallenge({ title: "", description: "", target_amount: "", unit: "", progress: 0 });
             setIsCreating(false);
+            setNewChallenge({ title: "", description: "", target_amount: "", is_public: true });
+            await fetchChallenges();
         } catch (err) {
-            setError(err.message);
             showToast("Error creating challenge: " + err.message, "error");
         }
     };
+
 
     useEffect(() => {
         fetchChallenges();
@@ -112,41 +102,85 @@ export default function Challenges() {
      * ------------------------------------------------------------------*/
     const closeModals = () => {
         setReportingId(null);
-        setProgressEdit({ id: null, value: "" });
-        setReason(""); // reset report textarea
+        setReason("");
+        setReportDescription("");
     };
 
-    const handleReport = async (id, txt) => {
-        // TODO: POST to /api/challenges/:id/report/
-        /* await fetch(`${API_BASE}/api/challenges/${id}/report/`, {
-             method: "POST",
-             headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-             body: JSON.stringify({ reason: txt }),
-        });*/
-        showToast("Report submitted. Thank you!", "success", 2000);
-    };
-
-    const handleProgressUpdate = async (id, amount) => {
+    const handleReport = async (challengeId, reason, description) => {
         try {
-            // TODO: POST to /api/challenges/:id/progress/
-            /* await fetch(`${API_BASE}/api/challenges/${id}/progress/`, { ... }) */
-            setChallenges((prev) =>
-                prev.map((c) => (c.id === id ? {...c, progress: amount} : c))
+            await axios.post(
+              `${API_BASE}/api/challenge/${challengeId}/report/`,
+              {
+                  reason,       // e.g., "spam"
+                  description,  // user explanation
+              },
+              {
+                  headers: {
+                      "Content-Type": "application/json",
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  },
+              }
+            );
+
+            showToast("Report submitted. Thank you!", "success");
+        } catch (err) {
+            showToast("Error reporting challenge: " + err.message, "error");
+        }
+    };
+
+    const fetchEnrolledChallengeIds = async () => {
+        try {
+            const token = localStorage.getItem("accessToken");
+            const response = await axios.get(`${API_BASE}/api/challenges/enrolled/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const ids = response.data.map((entry) => entry.challenge);
+            setEnrolledChallengeIds(ids);
+        } catch (err) {
+            showToast("Error fetching enrolled challenges: " + err.message, "error");
+        }
+    };
+
+
+    const handleEnroll = async (challengeId) => {
+        try {
+            const token = localStorage.getItem("accessToken");
+            await axios.post(
+              `${API_BASE}/api/challenges/participate/`,
+              { challenge: challengeId },
+              {
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                  },
+              }
             );
             await fetchChallenges();
+            showToast("You joined the challenge!", "success");
         } catch (err) {
-            setError(err.message);
-            showToast("Error updating progress: " + err.message, "error");
+            if (err.response?.status === 400) {
+                showToast("You are already participating or not allowed.", "error");
+            } else {
+                showToast("Error joining challenge: " + err.message, "error");
+            }
         }
-
     };
 
     /** ------------------------------------------------------------------
      *  Render helpers
      * ------------------------------------------------------------------*/
     const renderCard = (c) => {
-        const pct = Math.min(100, (c.progress / c.target_amount) * 100);
+        const pct = Math.min(100, (c.current_progress / c.target_amount) * 100);
         const completed = pct >= 100;
+
+        // format the values to 2f
+        const formattedCurrentProgress = parseFloat(c.current_progress).toFixed(2);
+        const formattedTargetAmount = parseFloat(c.target_amount).toFixed(2);
+        c.current_progress = formattedCurrentProgress;
+        c.target_amount = formattedTargetAmount;
 
         return (
             <div
@@ -156,18 +190,23 @@ export default function Challenges() {
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2 p-4">
                     <div>
+                        {enrolledChallengeIds.includes(c.id) && (
+                          <span className="mb-1 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-800 dark:text-green-200">
+                            You're enrolled
+                          </span>
+                        )}
                         <h3 className="text-lg font-semibold">{c.title}</h3>
                         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">
                             {c.description}
                         </p>
                     </div>
                     <button
-                        onClick={() => {
-                            setReportingId(c.id);
-                            setReason(""); // clear textarea when modal opens
-                        }}
-                        className="rounded-full p-1 text-zinc-500 hover:bg-zinc-200 hover:text-destructive dark:hover:bg-zinc-200"
-                        title="Report this challenge"
+                      onClick={() => {
+                          setReportingId(c.id);
+                          setReason("");
+                      }}
+                      className="rounded-full p-1 text-zinc-500 hover:bg-zinc-200 hover:text-destructive dark:hover:bg-zinc-200"
+                      title="Report this challenge"
                     >
                         &#9888;
                     </button>
@@ -184,15 +223,20 @@ export default function Challenges() {
                 {/* Footer with actions */}
                 <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3 text-sm dark:border-zinc-800">
                     <span>
-                        {c.progress}/{c.target_amount} {c.unit}
+                        {c.current_progress}/{c.target_amount}
                     </span>
                     {token && (
-                        <button
-                            onClick={() => setProgressEdit({ id: c.id, value: c.progress })}
-                            className="rounded-lg border px-3 py-1 transition hover:bg-zinc-200 dark:hover:bg-zinc-200"
-                        >
-                            Update progress
-                        </button>
+                      <button
+                        onClick={() => handleEnroll(c.id)}
+                        disabled={enrolledChallengeIds.includes(c.id)}
+                        className={`rounded-lg border px-3 py-1 transition ${
+                          enrolledChallengeIds.includes(c.id)
+                            ? "cursor-not-allowed opacity-50"
+                            : "hover:bg-zinc-200 dark:hover:bg-zinc-200"
+                        }`}
+                      >
+                          {enrolledChallengeIds.includes(c.id) ? "Already Joined" : "Join Challenge"}
+                      </button>
                     )}
                 </div>
             </div>
@@ -214,10 +258,13 @@ export default function Challenges() {
                 <h1 className="text-3xl font-bold tracking-tight">Challenges</h1>
                 <div className="flex gap-4">
                     <button
-                      onClick={fetchChallenges}
+                      onClick={async () => {
+                          setShowEnrolledOnly((prev) => !prev);
+                          await fetchChallenges();
+                      }}
                       className="rounded-xl border px-4 py-2 text-sm transition hover:bg-zinc-200 dark:hover:bg-zinc-200"
                     >
-                        Refresh
+                        {showEnrolledOnly ? "Show All" : "Show Enrolled Only"}
                     </button>
                     <button
                       onClick={() => setIsCreating(true)}
@@ -228,10 +275,10 @@ export default function Challenges() {
                 </div>
             </header>
 
-            <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-busy={isLoading}>
-                {isLoading
-                    ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                    : challenges.map(renderCard)}
+            <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {challenges
+                    .filter((c) => !showEnrolledOnly || enrolledChallengeIds.includes(c.id))
+                    .map(renderCard)}
             </section>
 
             {/* Create Challenge Modal */}
@@ -250,88 +297,72 @@ export default function Challenges() {
                         className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
                       >
                           <h2 className="text-lg font-semibold text-green-700">Create Challenge</h2>
-                          <div className="space-y-4">
-                              {/* Title */}
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                                      Title
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="Enter challenge title"
-                                    value={newChallenge.title}
-                                    onChange={(e) => setNewChallenge({ ...newChallenge, title: e.target.value })}
-                                    className="w-full rounded-lg border px-3 py-2"
-                                  />
-                              </div>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-600">
+                              Fill out the fields below to add a new sustainability challenge.
+                          </p>
 
-                              {/* Description */}
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                                      Description
-                                  </label>
-                                  <textarea
-                                    rows={4}
-                                    placeholder="Enter challenge description"
-                                    value={newChallenge.description}
-                                    onChange={(e) => setNewChallenge({ ...newChallenge, description: e.target.value })}
-                                    className="w-full rounded-lg border px-3 py-2"
-                                  />
-                              </div>
-
-                              {/* Target Amount */}
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                                      Target Amount
-                                  </label>
-                                  <input
-                                    type="number"
-                                    placeholder="Enter target amount"
-                                    value={newChallenge.target_amount}
-                                    onChange={(e) => setNewChallenge({ ...newChallenge, target_amount: e.target.value })}
-                                    className="w-full rounded-lg border px-3 py-2"
-                                  />
-                              </div>
-
-                              {/* Unit */}
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                                      Unit
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="Enter unit (e.g., bottle, day)"
-                                    value={newChallenge.unit}
-                                    onChange={(e) => setNewChallenge({ ...newChallenge, unit: e.target.value })}
-                                    className="w-full rounded-lg border px-3 py-2"
-                                  />
-                              </div>
-
-                              {/* Progress */}
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                                      Progress
-                                  </label>
-                                  <input
-                                    type="number"
-                                    placeholder="Enter initial progress"
-                                    value={newChallenge.progress}
-                                    onChange={(e) => setNewChallenge({ ...newChallenge, progress: e.target.value })}
-                                    className="w-full rounded-lg border px-3 py-2"
-                                  />
-                              </div>
+                          {/* Title */}
+                          <div>
+                              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Title</label>
+                              <input
+                                type="text"
+                                placeholder="Enter challenge title"
+                                value={newChallenge.title}
+                                onChange={(e) => setNewChallenge({ ...newChallenge, title: e.target.value })}
+                                className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
+                              />
                           </div>
 
-                          <div className="flex justify-end gap-3 pt-4">
+                          {/* Description */}
+                          <div>
+                              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
+                              <textarea
+                                rows={4}
+                                placeholder="Enter challenge description"
+                                value={newChallenge.description}
+                                onChange={(e) => setNewChallenge({ ...newChallenge, description: e.target.value })}
+                                className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100"
+                              />
+                          </div>
+
+                          {/* Target Amount */}
+                          <div>
+                              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Target Amount</label>
+                              <input
+                                type="number"
+                                placeholder="Enter target amount"
+                                value={newChallenge.target_amount}
+                                onChange={(e) => setNewChallenge({ ...newChallenge, target_amount: e.target.value })}
+                                className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
+                              />
+                          </div>
+
+                          {/* Public Toggle */}
+                          <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="is_public"
+                                checked={newChallenge.is_public}
+                                onChange={(e) => setNewChallenge({ ...newChallenge, is_public: e.target.checked })}
+                              />
+                              <label htmlFor="is_public" className="text-sm text-zinc-700 dark:text-zinc-700">
+                                  Make challenge public
+                              </label>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="mt-6 flex justify-end gap-3">
                               <button
                                 onClick={() => setIsCreating(false)}
-                                className="rounded-lg border px-4 py-2 text-sm transition hover:bg-zinc-200 dark:hover:bg-zinc-200"
+                                className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700
+              shadow-sm transition hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10"
                               >
                                   Cancel
                               </button>
                               <button
                                 onClick={handleCreateChallenge}
-                                className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-green-600"
+                                className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition
+              hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                   Create
                               </button>
@@ -341,113 +372,83 @@ export default function Challenges() {
                 )}
             </AnimatePresence>
 
+
             {/* Report modal */}
             <AnimatePresence>
                 {reportingId !== null && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    >
-                        <motion.div
-                            initial={{ y: 40, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 40, opacity: 0 }}
-                            className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900 bg-zinc-900"
-                        >
-                            <h2 className="text-lg font-semibold">Report Challenge</h2>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                Let us know what’s wrong with this challenge.
-                            </p>
-                            {/* ── Reason textarea ─────────────────────────────────────────────── */}
-                            <textarea
-                              id="report-reason"
-                              rows={8}                           /* taller default */
-                              value={reason}
-                              onChange={(e) => setReason(e.target.value)}
-                              placeholder="Reason…"
-                              className="mt-3 w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base
-             placeholder-zinc-400 shadow-sm transition focus:border-green-500 focus:outline-none focus:ring-2
-             focus:ring-green-200 dark:border-zinc-600 dark:bg-zinc-800 dark:placeholder-zinc-500
-             dark:focus:border-green-400 dark:focus:ring-green-400/40"
-                            />
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                  >
+                      <motion.div
+                        initial={{ y: 40, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 40, opacity: 0 }}
+                        className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
+                      >
+                          <h2 className="text-lg font-semibold">Report Challenge</h2>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-600">
+                              Let us know what’s wrong with this challenge.
+                          </p>
 
-                            {/* ── Action buttons ─────────────────────────────────────────────── */}
-                            <div className="mt-6 flex justify-end gap-3">
-                                <button
-                                  onClick={closeModals}
-                                  className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700
-               shadow-sm transition hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2
-               focus-visible:ring-green-500 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10"
-                                >
-                                    Cancel
-                                </button>
+                          {/* Reason dropdown */}
+                          <div>
+                              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Reason</label>
+                              <select
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
+                              >
+                                  <option value="">Select a reason</option>
+                                  <option value="SPAM">Spam</option>
+                                  <option value="INAPPROPRIATE">Inappropriate</option>
+                                  <option value="HARASSMENT">Harassment</option>
+                                  <option value="MISLEADING">Misleading or Fake</option>
+                                  <option value="OTHER">Other</option>
+                              </select>
+                          </div>
 
-                                <button
-                                  onClick={() => {
-                                      if (!reason.trim()) return;
-                                      handleReport(reportingId, reason.trim());
-                                      closeModals();
-                                  }}
-                                  disabled={!reason.trim()}
-                                  className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition
-               hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                                >
-                                    Submit
-                                </button>
-                            </div>
+                          {/* Description textarea */}
+                          <div>
+                              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
+                              <textarea
+                                rows={5}
+                                value={reportDescription}
+                                onChange={(e) => setReportDescription(e.target.value)}
+                                placeholder="Please explain briefly…"
+                                className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100"
+                              />
+                          </div>
 
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Progress edit modal */}
-            <AnimatePresence>
-                {progressEdit.id !== null && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    >
-                        <motion.form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                const valueNum = Number(progressEdit.value);
-                                if (!Number.isNaN(valueNum)) {
-                                    handleProgressUpdate(progressEdit.id, valueNum);
+                          {/* Action buttons */}
+                          <div className="mt-6 flex justify-end gap-3">
+                              <button
+                                onClick={closeModals}
+                                className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700
+              shadow-sm transition hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10"
+                              >
+                                  Cancel
+                              </button>
+                              <button
+                                onClick={() => {
+                                    if (!reason || !reportDescription.trim()) return;
+                                    handleReport(reportingId, reason, reportDescription.trim());
                                     closeModals();
-                                }
-                            }}
-                            initial={{ y: 40, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 40, opacity: 0 }}
-                            className="w-full max-w-xs space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
-                        >
-                            <h2 className="text-lg font-semibold">Update Progress</h2>
-                            <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                value={progressEdit.value}
-                                onChange={(e) => setProgressEdit({ ...progressEdit, value: e.target.value })}
-                                className="w-full rounded border px-3 py-2"
-                            />
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={closeModals} className="rounded border px-4 py-2 text-sm">
-                                    Cancel
-                                </button>
-                                <button type="submit" className="rounded bg-primary px-4 py-2 text-sm font-medium text-white">
-                                    Save
-                                </button>
-                            </div>
-                        </motion.form>
-                    </motion.div>
+                                }}
+                                disabled={!reason || !reportDescription.trim()}
+                                className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition
+              hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                  Submit
+                              </button>
+                          </div>
+                      </motion.div>
+                  </motion.div>
                 )}
             </AnimatePresence>
+
         </motion.main>
       </div>
     );
