@@ -14,6 +14,8 @@ interface Post {
   like_count: number;
   dislike_count: number;
   image_url?: string;
+  is_user_liked?: boolean;
+  is_user_disliked?: boolean;
 }
 
 const BASE_URL = 'https://134-209-253-215.sslip.io';
@@ -97,8 +99,23 @@ export const CommunityScreen = () => {
     fetchPosts();
   }, []);
 
+  const handleReaction = async (postId: number, type: 'like' | 'dislike') => {
+    try {
+      const response = await api.post(`/api/posts/${postId}/${type}/`);
+      if (response.data && response.data.data) {
+        const updatedPost = response.data.data;
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId ? { ...post, ...updatedPost } : post
+          )
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', `Failed to ${type} post`);
+    }
+  };
+
   const renderItem = ({ item }: { item: Post }) => {
-    // Prefer image_url from backend, fallback to previous logic
     const imageUrl = item.image_url || (
       item.image
         ? item.image.startsWith('http')
@@ -122,8 +139,22 @@ export const CommunityScreen = () => {
           <Image source={{ uri: imageUrl }} style={styles.postImage} />
         ) : null}
         <View style={styles.statsRow}>
-          <Text style={styles.stat}>👍 {item.like_count}</Text>
-          <Text style={styles.stat}>👎 {item.dislike_count}</Text>
+          <TouchableOpacity 
+            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]} 
+            onPress={() => handleReaction(item.id, 'like')}
+          >
+            <Text style={[styles.reactionText, item.is_user_liked && styles.activeReactionText]}>
+              👍 {item.like_count}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]} 
+            onPress={() => handleReaction(item.id, 'dislike')}
+          >
+            <Text style={[styles.reactionText, item.is_user_disliked && styles.activeReactionText]}>
+              👎 {item.dislike_count}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -250,11 +281,27 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.lightGray,
   },
-  stat: {
+  reactionButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    marginLeft: spacing.sm,
+  },
+  activeReactionButton: {
+    backgroundColor: colors.lightGray,
+  },
+  reactionText: {
     ...typography.body,
     color: colors.gray,
-    marginLeft: spacing.md,
+  },
+  activeReactionText: {
+    color: colors.primary,
+    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
