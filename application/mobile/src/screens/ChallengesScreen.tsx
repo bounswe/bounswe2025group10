@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { challengeService } from '../services/api';
 
 interface Challenge {
   id: number;
@@ -67,6 +67,20 @@ export const ChallengesScreen = () => {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    Alert.alert('Delete Challenge', 'Are you sure you want to delete this challenge?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await challengeService.deleteChallenge(id);
+            fetchChallenges();
+          } catch (error:any) {
+            Alert.alert('Error', error.response?.data?.detail || 'Failed to delete');
+          }
+        } },
+    ]);
+  };
+
   useEffect(() => {
     fetchChallenges();
   }, []);
@@ -88,6 +102,9 @@ export const ChallengesScreen = () => {
               <Text>Target: {item.target_amount}</Text>
               <Text>Progress: {item.current_progress}</Text>
               <Text>Type: {item.is_public ? 'Public' : 'Private'}</Text>
+              <TouchableOpacity onPress={() => handleDelete(item.id)} style={{ marginTop: 4 }}>
+                <Text style={{ color: 'red' }}>Delete</Text>
+              </TouchableOpacity>
             </View>
           )}
           refreshing={refreshing}

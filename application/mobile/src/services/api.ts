@@ -151,6 +151,13 @@ export const achievementService = {
   },
 };
 
+export const challengeService = {
+  deleteChallenge: async (id: number): Promise<any> => {
+    const response = await api.delete(`/api/challenges/${id}/delete/`);
+    return response.data;
+  },
+};
+
 export const profileService = {
   uploadProfilePicture: async (formData: FormData): Promise<any> => {
     console.log('Uploading profile picture...');
