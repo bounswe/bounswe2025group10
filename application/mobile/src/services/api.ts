@@ -151,6 +151,13 @@ export const achievementService = {
   },
 };
 
+export const challengeService = {
+  deleteChallenge: async (id: number): Promise<any> => {
+    const response = await api.delete(`/api/challenges/${id}/delete/`);
+    return response.data;
+  },
+};
+
 export const profileService = {
   uploadProfilePicture: async (formData: FormData): Promise<any> => {
     console.log('Uploading profile picture...');
@@ -161,6 +168,15 @@ export const profileService = {
     });
     console.log('Profile picture upload full response:', JSON.stringify(response.data, null, 2));
     return response.data;
+  },
+};
+
+// Public profile endpoints (no auth required)
+export const profilePublicService = {
+  /** Get public bio info of a user by username */
+  getUserBio: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/bio/`);
+    return response.data; // { username, bio }
   },
 };
 

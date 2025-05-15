@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, Touc
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useNavigation } from '@react-navigation/native';
 
 interface Post {
   id: number;
@@ -26,6 +27,8 @@ export const CommunityScreen = () => {
   const [newText, setNewText] = useState('');
   const [imageFile, setImageFile] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+
+  const navigation = useNavigation<any>();
 
   const fetchPosts = async () => {
     if (!refreshing) setLoading(true);
@@ -110,12 +113,14 @@ export const CommunityScreen = () => {
     return (
       <View style={styles.postItem}>
         <View style={styles.postHeader}>
-          {item.creator_profile_image ? (
-            <Image source={{ uri: item.creator_profile_image }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder} />
-          )}
-          <Text style={styles.username}>{item.creator_username}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('OtherProfile', { username: item.creator_username })} style={{flexDirection:'row', alignItems:'center'}}>
+            {item.creator_profile_image ? (
+              <Image source={{ uri: item.creator_profile_image.startsWith('http') ? item.creator_profile_image : `${BASE_URL}${item.creator_profile_image.startsWith('/') ? '' : '/'}${item.creator_profile_image}` }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder} />
+            )}
+            <Text style={styles.username}>{item.creator_username}</Text>
+          </TouchableOpacity>
         </View>
         {item.text ? <Text style={styles.postText}>{item.text}</Text> : null}
         {imageUrl ? (
