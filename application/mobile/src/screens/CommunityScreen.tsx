@@ -115,7 +115,7 @@ export const CommunityScreen = () => {
         <View style={styles.postHeader}>
           <TouchableOpacity onPress={() => navigation.navigate('OtherProfile', { username: item.creator_username })} style={{flexDirection:'row', alignItems:'center'}}>
             {item.creator_profile_image ? (
-              <Image source={{ uri: item.creator_profile_image }} style={styles.avatar} />
+              <Image source={{ uri: item.creator_profile_image.startsWith('http') ? item.creator_profile_image : `${BASE_URL}${item.creator_profile_image.startsWith('/') ? '' : '/'}${item.creator_profile_image}` }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder} />
             )}
