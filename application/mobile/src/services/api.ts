@@ -100,6 +100,7 @@ export const authService = {
 
   getUserInfo: async (): Promise<any> => {
     const response = await api.get('/me/');
+    console.log('Full user info response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
 
@@ -141,12 +142,13 @@ export const achievementService = {
 
 export const profileService = {
   uploadProfilePicture: async (formData: FormData): Promise<any> => {
-    // Ensure headers for multipart/form-data; axios will set correct boundary when content-type is undefined or set multipart/form-data
+    console.log('Uploading profile picture...');
     const response = await api.post('/api/profile/profile-picture/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    console.log('Profile picture upload full response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
 };
