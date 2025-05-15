@@ -3,12 +3,17 @@ import { useAuth } from "../Login/AuthContent";
 import Navbar from "../components/Navbar";
 import axios from "axios";
 
+const DEFAULT_PROFILE_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";
+
 export default function LeaderboardPage() {
   const { logout, token } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [userRank, setUserRank] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBioModal, setShowBioModal] = useState(false);
+  const [selectedUserBio, setSelectedUserBio] = useState(null);
+  const [bioLoading, setBioLoading] = useState(false);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -16,57 +21,44 @@ export default function LeaderboardPage() {
         setLoading(true);
         setError(null);
         
-        // Fetch current user info first
-        let currentUserData = null;
-        if (token) {
-          try {
-            const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/me/`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            currentUserData = userResponse.data;
-          } catch (error) {
-            console.error("Failed to fetch current user:", error);
-          }
-        }
+        // Fetch leaderboard data
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/leaderboard/`, {
+          headers: token ? {
+            Authorization: `Bearer ${token}`,
+          } : {}
+        });
         
-        // Fetch complete leaderboard data
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/waste/leaderboard/`);
-        const leaderboardData = response.data.data;
-        
-        // Find current user's position
-        const currentUserIndex = currentUserData 
-          ? leaderboardData.findIndex(userData => userData.username === currentUserData.username)
-          : -1;
-        
-        // Take top 10 for display
-        const top10Data = leaderboardData.slice(0, 10);
+        const { top_users, current_user } = response.data.data;
         
         // Process top 10 data
         const leaderboardWithPictures = await Promise.all(
-          top10Data.map(async (userData, index) => {
+          top_users.map(async (userData, index) => {
             let profileImage = null;
             
             try {
               if (userData.profile_picture) {
-                const pictureResponse = await axios.get(
-                  `${import.meta.env.VITE_API_URL}/api/profile/${userData.username}/picture/`,
-                  {
-                    headers: {
-                      'Content-Type': 'image/jpeg'
-                    },
-                    responseType: 'blob'
-                  }
-                );
-                
-                profileImage = URL.createObjectURL(pictureResponse.data);
+                // Check if profile_picture is a full URL or a relative path
+                if (userData.profile_picture.startsWith('http')) {
+                  profileImage = userData.profile_picture;
+                } else {
+                  // If it's a relative path, fetch from API
+                  const pictureResponse = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/api/profile/${userData.username}/picture/`,
+                    {
+                      headers: {
+                        'Content-Type': 'image/jpeg'
+                      },
+                      responseType: 'blob'
+                    }
+                  );
+                  profileImage = URL.createObjectURL(pictureResponse.data);
+                }
               } else {
-                profileImage = `https://i.pravatar.cc/100?img=${index + 1}`;
+                profileImage = DEFAULT_PROFILE_IMAGE;
               }
             } catch (error) {
               console.error(`Failed to fetch profile picture for ${userData.username}:`, error);
-              profileImage = `https://i.pravatar.cc/100?img=${index + 1}`;
+              profileImage = DEFAULT_PROFILE_IMAGE;
             }
             
             return {
@@ -74,44 +66,49 @@ export default function LeaderboardPage() {
               score: userData.total_waste,
               points: Math.round(userData.points || 0), // Round points to integer
               profileImage: profileImage,
-              isCurrentUser: currentUserData && userData.username === currentUserData.username
+              rank: userData.rank,
+              isCurrentUser: current_user && userData.username === current_user.username
             };
           })
         );
         
         setLeaderboard(leaderboardWithPictures);
         
-        // Set user's rank info if not in top 10
-        if (currentUserIndex !== -1 && currentUserIndex >= 10) {
-          const currentUserEntryData = leaderboardData[currentUserIndex];
-          
+        // Set user's rank info if current user exists and not in top 10
+        if (current_user && current_user.rank > 10) {
           // Fetch profile picture for current user
           let currentUserImage = null;
           try {
-            if (currentUserEntryData.profile_picture) {
-              const pictureResponse = await axios.get(
-                `${import.meta.env.VITE_API_URL}/api/profile/${currentUserEntryData.username}/picture/`,
-                {
-                  headers: {
-                    'Content-Type': 'image/jpeg'
-                  },
-                  responseType: 'blob'
-                }
-              );
-              currentUserImage = URL.createObjectURL(pictureResponse.data);
+            if (current_user.profile_picture) {
+              // Check if profile_picture is a full URL or a relative path
+              if (current_user.profile_picture.startsWith('http')) {
+                currentUserImage = current_user.profile_picture;
+              } else {
+                // If it's a relative path, fetch from API
+                const pictureResponse = await axios.get(
+                  `${import.meta.env.VITE_API_URL}/api/profile/${current_user.username}/picture/`,
+                  {
+                    headers: {
+                      'Content-Type': 'image/jpeg'
+                    },
+                    responseType: 'blob'
+                  }
+                );
+                currentUserImage = URL.createObjectURL(pictureResponse.data);
+              }
             } else {
-              currentUserImage = `https://i.pravatar.cc/100?img=${currentUserIndex + 1}`;
+              currentUserImage = DEFAULT_PROFILE_IMAGE;
             }
           } catch (error) {
             console.error(`Failed to fetch profile picture for current user:`, error);
-            currentUserImage = `https://i.pravatar.cc/100?img=${currentUserIndex + 1}`;
+            currentUserImage = DEFAULT_PROFILE_IMAGE;
           }
           
           setUserRank({
-            position: currentUserIndex + 1,
-            username: currentUserEntryData.username,
-            score: currentUserEntryData.total_waste,
-            points: Math.round(currentUserEntryData.points || 0), // Round points to integer
+            position: current_user.rank,
+            username: current_user.username,
+            score: current_user.total_waste,
+            points: Math.round(current_user.points || 0), // Round points to integer
             profileImage: currentUserImage
           });
         } else {
@@ -127,6 +124,25 @@ export default function LeaderboardPage() {
 
     fetchLeaderboard();
   }, [token]); // Only token in dependency
+
+  const fetchUserBio = async (username) => {
+    setBioLoading(true);
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/profile/${username}/bio/`);
+      setSelectedUserBio(response.data);
+      setShowBioModal(true);
+    } catch (error) {
+      console.error(`Failed to fetch bio for ${username}:`, error);
+      setSelectedUserBio({ username, bio: "Bio could not be loaded." });
+      setShowBioModal(true);
+    } finally {
+      setBioLoading(false);
+    }
+  };
+
+  const handleProfileClick = (username) => {
+    fetchUserBio(username);
+  };
 
   const getRankDisplay = (position) => {
     if (position === 1) return "🥇";
@@ -218,7 +234,6 @@ export default function LeaderboardPage() {
               </thead>
               <tbody>
                 {leaderboard.map((u, index) => {
-                  const position = index + 1;
                   return (
                     <tr
                       key={u.username}
@@ -236,12 +251,12 @@ export default function LeaderboardPage() {
                       <td
                         style={{
                           fontSize:
-                            position === 1 || position === 2 || position === 3
+                            u.rank === 1 || u.rank === 2 || u.rank === 3
                               ? "1.5rem"
                               : "1rem",
                         }}
                       >
-                        {getRankDisplay(position)}
+                        {getRankDisplay(u.rank)}
                       </td>
                       <td>
                         <div className="d-flex justify-content-center">
@@ -253,7 +268,10 @@ export default function LeaderboardPage() {
                               width: "50px",
                               height: "50px",
                               objectFit: "cover",
+                              cursor: "pointer"
                             }}
+                            onClick={() => handleProfileClick(u.username)}
+                            title={`Click to view ${u.username}'s bio`}
                           />
                         </div>
                       </td>
@@ -328,7 +346,10 @@ export default function LeaderboardPage() {
                             width: "50px",
                             height: "50px",
                             objectFit: "cover",
+                            cursor: "pointer"
                           }}
+                          onClick={() => handleProfileClick(userRank.username)}
+                          title={`Click to view ${userRank.username}'s bio`}
                         />
                       </div>
                     </td>
@@ -338,6 +359,82 @@ export default function LeaderboardPage() {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Bio Modal */}
+        {showBioModal && (
+          <div 
+            className="modal fade show" 
+            style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onClick={() => setShowBioModal(false)}
+          >
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content" style={{ border: 'none', borderRadius: '16px', overflow: 'hidden' }}>
+                <div className="position-relative" style={{ background: 'linear-gradient(135deg, #28a745 0%, #155724 100%)', padding: '2rem', color: 'white' }}>
+                  <button 
+                    type="button" 
+                    className="btn-close btn-close-white position-absolute top-0 end-0" 
+                    style={{ margin: '1rem' }}
+                    onClick={() => setShowBioModal(false)}
+                  ></button>
+                  
+                  <div className="d-flex align-items-center">
+                    <div className="me-3">
+                      <img
+                        src={leaderboard.find(u => u.username === selectedUserBio?.username)?.profileImage || 
+                             (userRank && userRank.username === selectedUserBio?.username ? userRank.profileImage : DEFAULT_PROFILE_IMAGE)}
+                        alt={selectedUserBio?.username}
+                        className="rounded-circle border border-3 border-white shadow"
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+                    <div className="text-start">
+                      <h4 className="fw-bold mb-1">{selectedUserBio?.username}</h4>
+                      <p className="opacity-75 mb-0">Profile Bio</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-body" style={{ padding: '2rem' }}>
+                  {bioLoading ? (
+                    <div className="text-center py-4">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading bio...</span>
+                      </div>
+                      <p className="mt-3 text-muted">Loading bio...</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div 
+                        className="p-4 rounded-3" 
+                        style={{ 
+                          backgroundColor: '#f8f9fa',
+                          border: '1px dashed #dee2e6',
+                          minHeight: '100px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <p className="mb-0" style={{ 
+                          fontSize: '1.1rem', 
+                          lineHeight: '1.6',
+                          color: selectedUserBio?.bio ? '#333' : '#6c757d',
+                          fontStyle: selectedUserBio?.bio ? 'normal' : 'italic'
+                        }}>
+                          {selectedUserBio?.bio || "This user hasn't written a bio yet."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
