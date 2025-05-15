@@ -2,13 +2,16 @@
 
 Welcome to the codebase of the **Zero Waste Challenge**, a gamified platform designed to promote sustainable living through personalized goals, community challenges, and collaborative efforts.
 
+## 🚀 Project Video Recordings
+
+1) [User Web Application](https://www.youtube.com/watch?v=_MOUUgUt5oI)
+
 ## 🚀 Project Overview
 
 This repository contains the implementation of the Zero Waste Challenge platform, encompassing backend services, frontend interfaces, and supporting tools.
 
 ## 🛠️ Technologies Used
 
-** TO BE COMPLETED**
 For detailed information, please refer to [Software Requirement Specifications](https://github.com/bounswe/bounswe2025group10/wiki/Project-%235-:-ZERO-WASTE-CHALLENGE#software-requirements-specification) page
 
 ## 📁 File Structure
