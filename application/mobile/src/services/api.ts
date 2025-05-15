@@ -164,4 +164,13 @@ export const profileService = {
   },
 };
 
+// Public profile endpoints (no auth required)
+export const profilePublicService = {
+  /** Get public bio info of a user by username */
+  getUserBio: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/bio/`);
+    return response.data; // { username, bio }
+  },
+};
+
 export default api; 
