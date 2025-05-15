@@ -184,4 +184,16 @@ export const profilePublicService = {
   },
 };
 
+// External weather API (Open-Meteo)
+export const weatherService = {
+  /**
+   * Get current weather for given coordinates using the free Open-Meteo API (no key needed).
+   */
+  getCurrentWeather: async (latitude: number, longitude: number): Promise<any> => {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+    const response = await axios.get(url);
+    return response.data.current_weather; // { temperature, windspeed, weathercode, ... }
+  },
+};
+
 export default api; 

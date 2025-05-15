@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, FlatList, Alert, Dimensions, ScrollView, RefreshControl } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
-import { wasteService, tipService } from '../services/api';
+import { wasteService, tipService, weatherService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
 
 const chartConfig = {
@@ -22,13 +22,14 @@ export const HomeScreen: React.FC = () => {
   const [loadingWaste, setLoadingWaste] = useState(true);
   const [tips, setTips] = useState<any[]>([]);
   const [loadingTips, setLoadingTips] = useState(true);
+  const [weather, setWeather] = useState<{temperature:number, weathercode:number} | null>(null);
   const profilePic = null; // Replace with actual image URI if available
 
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchWasteData(), fetchTips()]);
+    await Promise.all([fetchWasteData(), fetchTips(), fetchWeather()]);
     setRefreshing(false);
   }, []);
 
@@ -57,9 +58,20 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  const fetchWeather = async () => {
+    // Istanbul coords as example
+    const lat = 41.0082;
+    const lon = 28.9784;
+    try {
+      const data = await weatherService.getCurrentWeather(lat, lon);
+      setWeather(data);
+    } catch (err) { console.warn('Weather fetch error', err); }
+  };
+
   useEffect(() => {
     fetchWasteData();
     fetchTips();
+    fetchWeather();
   }, []);
 
   const handleLogout = async () => {
@@ -101,6 +113,11 @@ export const HomeScreen: React.FC = () => {
       <View style={styles.userInfoRow}>
         <Text style={styles.username}>{"Hello, " + userData?.username || 'Loading...'}</Text>
       </View>
+      {weather && (
+        <Text style={{ alignSelf:'center', marginBottom:8, color: colors.gray }}>
+          {`Istanbul Weather: ${weather.temperature}°C`}
+        </Text>
+      )}
       <View style={{ height: 26 }} />
       {/* Progress Chart */}
       <View style={styles.chartContainer}>
