@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { authService } from '../../services/api';
 import { storage } from '../../utils/storage';
 import { CommonActions } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 
 interface LoginScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
@@ -23,6 +24,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+
+  // Quote state
+  const [jokeSetup, setJokeSetup] = useState('');
+  const [jokePunchline, setJokePunchline] = useState('');
+
+  useEffect(() => {
+    axios.get('https://official-joke-api.appspot.com/random_joke')
+      .then(res => {
+        setJokeSetup(res.data.setup);
+        setJokePunchline(res.data.punchline);
+      })
+      .catch((err) => {
+        console.error('Joke API error:', err);
+        setJokeSetup('Welcome to the app!');
+        setJokePunchline('');
+      });
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -114,6 +132,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         )}
       </TouchableOpacity>
 
+      {/* Random joke section */}
+      {jokeSetup ? (
+        <View style={styles.jokeContainer}>
+          <Text style={styles.jokeSetup}>{jokeSetup}</Text>
+          {jokePunchline ? <Text style={styles.jokePunchline}>{jokePunchline}</Text> : null}
+        </View>
+      ) : null}
+
       <TouchableOpacity
         style={styles.signupLink}
         onPress={() => navigation.navigate('Signup')}
@@ -163,6 +189,22 @@ const styles = StyleSheet.create({
   },
   signupTextBold: {
     color: colors.primary,
+    fontWeight: 'bold',
+  },
+  jokeContainer: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  jokeSetup: {
+    fontStyle: 'italic',
+    color: colors.gray,
+    textAlign: 'center',
+  },
+  jokePunchline: {
+    color: colors.primary,
+    textAlign: 'center',
+    marginTop: 4,
     fontWeight: 'bold',
   },
 }); 
