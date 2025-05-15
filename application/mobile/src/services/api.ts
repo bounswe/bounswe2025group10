@@ -28,7 +28,7 @@ export interface AuthResponse {
 
 // API Configuration
 // Use the deployed backend for all requests
-const API_URL = 'https://134-209-253-215.sslip.io';
+export const API_URL = 'https://134-209-253-215.sslip.io';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -100,6 +100,7 @@ export const authService = {
 
   getUserInfo: async (): Promise<any> => {
     const response = await api.get('/me/');
+    console.log('Full user info response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
 
@@ -116,7 +117,7 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<any> => {
-    const response = await api.get('/api/waste/get/');
+    const response = await api.get('/api/waste/get');
     return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
@@ -126,9 +127,39 @@ export const wasteService = {
 };
 
 export const tipService = {
-  getTips: async (): Promise<any> => {
-    // Fetch 3 random tips from the backend
+  /**
+   * Fetch the most recent tips (backend returns latest N records)
+   */
+  getRecentTips: async (): Promise<any> => {
     const response = await api.get('/api/tips/get_recent_tips');
+    return response.data;
+  },
+
+  /**
+   * Fetch all tips (could be used for paginated lists later)
+   */
+  getAllTips: async (): Promise<any> => {
+    const response = await api.get('/api/tips/all/');
+    return response.data;
+  },
+};
+
+export const achievementService = {
+  getUserAchievements: async (): Promise<any> => {
+    const response = await api.get('/api/challenges/enrolled/');
+    return response.data;
+  },
+};
+
+export const profileService = {
+  uploadProfilePicture: async (formData: FormData): Promise<any> => {
+    console.log('Uploading profile picture...');
+    const response = await api.post('/api/profile/profile-picture/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log('Profile picture upload full response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
 };

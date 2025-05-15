@@ -21,13 +21,14 @@ export const ChallengesScreen = () => {
   const { userData } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   const fetchChallenges = async () => {
-    setLoading(true);
+    if (!refreshing) setLoading(true);
     try {
       const response = await api.get('/api/challenges/');
       setChallenges(response.data); // If backend wraps in {data: [...]}, use response.data.data
@@ -35,8 +36,14 @@ export const ChallengesScreen = () => {
       Alert.alert('Error', 'Failed to fetch challenges');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchChallenges();
+  }, []);
 
   const createChallenge = async () => {
     if (!title || !description || !targetAmount) {
@@ -68,7 +75,7 @@ export const ChallengesScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>My Challenges</Text>
 
-      {loading ? (
+      {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
         <FlatList
@@ -83,6 +90,8 @@ export const ChallengesScreen = () => {
               <Text>Type: {item.is_public ? 'Public' : 'Private'}</Text>
             </View>
           )}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
 

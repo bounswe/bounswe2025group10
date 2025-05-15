@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, FlatList, Alert, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, FlatList, Alert, Dimensions, ScrollView, RefreshControl } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { wasteService, tipService } from '../services/api';
@@ -24,6 +24,14 @@ export const HomeScreen: React.FC = () => {
   const [loadingTips, setLoadingTips] = useState(true);
   const profilePic = null; // Replace with actual image URI if available
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchWasteData(), fetchTips()]);
+    setRefreshing(false);
+  }, []);
+
   // Reusable fetch function
   const fetchWasteData = async () => {
     setLoadingWaste(true);
@@ -40,8 +48,8 @@ export const HomeScreen: React.FC = () => {
   const fetchTips = async () => {
     setLoadingTips(true);
     try {
-      const response = await tipService.getTips();
-      setTips(response.data);
+      const tipsArray = await tipService.getRecentTips();
+      setTips(tipsArray);
     } catch (error) {
       console.error('Error fetching tips:', error);
     } finally {
@@ -85,8 +93,9 @@ export const HomeScreen: React.FC = () => {
   const barData = wasteData.map((item) => item.total_amount);
   const screenWidth = Dimensions.get('window').width - 32; // padding
 
-  return (
-    <View style={styles.container}>
+  // Header component rendered at top of FlatList
+  const renderHeader = () => (
+    <>
       {/* User Info Row */}
       <View style={{ height: 26 }} />
       <View style={styles.userInfoRow}>
@@ -143,34 +152,44 @@ export const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Latest Tips */}
+      {/* Latest Tips Header */}
       <View style={styles.tipsContainer}>
         <Text style={styles.sectionTitle}>Latest Tips</Text>
-        {loadingTips ? (
-          <Text style={styles.tipText}>Loading tips...</Text>
-        ) : (
-          <FlatList
-            data={tips}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.tipItem}>
-                <Text style={styles.tipTitle}>{item.title}</Text>
-                <Text style={styles.tipDescription}>{item.description}</Text>
-                <View style={styles.tipStatsRow}>
-                  <Text style={styles.tipStat}>👍 {item.like_count}</Text>
-                  <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
-                </View>
-              </View>
-            )}
-          />
-        )}
       </View>
+    </>
+  );
 
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+  const renderTipItem = ({ item }: { item: any }) => (
+    <View style={styles.tipItem}>
+      <Text style={styles.tipTitle}>{item.title}</Text>
+      <Text style={styles.tipDescription}>{item.description}</Text>
+      <View style={styles.tipStatsRow}>
+        <Text style={styles.tipStat}>👍 {item.like_count}</Text>
+        <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
+      </View>
     </View>
+  );
+
+  const renderEmptyTips = () => (
+    <Text style={styles.tipText}>No tips available. Be the first to add one!</Text>
+  );
+
+  return (
+    <FlatList
+      style={styles.container}
+      data={loadingTips ? [] : tips}
+      keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
+      renderItem={renderTipItem}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={loadingTips ? undefined : renderEmptyTips}
+      ListFooterComponent={
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={{ paddingBottom: spacing.lg }}
+    />
   );
 };
 

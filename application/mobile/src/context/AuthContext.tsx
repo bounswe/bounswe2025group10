@@ -5,6 +5,7 @@ import { authService, AuthResponse } from '../services/api';
 interface UserData {
   email: string;
   username: string;
+  profile_picture?: string; // URL or relative path to profile picture
 }
 
 interface AuthContextType {
@@ -23,8 +24,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserData = async () => {
     try {
-      const response = await authService.getUserInfo();
-      setUserData(response.data || response); // Try both possibilities
+      const data = await authService.getUserInfo();
+      console.log('Fetched user data:', JSON.stringify(data, null, 2));
+      setUserData(data);
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
