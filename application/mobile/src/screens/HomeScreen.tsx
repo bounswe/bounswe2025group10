@@ -182,11 +182,6 @@ export const HomeScreen: React.FC = () => {
       renderItem={renderTipItem}
       ListHeaderComponent={renderHeader}
       ListEmptyComponent={loadingTips ? undefined : renderEmptyTips}
-      ListFooterComponent={
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       contentContainerStyle={{ paddingBottom: spacing.lg }}
     />
@@ -281,16 +276,5 @@ const styles = StyleSheet.create({
   },
   tipText: {
     color: colors.gray,
-  },
-  logoutButton: {
-    backgroundColor: colors.error,
-    padding: spacing.sm,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  logoutButtonText: {
-    color: colors.white,
-    fontWeight: 'bold',
   },
 }); 

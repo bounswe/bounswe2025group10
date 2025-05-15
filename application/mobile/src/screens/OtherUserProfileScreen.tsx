@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     marginBottom: 6,
+    textAlign: 'center',
   },
   postStatsRow: {
     flexDirection: 'row',
