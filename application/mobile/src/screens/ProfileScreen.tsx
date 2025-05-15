@@ -26,6 +26,17 @@ const ProfileMain: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [profileImageLoadError, setProfileImageLoadError] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  // Load auth token once on mount
+  useEffect(() => {
+    (async () => {
+      const token = await storage.getToken();
+      setAuthToken(token);
+      console.log('Auth token loaded');
+    })();
+  }, []);
 
   const getProfilePictureUrl = (username: string) => {
     // Use the dedicated endpoint for profile pictures
@@ -84,13 +95,18 @@ const ProfileMain: React.FC = () => {
     
     // Always try to load the profile picture if we have a username
     if (userData?.username) {
-      const source = { 
+      if (!authToken) {
+        console.warn('Auth token not yet loaded, using placeholder');
+        return PROFILE_PLACEHOLDER;
+      }
+      
+      const source = {
         uri: getProfilePictureUrl(userData.username),
         headers: {
-          Authorization: `Bearer ${storage.getToken()}`,
+          Authorization: `Bearer ${authToken}`,
         },
-        cache: 'reload'
-      };
+        cache: 'reload',
+      } as const;
       console.log('Using profile image source:', JSON.stringify(source, null, 2));
       return source;
     }
@@ -176,13 +192,17 @@ const ProfileMain: React.FC = () => {
           source={profileImageSource} 
           style={styles.profilePic}
           onError={(error) => {
-            console.error('Profile image loading error details:', {
-              error: error.nativeEvent,
-              source: profileImageSource,
-            });
+            console.error('Profile image loading error:', error.nativeEvent);
+            // On error, fall back to placeholder image
+            if (error.nativeEvent.error) {
+              console.log('Falling back to placeholder image');
+              // Force a re-render with placeholder
+              setProfileImageLoadError(true);
+            }
           }}
           onLoad={() => {
-            console.log('Profile image loaded successfully with source:', JSON.stringify(profileImageSource, null, 2));
+            console.log('Profile image loaded successfully');
+            setProfileImageLoadError(false);
           }}
           // Force image refresh on each render
           key={Date.now()}

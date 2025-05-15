@@ -127,8 +127,19 @@ export const wasteService = {
 };
 
 export const tipService = {
-  getTips: async (): Promise<any> => {
-    const response = await api.get('/api/tips/');
+  /**
+   * Fetch the most recent tips (backend returns latest N records)
+   */
+  getRecentTips: async (): Promise<any> => {
+    const response = await api.get('/api/tips/get_recent_tips');
+    return response.data;
+  },
+
+  /**
+   * Fetch all tips (could be used for paginated lists later)
+   */
+  getAllTips: async (): Promise<any> => {
+    const response = await api.get('/api/tips/all/');
     return response.data;
   },
 };

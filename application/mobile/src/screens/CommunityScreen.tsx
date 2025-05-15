@@ -21,13 +21,14 @@ const BASE_URL = 'https://134-209-253-215.sslip.io';
 export const CommunityScreen = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [newText, setNewText] = useState('');
   const [imageFile, setImageFile] = useState<any>(null);
   const [creating, setCreating] = useState(false);
 
   const fetchPosts = async () => {
-    setLoading(true);
+    if (!refreshing) setLoading(true);
     try {
       const response = await api.get('/api/posts/all/');
       setPosts(response.data.data); // response.data.data is the array of posts
@@ -35,6 +36,7 @@ export const CommunityScreen = () => {
       Alert.alert('Error', 'Failed to fetch posts');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -86,6 +88,11 @@ export const CommunityScreen = () => {
     }
   };
 
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchPosts();
+  }, []);
+
   useEffect(() => {
     fetchPosts();
   }, []);
@@ -128,7 +135,7 @@ export const CommunityScreen = () => {
       <TouchableOpacity style={styles.createButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.createButtonText}>+ Create</Text>
       </TouchableOpacity>
-      {loading ? (
+      {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
         <FlatList
@@ -136,6 +143,8 @@ export const CommunityScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: spacing.lg }}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
       <Modal
