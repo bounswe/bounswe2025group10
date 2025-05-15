@@ -6,13 +6,14 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { CommunityScreen } from '../screens/CommunityScreen';
 import { ChallengesScreen } from '../screens/ChallengesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { OtherUserProfileScreen } from '../screens/OtherUserProfileScreen';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
 import { Image } from 'react-native';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
 
 const iconMap: Record<string, any> = {
   Home: require('../assets/home.png'),
@@ -44,10 +45,10 @@ const MainTabs = () => (
 );
 
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="Signup" component={SignupScreen} />
-  </Stack.Navigator>
+  <RootStack.Navigator screenOptions={{ headerShown: false }}>
+    <RootStack.Screen name="Login" component={LoginScreen} />
+    <RootStack.Screen name="Signup" component={SignupScreen} />
+  </RootStack.Navigator>
 );
 
 export const AppNavigator = () => {
@@ -55,7 +56,14 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+      {isAuthenticated ? (
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+          <RootStack.Screen name="MainTabs" component={MainTabs} />
+          <RootStack.Screen name="OtherProfile" component={OtherUserProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
+        </RootStack.Navigator>
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }; 
