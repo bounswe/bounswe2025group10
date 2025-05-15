@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
-import { wasteService, tipService } from '../services/api';
+import { wasteService, tipService, weatherService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
 
 const chartConfig = {
@@ -27,50 +27,73 @@ const chartConfig = {
 export const HomeScreen: React.FC = () => {
   const { logout, userData } = useAuth();
 
+  // waste form state
   const [wasteType, setWasteType] = useState('');
   const [wasteQuantity, setWasteQuantity] = useState('');
 
+  // data state
   const [wasteData, setWasteData] = useState<any[]>([]);
   const [loadingWaste, setLoadingWaste] = useState(true);
   const [tips, setTips] = useState<any[]>([]);
   const [loadingTips, setLoadingTips] = useState(true);
 
+  // weather state
+  const [weather, setWeather] = useState<{ temperature: number; weathercode: number } | null>(null);
+
+  // pull‑to‑refresh
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchWasteData(), fetchTips()]);
+    await Promise.all([fetchWasteData(), fetchTips(), fetchWeather()]);
     setRefreshing(false);
   }, []);
 
+  // fetch user waste totals
   const fetchWasteData = async () => {
     setLoadingWaste(true);
     try {
       const response = await wasteService.getUserWastes();
       setWasteData(response.data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching waste data:', err);
     } finally {
       setLoadingWaste(false);
     }
   };
 
+  // fetch latest tips
   const fetchTips = async () => {
     setLoadingTips(true);
     try {
       const response = await tipService.getRecentTips();
       setTips(response.data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching tips:', err);
     } finally {
       setLoadingTips(false);
     }
   };
 
+  // fetch current weather for Istanbul
+  const fetchWeather = async () => {
+    const lat = 41.0082;
+    const lon = 28.9784;
+    try {
+      const data = await weatherService.getCurrentWeather(lat, lon);
+      setWeather(data);
+    } catch (err) {
+      console.warn('Weather fetch error:', err);
+    }
+  };
+
+  // initial load
   useEffect(() => {
     fetchWasteData();
     fetchTips();
+    fetchWeather();
   }, []);
 
+  // add a new waste entry
   const handleAddWaste = async () => {
     if (!wasteType || !wasteQuantity) return;
     try {
@@ -89,10 +112,12 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  // prepare chart data
   const barLabels = wasteData.map((i) => i.waste_type);
   const barData = wasteData.map((i) => i.total_amount);
   const screenWidth = Dimensions.get('window').width - 32;
 
+  // tip item renderer
   const renderTipItem = ({ item }: { item: any }) => (
     <View style={styles.tipItem}>
       <Text style={styles.tipTitle}>{item.title}</Text>
@@ -110,17 +135,24 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* spacer */}
       <View style={{ height: 20 }} />
 
-      {/* --- User Info --- */}
+      {/* User greeting */}
       <View style={styles.userInfoRow}>
         <Text style={styles.username}>
           {userData?.username ? `Hello, ${userData.username}` : 'Loading...'}
         </Text>
       </View>
-      <View style={{ height: 20 }} />
 
-      {/* --- Bar Chart --- */}
+      {/* Weather line */}
+      {weather && (
+        <Text style={{ alignSelf: 'center', marginBottom: spacing.sm, color: colors.gray }}>
+          {`Istanbul Weather: ${weather.temperature}°C`}
+        </Text>
+      )}
+
+      {/* Bar chart */}
       <View style={styles.chartContainer}>
         <Text style={styles.sectionTitle}>Your Progress</Text>
         <View style={styles.chartPlaceholder}>
@@ -141,9 +173,11 @@ export const HomeScreen: React.FC = () => {
           )}
         </View>
       </View>
+
+      {/* 40px gap */}
       <View style={{ height: 40 }} />
 
-      {/* --- Waste Logging Inputs --- */}
+      {/* Waste logging inputs */}
       <View style={styles.logRow}>
         <TextInput
           style={styles.input}
@@ -163,10 +197,12 @@ export const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* --- Tips List --- */}
+      {/* Latest Tips header */}
       <Text style={[styles.sectionTitle, { marginBottom: spacing.sm }]}>
         Latest Tips
       </Text>
+
+      {/* Tips list + logout footer */}
       <FlatList
         style={{ flex: 1 }}
         data={loadingTips ? [] : tips}

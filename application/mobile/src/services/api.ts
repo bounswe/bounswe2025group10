@@ -169,6 +169,10 @@ export const profileService = {
     console.log('Profile picture upload full response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
+  updateBio: async (username: string, bio: string): Promise<any> => {
+    const response = await api.put(`/api/profile/${username}/bio/`, { bio });
+    return response.data;
+  },
 };
 
 // Public profile endpoints (no auth required)
@@ -177,6 +181,18 @@ export const profilePublicService = {
   getUserBio: async (username: string): Promise<any> => {
     const response = await api.get(`/api/profile/${username}/bio/`);
     return response.data; // { username, bio }
+  },
+};
+
+// External weather API (Open-Meteo)
+export const weatherService = {
+  /**
+   * Get current weather for given coordinates using the free Open-Meteo API (no key needed).
+   */
+  getCurrentWeather: async (latitude: number, longitude: number): Promise<any> => {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+    const response = await axios.get(url);
+    return response.data.current_weather; // { temperature, windspeed, weathercode, ... }
   },
 };
 
