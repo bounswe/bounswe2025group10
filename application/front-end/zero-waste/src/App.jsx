@@ -13,6 +13,8 @@ import Profile from "./pages/ProfilePage.jsx"
 import Community from "./pages/Community.jsx";
 import Tips from "./pages/Tips.jsx";
 import Leaderboard from "./Leaderboard/Leaderboard";
+import Achievements from "./pages/Achievements.jsx";
+import PublicProfile from "./pages/PublicProfile.jsx";
 
 export default function App() {
   return (
@@ -22,11 +24,12 @@ export default function App() {
       <Route element={<ProtectedUserRoute />}>
         <Route path="/" element={<MainPage />} />
         <Route path="/tips" element={<Tips />} />
-        {/*<Route path="/achievements" element={<Achievements />} />*/}
+        <Route path="/achievements" element={<Achievements />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile /> }></Route>
+        <Route path="/profile/:username" element={<PublicProfile />} />
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
 
       </Route>

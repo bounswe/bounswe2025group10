@@ -1,4 +1,3 @@
-console.log("MainPage loaded");
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../Login/AuthContent";
 import "./MainPage.css";
