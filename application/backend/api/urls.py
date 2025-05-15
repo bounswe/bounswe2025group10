@@ -10,6 +10,8 @@ from .post import post_views
 from .comment import comment_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
+from .opentdb import views as opentdb_views
+from .achievement import achievement_views
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -131,4 +133,16 @@ urlpatterns = [
     
     # POST: Report inappropriate content (posts, comments, etc.)
     path("api/<str:content_type>/<int:object_id>/report/", ReportCreateView.as_view(), name="report_content"),
+
+    # Achievement Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve the authenticated user's achievements
+    path("api/achievements/", achievement_views.get_user_achievements, name="get_user_achievements"),
+    
+    # GET: Retrieve a specific user's achievements by username
+    path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
+
+    # Opentdb Trivia API Endpoints
+    path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question')
 ]
