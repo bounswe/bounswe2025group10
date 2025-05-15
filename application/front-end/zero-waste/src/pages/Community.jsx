@@ -9,13 +9,15 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 const API_BASE = import.meta.env.VITE_API_URL;
+const DEFAULT_PROFILE_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";
+const DEFAULT_POST_IMAGE = "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
 
 export default function Community() {
   const { token } = useAuth();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [newPost, setNewPost] = useState({ description: "", image: "" });
+  const [newPost, setNewPost] = useState({ description: "", image: null });
   const [sortOption, setSortOption] = useState("recent");
 
   const [reportingId, setReportingId] = useState(null);
@@ -40,11 +42,15 @@ export default function Community() {
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/posts/all/`);
+      const response = await fetch(`${API_BASE}/api/posts/all/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const result = await response.json();
       if (response.ok) {
         setPosts(result.data);
-        result.data.forEach((p) => fetchComments(p.id));
       }
       else showToast(result.message || "Failed to fetch posts.", "error");
     } catch (err) {
@@ -60,20 +66,24 @@ export default function Community() {
       return;
     }
     try {
+      const formData = new FormData();
+      formData.append("text", newPost.description);
+      if (newPost.image instanceof File) {
+        formData.append("image", newPost.image);
+      }
+
       const response = await fetch(`${API_BASE}/api/posts/create/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text: newPost.description, image: newPost.image || null }),
+        headers: { Authorization: `Bearer ${token}` }, // Do NOT set Content-Type
+        body: formData,
       });
+
       const result = await response.json();
       if (response.ok) {
         showToast("Post created successfully!", "success");
-        setNewPost({ description: "", image: "" });
+        setNewPost({ description: "", image: null });
         setIsCreating(false);
-        fetchPosts();
+        await fetchPosts();
       } else {
         showToast(result.message || "Failed to create post.", "error");
       }
@@ -90,8 +100,13 @@ export default function Community() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const result = await response.json();
-      if (response.ok) {
-        await fetchPosts();
+
+      if (response.ok && result.data) {
+        const updatedPost = result.data;
+
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p))
+        );
       } else {
         showToast(result.message || `Failed to ${type} post.`, "error");
       }
@@ -296,9 +311,33 @@ export default function Community() {
                 </button>
 
                 {/* Image (optional) */}
-                {post.image && (
-                  <img src={post.image} alt="Post" className="h-48 w-full object-cover" />
+                {post.image_url && (
+                  <img
+                    src={post.image_url}
+                    alt="Post"
+                    onError={(e) => (e.target.src = DEFAULT_POST_IMAGE)}
+                    className="h-48 w-full object-cover"
+                  />
                 )}
+
+                <div className="flex items-center gap-3 px-4 pt-3">
+                  <img
+                    src={
+                      post.creator_profile_image?.startsWith("http")
+                        ? post.creator_profile_image
+                        : `${API_BASE}${post.creator_profile_image || DEFAULT_PROFILE_IMAGE}`
+                    }
+                    alt={post.creator_username}
+                    onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
+                    className="h-8 w-8 rounded-full object-cover border"
+                  />
+                  <a
+                    href={`/profile/${post.creator_username}`}
+                    className="text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:underline"
+                  >
+                    {post.creator_username}
+                  </a>
+                </div>
 
                 {/* Text content fills the space */}
                 <div className="p-4 flex-1">
@@ -309,13 +348,17 @@ export default function Community() {
                 <div className="flex items-center gap-4 border-t border-zinc-100 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
                   <button
                     onClick={() => handleReaction(post.id, "like")}
-                    className="flex items-center gap-1 transition hover:text-green-600"
+                    className={`flex items-center gap-1 transition ${
+                      post.is_user_liked ? "text-green-600 font-semibold" : "hover:text-green-600"
+                    }`}
                   >
                     👍 {post.like_count}
                   </button>
                   <button
                     onClick={() => handleReaction(post.id, "dislike")}
-                    className="flex items-center gap-1 transition hover:text-red-600"
+                    className={`flex items-center gap-1 transition ${
+                      post.is_user_disliked ? "text-red-600 font-semibold" : "hover:text-red-600"
+                    }`}
                   >
                     👎 {post.dislike_count}
                   </button>
@@ -362,14 +405,15 @@ export default function Community() {
                   >
                     Post Comment
                   </button>
-                  {postComments[post.id]?.length > 0 && (
-                    <button
-                      onClick={() => setViewingCommentsPostId(post.id)}
-                      className="mt-2 text-xs text-blue-600 hover:underline"
-                    >
-                      View all {postComments[post.id].length} comments
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      setViewingCommentsPostId(post.id);
+                      fetchComments(post.id); // Lazy fetch
+                    }}
+                    className="mt-2 text-xs text-blue-600 hover:underline"
+                  >
+                    View all comments
+                  </button>
                 </div>
               </div>
             ))}
@@ -405,12 +449,13 @@ export default function Community() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Image URL (optional)</label>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">
+                    Upload Image (optional)
+                  </label>
                   <input
-                    type="url"
-                    placeholder="Enter image URL"
-                    value={newPost.image}
-                    onChange={(e) => setNewPost({ ...newPost, image: e.target.value })}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
                     className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
                   />
                 </div>
@@ -516,8 +561,25 @@ export default function Community() {
                       )
                       .map((comment) => (
                         <div key={comment.id} className="relative rounded-md border px-3 py-2 dark:border-zinc-700">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{comment.author_username}</span>
+                          <div className="flex items-center justify-between pr-6">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={
+                                  comment.author_profile_image?.startsWith("http")
+                                    ? comment.author_profile_image
+                                    : `${API_BASE}${comment.author_profile_image || DEFAULT_PROFILE_IMAGE}`
+                                }
+                                alt={comment.author_username}
+                                onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
+                                className="h-6 w-6 rounded-full object-cover border"
+                              />
+                              <a
+                                href={`/profile/${comment.author_username}`}
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-800 hover:underline"
+                              >
+                                {comment.author_username}
+                              </a>
+                            </div>
                             <span className="text-xs text-zinc-400">{dayjs(comment.date).fromNow()}</span>
                           </div>
                           <div>{comment.content}</div>
