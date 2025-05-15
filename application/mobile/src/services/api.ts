@@ -169,6 +169,10 @@ export const profileService = {
     console.log('Profile picture upload full response:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
+  updateBio: async (username: string, bio: string): Promise<any> => {
+    const response = await api.put(`/api/profile/${username}/bio/`, { bio });
+    return response.data;
+  },
 };
 
 // Public profile endpoints (no auth required)

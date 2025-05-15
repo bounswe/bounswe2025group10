@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { colors } from '../utils/theme';
-import { wasteService, achievementService, profileService, API_URL } from '../services/api';
+import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import { storage } from '../utils/storage';
@@ -28,6 +28,9 @@ const ProfileMain: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [profileImageLoadError, setProfileImageLoadError] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [bio, setBio] = useState<string>('');
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState<string>('');
 
   // Load auth token once on mount
   useEffect(() => {
@@ -43,6 +46,16 @@ const ProfileMain: React.FC = () => {
     const url = `${API_URL}/api/profile/${username}/picture/`;
     console.log('Generated profile picture URL:', url);
     return url;
+  };
+
+  const fetchBio = async () => {
+    if (!userData?.username) return;
+    try {
+      const data = await profilePublicService.getUserBio(userData.username);
+      setBio(data.bio || '');
+    } catch (err) {
+      console.warn('Error fetching bio');
+    }
   };
 
   const fetchData = async () => {
@@ -78,10 +91,12 @@ const ProfileMain: React.FC = () => {
     setRefreshing(true);
     await fetchUserData(); // Refresh user data including profile picture
     await fetchData();
+    await fetchBio();
   };
 
   useEffect(() => {
     fetchData();
+    fetchBio();
   }, [userData]); // Add userData as dependency to refresh when it changes
 
   // Prepare data for BarChart - handle the specific waste data structure
@@ -216,6 +231,38 @@ const ProfileMain: React.FC = () => {
       <Text style={styles.title}>User Profile</Text>
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}><Text style={styles.infoLabel}>Name:</Text> {userData?.username || 'Loading...'}</Text>
+        {editingBio ? (
+          <View style={{ width:'100%', alignItems:'center', marginBottom:12 }}>
+            <TextInput
+              style={[styles.input, {height:80}]}
+              multiline
+              value={bioInput}
+              onChangeText={setBioInput}
+              placeholder="Enter your bio"
+            />
+            <View style={{flexDirection:'row', marginTop:4}}>
+              <TouchableOpacity style={[styles.saveButton,{marginRight:8}]} onPress={async ()=>{
+                try{
+                  await profileService.updateBio(userData!.username,bioInput);
+                  setBio(bioInput);
+                  setEditingBio(false);
+                }catch(err){Alert.alert('Error','Could not update bio');}
+              }}>
+                <Text style={styles.logoutButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.logoutButton} onPress={()=>{setEditingBio(false);}}>
+                <Text style={styles.logoutButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={{alignItems:'center', marginBottom:12}}>
+            <Text style={styles.bioText}>{bio || 'No bio yet.'}</Text>
+            <TouchableOpacity onPress={()=>{setBioInput(bio); setEditingBio(true);}}>
+              <Text style={{color:'#228B22'}}>Edit Bio</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Progress Chart Section */}
@@ -472,5 +519,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  bioText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
+  },
+  input: {
+    width: '100%',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+  },
+  saveButton: {
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: '#228B22',
   },
 }); 
