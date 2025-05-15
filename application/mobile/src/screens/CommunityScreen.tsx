@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -19,6 +19,16 @@ interface Post {
   is_user_disliked?: boolean;
 }
 
+interface Comment {
+  id: number;
+  content: string;
+  date: string;
+  post: number;
+  author: number;
+  author_username: string;
+  author_profile_image?: string;
+}
+
 const BASE_URL = 'https://134-209-253-215.sslip.io';
 
 export const CommunityScreen = () => {
@@ -29,6 +39,12 @@ export const CommunityScreen = () => {
   const [newText, setNewText] = useState('');
   const [imageFile, setImageFile] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+  const [comments, setComments] = useState<{ [postId: number]: Comment[] }>({});
+  const [commentsModalVisible, setCommentsModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
 
   const navigation = useNavigation<any>();
 
@@ -118,6 +134,45 @@ export const CommunityScreen = () => {
     }
   };
 
+  const fetchComments = async (postId: number) => {
+    setLoadingComments(true);
+    try {
+      const response = await api.get(`/api/posts/${postId}/comments/`);
+      if (response.data && response.data.data) {
+        setComments(prev => ({ ...prev, [postId]: response.data.data }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch comments');
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const openCommentsModal = (postId: number) => {
+    setSelectedPostId(postId);
+    setCommentsModalVisible(true);
+    fetchComments(postId);
+  };
+
+  const closeCommentsModal = () => {
+    setCommentsModalVisible(false);
+    setSelectedPostId(null);
+  };
+
+  const postComment = async () => {
+    if (!selectedPostId || !newComment.trim()) return;
+    setPostingComment(true);
+    try {
+      await api.post(`/api/posts/${selectedPostId}/comments/create/`, { content: newComment });
+      setNewComment('');
+      fetchComments(selectedPostId); // Refresh comments
+    } catch (error) {
+      Alert.alert('Error', 'Failed to post comment');
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
   const renderItem = ({ item }: { item: Post }) => {
     const imageUrl = item.image_url || (
       item.image
@@ -161,6 +216,12 @@ export const CommunityScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.commentsButton}
+          onPress={() => openCommentsModal(item.id)}
+        >
+          <Text style={styles.commentsButtonText}>View Comments</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -213,6 +274,59 @@ export const CommunityScreen = () => {
                 <Text style={styles.modalButtonText}>{creating ? 'Sharing...' : 'Share'}</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={commentsModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={closeCommentsModal}
+      >
+        <View style={{ flex: 1, backgroundColor: 'white' }}>
+          <Text style={{ ...typography.h2, color: colors.primary, margin: spacing.md }}>Comments</Text>
+          <TouchableOpacity onPress={closeCommentsModal} style={{ alignSelf: 'flex-end', margin: spacing.md }}>
+            <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Close</Text>
+          </TouchableOpacity>
+          {loadingComments ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <ScrollView style={{ flex: 1, padding: spacing.md }}>
+              {selectedPostId && comments[selectedPostId] && comments[selectedPostId].length > 0 ? (
+                comments[selectedPostId].map(comment => (
+                  <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      {comment.author_profile_image ? (
+                        <Image source={{ uri: comment.author_profile_image }} style={{ width: 24, height: 24, borderRadius: 12, marginRight: 8, backgroundColor: colors.lightGray }} />
+                      ) : (
+                        <View style={{ width: 24, height: 24, borderRadius: 12, marginRight: 8, backgroundColor: colors.lightGray }} />
+                      )}
+                      <Text style={{ fontWeight: 'bold', color: colors.primary }}>{comment.author_username}</Text>
+                      <Text style={{ marginLeft: 8, color: colors.gray, fontSize: 12 }}>{new Date(comment.date).toLocaleString()}</Text>
+                    </View>
+                    <Text style={{ color: colors.black }}>{comment.content}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={{ color: colors.gray, textAlign: 'center', marginTop: spacing.lg }}>No comments yet.</Text>
+              )}
+            </ScrollView>
+          )}
+          <View style={styles.newCommentContainer}>
+            <TextInput
+              style={styles.newCommentInput}
+              placeholder="Write a comment..."
+              value={newComment}
+              onChangeText={setNewComment}
+              editable={!postingComment}
+            />
+            <TouchableOpacity
+              style={[styles.postCommentButton, (!newComment.trim() || postingComment) && { backgroundColor: colors.gray }]}
+              onPress={postComment}
+              disabled={!newComment.trim() || postingComment}
+            >
+              <Text style={styles.postCommentButtonText}>{postingComment ? 'Posting...' : 'Post'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -343,5 +457,45 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  commentsButton: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-end',
+    backgroundColor: colors.lightGray,
+    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  commentsButtonText: {
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  newCommentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.lightGray,
+    backgroundColor: colors.white,
+  },
+  newCommentInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    marginRight: spacing.sm,
+    backgroundColor: colors.lightGray,
+  },
+  postCommentButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  postCommentButtonText: {
+    color: colors.white,
+    fontWeight: 'bold',
   },
 }); 
