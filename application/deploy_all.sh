@@ -5,8 +5,8 @@ set -euo pipefail
 # 1) Saves DB via backend script
 # 2) Builds and runs the frontend
 
-BACKEND_SCRIPT="/Users/erenakcin/Desktop/codes/new451/bounswe2025group10/application/backend/deploy_save_db.sh"
-FRONTEND_SCRIPT="/Users/erenakcin/Desktop/codes/new451/bounswe2025group10/application/front-end/zero-waste/deploy_frontend.sh"
+BACKEND_SCRIPT="/root/bounswe2025group10/application/backend/deploy_save_db.sh"
+FRONTEND_SCRIPT="/root/bounswe2025group10/application/front-end/zero-waste/deploy_frontend.sh"
 
 echo "[deploy] Starting deployment..."
 
