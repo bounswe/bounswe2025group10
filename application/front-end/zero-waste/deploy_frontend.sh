@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Config (change if needed)
-PROJECT_ROOT="/Users/erenakcin/Desktop/codes/new451/bounswe2025group10"
+PROJECT_ROOT="/root/bounswe2025group10"
 FRONTEND_DIR="$PROJECT_ROOT/application/front-end/zero-waste"
 IMAGE_NAME="zero-waste-frontend"
 CONTAINER_NAME="zero-waste-frontend"
