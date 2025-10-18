@@ -12,6 +12,7 @@ from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
+from .activities.views.activity_view import ActivityEventViewSet
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -144,5 +145,8 @@ urlpatterns = [
     path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
 
     # Opentdb Trivia API Endpoints
-    path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question')
+    path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question'),
+
+    #get activity events
+    path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
 ]
