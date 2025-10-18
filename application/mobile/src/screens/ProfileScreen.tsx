@@ -4,7 +4,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { colors } from '../utils/theme';
 import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { launchImageLibrary, Asset } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../utils/storage';
 
 const chartConfig = {
@@ -133,62 +133,58 @@ const ProfileMain: React.FC = () => {
   console.log('Profile image source:', profileImageSource);
 
   // Handle selecting and uploading a new profile picture
-  const handleChoosePhoto = () => {
+  const handleChoosePhoto = async () => {
     if (uploading) return;
-    launchImageLibrary({ 
-      mediaType: 'photo', 
-      quality: 0.8,
-      includeBase64: false,
-    }, async (response) => {
-      if (response.didCancel) {
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled) {
         console.log('User cancelled image picker');
         return;
       }
-      if (response.errorCode) {
-        console.error('ImagePicker Error:', response.errorCode, response.errorMessage);
-        Alert.alert('Image Picker Error', response.errorMessage || 'Unknown error');
-        return;
-      }
-      
-      const asset: Asset | undefined = response.assets && response.assets[0];
+
+      const asset = result.assets[0];
       if (!asset?.uri) {
         console.error('No image URI available');
         Alert.alert('Error', 'Could not obtain image URI');
         return;
       }
 
-      try {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append('image', {
-          uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
-          type: asset.type || 'image/jpeg',
-          name: asset.fileName || `profile_${Date.now()}.jpg`,
-        } as any);
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('image', {
+        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
+        type: 'image/jpeg',
+        name: `profile_${Date.now()}.jpg`,
+      } as any);
 
-        const uploadResponse = await profileService.uploadProfilePicture(formData);
-        console.log('Upload response:', JSON.stringify(uploadResponse, null, 2));
-        
-        // Force reload user data
-        await fetchUserData();
-        console.log('User data refreshed after upload');
-        
-        // Force a re-render by updating state
-        setUploading(false); // This will trigger a re-render
-        
-        await fetchData();
-        Alert.alert('Success', 'Profile picture updated');
-      } catch (error: any) {
-        console.error('Upload error details:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-        });
-        Alert.alert('Error', 'Could not upload profile picture');
-      } finally {
-        setUploading(false);
-      }
-    });
+      const uploadResponse = await profileService.uploadProfilePicture(formData);
+      console.log('Upload response:', JSON.stringify(uploadResponse, null, 2));
+
+      // Force reload user data
+      await fetchUserData();
+      console.log('User data refreshed after upload');
+
+      // Force a re-render by updating state
+      setUploading(false); // This will trigger a re-render
+
+      await fetchData();
+      Alert.alert('Success', 'Profile picture updated');
+    } catch (error: any) {
+      console.error('Upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      Alert.alert('Error', 'Could not upload profile picture');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
