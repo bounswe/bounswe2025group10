@@ -4,7 +4,7 @@ services:
   db:
     image: mysql:8.0
     ports:
-      - "3306:3306"
+      - "3036:3036"
     environment:
       - MYSQL_DATABASE=main_db
       - MYSQL_USER=admin
@@ -24,6 +24,8 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database...' &&
+        python manage.py migrate --noinput &&
+        echo 'Database is ready!' &&
         python manage.py runserver 0.0.0.0:8000"
     develop:
       watch:
