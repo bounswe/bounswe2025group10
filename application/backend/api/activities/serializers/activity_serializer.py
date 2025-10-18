@@ -1,7 +1,7 @@
 # activities/serializers.py
 from copy import deepcopy
 from rest_framework import serializers
-from ..models.activity_model import ActivityEvent, Visibility
+from ...models import ActivityEvent, Visibility
 
 
 def _deep_merge(a: dict | None, b: dict | None) -> dict:

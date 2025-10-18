@@ -1,7 +1,7 @@
 # activities/views.py
 from rest_framework import viewsets, permissions, filters, decorators, response, status
 from django_filters.rest_framework import DjangoFilterBackend
-from ..models.activity_model import ActivityEvent
+from ...models import ActivityEvent
 from ..serializers.activity_serializer import ActivityEventSerializer
 
 class ActivityEventViewSet(viewsets.ModelViewSet):
@@ -14,7 +14,7 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
     """
     queryset = ActivityEvent.objects.all().order_by("-published_at")
     serializer_class = ActivityEventSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAdminUser]
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = {
@@ -43,3 +43,21 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(ser.data)
         ser = self.get_serializer(qs, many=True)
         return response.Response(ser.data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        total = queryset.count()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "type": "Collection",
+            "totalItems": total,
+            "items": serializer.data,
+        }
+        return response.Response(data)

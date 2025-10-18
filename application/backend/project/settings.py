@@ -41,11 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
+    "api.apps.ApiConfig", 
     'challenges',
     'django.contrib.auth',
     'django.contrib.admin',
-    # third-party apps
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',

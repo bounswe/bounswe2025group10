@@ -1,6 +1,7 @@
 # Import necessary views and path
 from django.urls import path
 # Import JWT token views from rest_framework_simplejwt
+from .activities.views.user_activity_view import UserActivityEventsView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
 from .report_system.report_views import ReportCreateView
@@ -149,4 +150,5 @@ urlpatterns = [
 
     #get activity events
     path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
+    path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
 ]
