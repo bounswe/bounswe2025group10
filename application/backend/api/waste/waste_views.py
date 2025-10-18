@@ -233,7 +233,7 @@ def get_top_users(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-CLIMATIQ_API_KEY = '3QMDVSHM8X6FQ5B97P8PBKPXHW'
+CLIMATIQ_API_KEY = 'MZ8FSSS4814K70VQY8JSBP726W'
 
 # Map waste types to Climatiq activity IDs
 WASTE_TYPE_TO_ACTIVITY_ID = {
