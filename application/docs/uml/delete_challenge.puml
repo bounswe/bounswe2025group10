@@ -1,0 +1,54 @@
+@startuml
+title User Deletes a Challenge
+
+actor User
+participant "Web UI" as UI
+participant ChallengeManagementSystem as CMS
+participant Challenge as C
+participant DatabaseHandler as DB
+
+User -> UI : Click "Delete Challenge" button
+activate UI
+
+UI -> CMS : deleteChallenge(challengeId)
+activate CMS
+
+alt challenge exists
+    CMS -> C : getChallengeById(challengeId)
+    activate C
+    C --> CMS : challengeObj
+    deactivate C
+
+    CMS -> C : delete()
+    activate C
+
+    C -> DB : sendQuery("DELETE FROM Challenges\nWHERE id = challengeId")
+    activate DB
+
+    alt deletion succeeds
+        DB --> C : success
+        deactivate DB
+
+        C --> CMS : deletionSuccess
+        deactivate C
+
+        CMS --> UI : showSuccess("Challenge deleted")
+    else deletion fails
+        DB --> C : error
+        deactivate DB
+
+        C --> CMS : deletionError("DB error")
+        deactivate C
+
+        CMS --> UI : showError("Could not delete challenge")
+    end
+
+else challenge not found
+    CMS --> UI : showError("Challenge not found")
+end
+
+deactivate CMS
+UI --> User : Display result
+deactivate UI
+
+@enduml 
