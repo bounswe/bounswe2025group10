@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
-import { launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 
 interface Post {
@@ -62,19 +62,21 @@ export const CommunityScreen = () => {
   };
 
   const pickImage = async () => {
-    launchImageLibrary(
-      { mediaType: 'photo', quality: 0.8 },
-      (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) {
-          Alert.alert('Error', response.errorMessage || 'Image picker error');
-          return;
-        }
-        if (response.assets && response.assets.length > 0) {
-          setImageFile(response.assets[0]);
-        }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled) return;
+
+      if (result.assets && result.assets.length > 0) {
+        setImageFile(result.assets[0]);
       }
-    );
+    } catch (error) {
+      Alert.alert('Error', 'Image picker error');
+    }
   };
 
   const createPost = async () => {
@@ -89,8 +91,8 @@ export const CommunityScreen = () => {
       if (imageFile) {
         formData.append('image', {
           uri: imageFile.uri,
-          name: imageFile.fileName || 'photo.jpg',
-          type: imageFile.type || 'image/jpeg',
+          name: 'photo.jpg',
+          type: 'image/jpeg',
         });
       }
       await api.post('/api/posts/create/', formData, {
