@@ -25,7 +25,7 @@ export const OtherUserProfileScreen: React.FC = () => {
 
   const getProfilePictureUrl = (u: string) => `${API_URL}/api/profile/${u}/picture/`;
 
-  const fetchBio = async () => {
+  const fetchBio = useCallback(async () => {
     try {
       const data = await profilePublicService.getUserBio(username);
       setBio(data.bio || '');
@@ -35,9 +35,9 @@ export const OtherUserProfileScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [username]);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
       const response = await api.get('/api/posts/all/');
@@ -49,17 +49,17 @@ export const OtherUserProfileScreen: React.FC = () => {
     } finally {
       setLoadingPosts(false);
     }
-  };
+  }, [username]);
 
   useEffect(() => {
     fetchBio();
     fetchPosts();
-  }, [username]);
+  }, [fetchBio, fetchPosts]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     Promise.all([fetchBio(), fetchPosts()]);
-  }, [username]);
+  }, [fetchBio, fetchPosts]);
 
   if (loading) {
     return (
@@ -170,4 +170,4 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 12,
   },
-}); 
+});

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
-import { Platform } from 'react-native';
+import { API_URL } from '@env';
 
 // Types
 export interface LoginCredentials {
@@ -27,8 +27,8 @@ export interface AuthResponse {
 }
 
 // API Configuration
-// Use the deployed backend for all requests
-export const API_URL = 'https://134-209-253-215.sslip.io';
+// API_URL is imported from environment variables (.env file)
+// To change the backend URL, update the .env file
 
 const api = axios.create({
   baseURL: API_URL,
@@ -73,7 +73,7 @@ api.interceptors.response.use(
       console.error('Response error:', {
         status: error.response.status,
         data: error.response.data,
-        url: error.config?.url
+        url: error.config?.url,
       });
     } else if (error.request) {
       // The request was made but no response was received
@@ -196,4 +196,4 @@ export const weatherService = {
   },
 };
 
-export default api; 
+export default api;

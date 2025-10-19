@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
@@ -48,8 +48,8 @@ export const CommunityScreen = () => {
 
   const navigation = useNavigation<any>();
 
-  const fetchPosts = async () => {
-    if (!refreshing) setLoading(true);
+  const fetchPosts = useCallback(async () => {
+    if (!refreshing) {setLoading(true);}
     try {
       const response = await api.get('/api/posts/all/');
       setPosts(response.data.data); // response.data.data is the array of posts
@@ -59,7 +59,7 @@ export const CommunityScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]);
 
   const pickImage = async () => {
     try {
@@ -69,7 +69,7 @@ export const CommunityScreen = () => {
         quality: 0.8,
       });
 
-      if (result.canceled) return;
+      if (result.canceled) {return;}
 
       if (result.assets && result.assets.length > 0) {
         setImageFile(result.assets[0]);
@@ -87,7 +87,7 @@ export const CommunityScreen = () => {
     setCreating(true);
     try {
       const formData = new FormData();
-      if (newText) formData.append('text', newText);
+      if (newText) {formData.append('text', newText);}
       if (imageFile) {
         formData.append('image', {
           uri: imageFile.uri,
@@ -114,19 +114,19 @@ export const CommunityScreen = () => {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   const handleReaction = async (postId: number, type: 'like' | 'dislike') => {
     try {
       const response = await api.post(`/api/posts/${postId}/${type}/`);
       if (response.data && response.data.data) {
         const updatedPost = response.data.data;
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
             post.id === postId ? { ...post, ...updatedPost } : post
           )
         );
@@ -162,7 +162,7 @@ export const CommunityScreen = () => {
   };
 
   const postComment = async () => {
-    if (!selectedPostId || !newComment.trim()) return;
+    if (!selectedPostId || !newComment.trim()) {return;}
     setPostingComment(true);
     try {
       await api.post(`/api/posts/${selectedPostId}/comments/create/`, { content: newComment });
@@ -201,16 +201,16 @@ export const CommunityScreen = () => {
           <Image source={{ uri: imageUrl }} style={styles.postImage} />
         ) : null}
         <View style={styles.statsRow}>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]} 
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]}
             onPress={() => handleReaction(item.id, 'like')}
           >
             <Text style={[styles.reactionText, item.is_user_liked && styles.activeReactionText]}>
               👍 {item.like_count}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]} 
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]}
             onPress={() => handleReaction(item.id, 'dislike')}
           >
             <Text style={[styles.reactionText, item.is_user_disliked && styles.activeReactionText]}>
@@ -500,4 +500,4 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: 'bold',
   },
-}); 
+});

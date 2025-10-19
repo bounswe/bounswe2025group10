@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { colors } from '../utils/theme';
@@ -25,8 +25,8 @@ const ProfileMain: React.FC = () => {
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [profileImageLoadError, setProfileImageLoadError] = useState(false);
+  const [_refreshing, setRefreshing] = useState(false);
+  const [_profileImageLoadError, setProfileImageLoadError] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [bio, setBio] = useState<string>('');
   const [editingBio, setEditingBio] = useState(false);
@@ -48,25 +48,25 @@ const ProfileMain: React.FC = () => {
     return url;
   };
 
-  const fetchBio = async () => {
-    if (!userData?.username) return;
+  const fetchBio = useCallback(async () => {
+    if (!userData?.username) {return;}
     try {
       const data = await profilePublicService.getUserBio(userData.username);
       setBio(data.bio || '');
     } catch (err) {
       console.warn('Error fetching bio');
     }
-  };
+  }, [userData?.username]);
 
   const fetchData = async () => {
     try {
       const [wasteResponse, challengesResponse] = await Promise.all([
         wasteService.getUserWastes(),
-        achievementService.getUserAchievements()
+        achievementService.getUserAchievements(),
       ]);
-      
+
       // Handle waste data
-      if (wasteResponse.message === "User wastes retrieved successfully") {
+      if (wasteResponse.message === 'User wastes retrieved successfully') {
         setWasteData(wasteResponse.data);
       }
 
@@ -76,7 +76,7 @@ const ProfileMain: React.FC = () => {
           id: challenge.challenge,
           title: 'Challenge Achievement',
           description: `Joined challenge on ${new Date(challenge.joined_date).toLocaleDateString()}`,
-          date_earned: challenge.joined_date
+          date_earned: challenge.joined_date,
         })));
       }
     } catch (error) {
@@ -87,17 +87,10 @@ const ProfileMain: React.FC = () => {
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchUserData(); // Refresh user data including profile picture
-    await fetchData();
-    await fetchBio();
-  };
-
   useEffect(() => {
     fetchData();
     fetchBio();
-  }, [userData]); // Add userData as dependency to refresh when it changes
+  }, [fetchBio]); // fetchBio already depends on userData?.username
 
   // Prepare data for BarChart - handle the specific waste data structure
   const screenWidth = Dimensions.get('window').width - 40;
@@ -107,14 +100,14 @@ const ProfileMain: React.FC = () => {
 
   const profileImageSource = (() => {
     console.log('Current userData state:', JSON.stringify(userData, null, 2));
-    
+
     // Always try to load the profile picture if we have a username
     if (userData?.username) {
       if (!authToken) {
         console.warn('Auth token not yet loaded, using placeholder');
         return PROFILE_PLACEHOLDER;
       }
-      
+
       const source = {
         uri: getProfilePictureUrl(userData.username),
         headers: {
@@ -125,16 +118,16 @@ const ProfileMain: React.FC = () => {
       console.log('Using profile image source:', JSON.stringify(source, null, 2));
       return source;
     }
-    
+
     console.log('No username available, using placeholder');
     return PROFILE_PLACEHOLDER;
   })();
-  
+
   console.log('Profile image source:', profileImageSource);
 
   // Handle selecting and uploading a new profile picture
   const handleChoosePhoto = async () => {
-    if (uploading) return;
+    if (uploading) {return;}
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -199,8 +192,8 @@ const ProfileMain: React.FC = () => {
     <View style={styles.mainContainer}>
       {/* Profile Picture */}
       <TouchableOpacity style={styles.profilePicWrapper} onPress={handleChoosePhoto} disabled={uploading}>
-        <Image 
-          source={profileImageSource} 
+        <Image
+          source={profileImageSource}
           style={styles.profilePic}
           onError={(error) => {
             console.error('Profile image loading error:', error.nativeEvent);
@@ -533,4 +526,4 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#228B22',
   },
-}); 
+});

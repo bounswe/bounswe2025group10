@@ -95,7 +95,7 @@ export const HomeScreen: React.FC = () => {
 
   // add a new waste entry
   const handleAddWaste = async () => {
-    if (!wasteType || !wasteQuantity) return;
+    if (!wasteType || !wasteQuantity) {return;}
     try {
       await wasteService.addUserWaste(
         wasteType.toUpperCase(),
@@ -106,8 +106,8 @@ export const HomeScreen: React.FC = () => {
       fetchWasteData();
     } catch (error: any) {
       let message = 'Unknown error';
-      if (error.response?.data) message = JSON.stringify(error.response.data);
-      else if (error.message) message = error.message;
+      if (error.response?.data) {message = JSON.stringify(error.response.data);}
+      else if (error.message) {message = error.message;}
       Alert.alert('Error', `Failed to add waste entry.\n${message}`);
     }
   };

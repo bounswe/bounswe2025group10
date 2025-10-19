@@ -26,7 +26,7 @@ const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
-      tabBarIcon: ({ color, size, focused }) => (
+      tabBarIcon: ({ size }) => (
         <Image
           source={iconMap[route.name]}
           style={{ width: size, height: size }}
@@ -66,4 +66,4 @@ export const AppNavigator = () => {
       )}
     </NavigationContainer>
   );
-}; 
+};

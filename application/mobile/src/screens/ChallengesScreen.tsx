@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import { useAuth } from '../context/AuthContext';
 import api, { challengeService } from '../services/api';
 
 interface Challenge {
@@ -18,7 +17,6 @@ interface Challenge {
 }
 
 export const ChallengesScreen = () => {
-  const { userData } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,8 +25,8 @@ export const ChallengesScreen = () => {
   const [targetAmount, setTargetAmount] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
-  const fetchChallenges = async () => {
-    if (!refreshing) setLoading(true);
+  const fetchChallenges = useCallback(async () => {
+    if (!refreshing) {setLoading(true);}
     try {
       const response = await api.get('/api/challenges/');
       setChallenges(response.data); // If backend wraps in {data: [...]}, use response.data.data
@@ -38,12 +36,12 @@ export const ChallengesScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await fetchChallenges();
-  }, []);
+  }, [fetchChallenges]);
 
   const createChallenge = async () => {
     if (!title || !description || !targetAmount) {
@@ -83,7 +81,7 @@ export const ChallengesScreen = () => {
 
   useEffect(() => {
     fetchChallenges();
-  }, []);
+  }, [fetchChallenges]);
 
   return (
     <View style={styles.container}>
