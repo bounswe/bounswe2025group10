@@ -43,9 +43,13 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await storage.getToken();
+      console.log('Retrieved token from storage:', token ? 'Token exists' : 'No token');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Added Authorization header:', `Bearer ${token.substring(0, 20)}...`);
+      } else {
+        console.log('No token available, request will be sent without Authorization header');
       }
       console.log('Making request to:', config.url, 'with headers:', config.headers);
       return config;
@@ -117,11 +121,15 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<any> => {
-    const response = await api.get('/api/waste/get');
+    console.log('Fetching user wastes...');
+    const response = await api.get('/api/waste/get/');
+    console.log('Waste data response:', response.status, response.data);
     return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
+    console.log('Adding user waste:', { waste_type, amount });
     const response = await api.post('/api/waste/', { waste_type, amount });
+    console.log('Add waste response:', response.status, response.data);
     return response.data;
   },
 };
