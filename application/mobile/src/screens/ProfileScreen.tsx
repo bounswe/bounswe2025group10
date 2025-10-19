@@ -6,6 +6,8 @@ import { wasteService, achievementService, profileService, API_URL, profilePubli
 import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../utils/storage';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useAppNavigation } from '../hooks/useNavigation';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -21,6 +23,7 @@ const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 // Main profile component that handles the user data display
 const ProfileMain: React.FC = () => {
   const { userData, fetchUserData, logout } = useAuth();
+  const { navigateToScreen } = useAppNavigation();
   const [wasteData, setWasteData] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -324,17 +327,15 @@ export const ProfileScreen: React.FC = () => {
   }, [fetchUserData]);
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={{ alignItems: 'center', paddingVertical: 24 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <ScreenWrapper
+      title="Profile"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      testID="profile-screen"
+      accessibilityLabel="User profile screen with personal information and statistics"
     >
-      <View style={styles.container}>
-        <ProfileMain />
-      </View>
-    </ScrollView>
+      <ProfileMain />
+    </ScreenWrapper>
   );
 };
 
