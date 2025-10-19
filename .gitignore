@@ -78,6 +78,7 @@ yarn.lock
 pnpm-lock.yaml
 
 # ===============================
+
 /application/front-end/node_modules/
 /application/front-end/dist/
 /application/front-end/build/
