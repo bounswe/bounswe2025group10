@@ -6,6 +6,7 @@ export const colors = {
   primaryLight: '#81C784',
   white: '#FFFFFF',
   black: '#000000',
+  darkGray: '#424242',
   gray: '#757575',
   lightGray: '#EEEEEE',
   error: '#D32F2F',

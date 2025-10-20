@@ -54,3 +54,4 @@ export const SCREEN_NAMES = {
 
 // Navigation types for type safety
 export type ScreenName = typeof SCREEN_NAMES[keyof typeof SCREEN_NAMES];
+
