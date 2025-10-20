@@ -13,9 +13,16 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
+    },
     "android": {
       "package": "com.zerowastechallenge.mobile",
       "usesCleartextTraffic": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.zerowastechallenge.mobile"
     }
   }
 }
