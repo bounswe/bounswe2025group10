@@ -9,11 +9,15 @@ import {
   Alert,
   Dimensions,
   RefreshControl,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { wasteService, tipService, weatherService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useAppNavigation } from '../hooks/useNavigation';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -24,12 +28,22 @@ const chartConfig = {
   decimalPlaces: 0,
 };
 
+const WASTE_TYPES = [
+  { key: 'PLASTIC', label: 'Plastic' },
+  { key: 'PAPER', label: 'Paper' },
+  { key: 'GLASS', label: 'Glass' },
+  { key: 'METAL', label: 'Metal' },
+];
+
 export const HomeScreen: React.FC = () => {
   const { logout, userData } = useAuth();
+  const { navigateToScreen } = useAppNavigation();
 
   // waste form state
   const [wasteType, setWasteType] = useState('');
   const [wasteQuantity, setWasteQuantity] = useState('');
+  const [showWasteTypeModal, setShowWasteTypeModal] = useState(false);
+  const [selectedWasteType, setSelectedWasteType] = useState<{ key: string; label: string } | null>(null);
 
   // data state
   const [wasteData, setWasteData] = useState<any[]>([]);
@@ -95,21 +109,40 @@ export const HomeScreen: React.FC = () => {
 
   // add a new waste entry
   const handleAddWaste = async () => {
-    if (!wasteType || !wasteQuantity) {return;}
+    if (!selectedWasteType || !wasteQuantity) {
+      Alert.alert('Error', 'Please select a waste type and enter quantity');
+      return;
+    }
+    
+    const quantity = parseFloat(wasteQuantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      Alert.alert('Error', 'Please enter a valid quantity (positive number)');
+      return;
+    }
+
     try {
       await wasteService.addUserWaste(
-        wasteType.toUpperCase(),
-        parseFloat(wasteQuantity)
+        selectedWasteType.key,
+        quantity
       );
       setWasteType('');
       setWasteQuantity('');
+      setSelectedWasteType(null);
       fetchWasteData();
+      Alert.alert('Success', 'Waste entry added successfully!');
     } catch (error: any) {
       let message = 'Unknown error';
       if (error.response?.data) {message = JSON.stringify(error.response.data);}
       else if (error.message) {message = error.message;}
       Alert.alert('Error', `Failed to add waste entry.\n${message}`);
     }
+  };
+
+  // handle waste type selection
+  const handleWasteTypeSelect = (wasteType: { key: string; label: string }) => {
+    setSelectedWasteType(wasteType);
+    setWasteType(wasteType.label);
+    setShowWasteTypeModal(false);
   };
 
   // prepare chart data
@@ -134,10 +167,14 @@ export const HomeScreen: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      {/* spacer */}
-      <View style={{ height: 20 }} />
-
+    <ScreenWrapper
+      title="Home"
+      scrollable={false}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      testID="home-screen"
+      accessibilityLabel="Home screen with waste tracking and tips"
+    >
       {/* User greeting */}
       <View style={styles.userInfoRow}>
         <Text style={styles.username}>
@@ -179,23 +216,63 @@ export const HomeScreen: React.FC = () => {
 
       {/* Waste logging inputs */}
       <View style={styles.logRow}>
+        <TouchableOpacity 
+          style={[styles.input, styles.wasteTypeButton]} 
+          onPress={() => setShowWasteTypeModal(true)}
+        >
+          <Text style={[styles.wasteTypeButtonText, !selectedWasteType && styles.placeholderText]}>
+            {selectedWasteType ? selectedWasteType.label : 'Select waste type'}
+          </Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
+        </TouchableOpacity>
+        
         <TextInput
           style={styles.input}
-          placeholder="Waste type"
-          value={wasteType}
-          onChangeText={setWasteType}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Waste quantity"
+          placeholder="Quantity (kg)"
           value={wasteQuantity}
           onChangeText={setWasteQuantity}
           keyboardType="numeric"
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddWaste}>
+        
+        <TouchableOpacity 
+          style={[styles.addButton, (!selectedWasteType || !wasteQuantity) && styles.addButtonDisabled]} 
+          onPress={handleAddWaste}
+          disabled={!selectedWasteType || !wasteQuantity}
+        >
           <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Waste Type Selection Modal */}
+      <Modal
+        visible={showWasteTypeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowWasteTypeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Waste Type</Text>
+            <ScrollView style={styles.wasteTypeList}>
+              {WASTE_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type.key}
+                  style={styles.wasteTypeItem}
+                  onPress={() => handleWasteTypeSelect(type)}
+                >
+                  <Text style={styles.wasteTypeItemText}>{type.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowWasteTypeModal(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Latest Tips header */}
       <Text style={[styles.sectionTitle, { marginBottom: spacing.sm }]}>
@@ -214,20 +291,15 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
         }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: spacing.lg }}
       />
-    </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    ...commonStyles.container,
-    padding: spacing.md,
     backgroundColor: '#eafbe6',
     flex: 1,
   },
@@ -271,9 +343,75 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: 8,
   },
+  addButtonDisabled: {
+    backgroundColor: colors.lightGray,
+    opacity: 0.6,
+  },
   addButtonText: {
     color: colors.white,
     fontWeight: 'bold',
+  },
+  wasteTypeButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  wasteTypeButtonText: {
+    flex: 1,
+    color: colors.black,
+  },
+  placeholderText: {
+    color: colors.gray,
+  },
+  dropdownArrow: {
+    color: colors.gray,
+    fontSize: 12,
+    marginLeft: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: spacing.lg,
+    width: '80%',
+    maxHeight: '60%',
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  wasteTypeList: {
+    maxHeight: 200,
+  },
+  wasteTypeItem: {
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+  },
+  wasteTypeItemText: {
+    ...typography.body,
+    color: colors.black,
+  },
+  modalCloseButton: {
+    backgroundColor: colors.lightGray,
+    padding: spacing.sm,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  modalCloseButtonText: {
+    ...typography.button,
+    color: colors.black,
   },
   tipItem: {
     backgroundColor: colors.white,

@@ -45,16 +45,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Starting login process...');
       const response = await authService.login({ email, password });
+      console.log('Login response received:', response);
+      
       if (response.token) {
+        console.log('Saving tokens to storage...');
         await storage.setToken(response.token.access);
         await storage.setRefreshToken(response.token.refresh);
+        
+        // Verify token was saved
+        const savedToken = await storage.getToken();
+        console.log('Token saved successfully:', savedToken ? 'Yes' : 'No');
+        
         setIsAuthenticated(true);
         await fetchUserData();
         return response;
+      } else {
+        console.log('No token in response:', response);
+        return null;
       }
-      return null;
     } catch (error) {
+      console.error('Login error in AuthContext:', error);
       return null;
     }
   };

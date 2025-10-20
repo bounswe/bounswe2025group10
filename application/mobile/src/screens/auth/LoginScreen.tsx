@@ -60,13 +60,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         return;
       }
 
+      console.log('Token received:', response.token.access ? 'Yes' : 'No');
+
       // Then try to login with the context
       const loginResult = await login(email, password);
       console.log('Context login result:', loginResult);
 
       if (!loginResult) {
         Alert.alert('Error', 'Failed to complete login process');
+        return;
       }
+
+      console.log('Login completed successfully!');
     } catch (error: any) {
       console.error('Login error:', error);
 
