@@ -139,6 +139,9 @@ class Waste(models.Model):
         ('PAPER', 'Paper'),
         ('GLASS', 'Glass'),
         ('METAL', 'Metal'),
+        ('ELECTRONIC', 'Electronic'),
+        ('OIL&FATS', 'Oil & Fats'),
+        ('ORGANIC', 'Organic'),
     ]
     type = models.CharField(
         max_length=50,
