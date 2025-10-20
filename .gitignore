@@ -66,7 +66,59 @@ ios/Flutter/Flutter.podspec
 
 # React Native
 .expo/
+.expo-shared/
 web-build/
+
+# React Native - Android
+android/app/build/
+android/.gradle/
+android/build/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/.cxx/
+android/app/debug/
+android/app/release/
+
+# React Native - iOS
+ios/build/
+ios/Pods/
+ios/DerivedData/
+ios/*.xcworkspace/
+ios/*.xcuserstate
+ios/.xcode.env.local
+ios/Podfile.lock
+
+# Metro bundler
+.metro-health-check*
+metro.config.js.bak
+
+# React Native - Cache and temp files
+*.jsbundle
+*.hbc
+.jest/
+.react-native/
+.watchmanconfig.bak
+
+# Fastlane
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+ios/fastlane/test_output
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/screenshots
+android/fastlane/test_output
+
+# Bundle artifacts
+*.jsbundle.map
+*.bundle
+
+# CocoaPods
+ios/Pods/
+Pods/
+Podfile.lock
 
 # Misc
 *.swp
