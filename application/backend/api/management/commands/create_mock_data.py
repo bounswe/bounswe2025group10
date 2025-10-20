@@ -43,9 +43,13 @@ WASTE_WEIGHTS = {
 }
 
 # At least 20 curated recycling tips (title, body)
+# ---------------------------------------------------------------------------
+# 🟢 RECYCLING TIPS (expanded ~50)
+# ---------------------------------------------------------------------------
+
 RECYCLING_TIPS = [
     ("Squash plastic bottles", "Remove caps and squash bottles to save bin space and improve collection efficiency."),
-    ("Keep paper clean", "Greasy/wet paper cannot be recycled. Keep it dry and clean for higher recovery rates."),
+    ("Keep paper clean", "Greasy or wet paper cannot be recycled. Keep it dry and clean for higher recovery rates."),
     ("Rinse glass quickly", "A quick rinse removes food residue; labels are fine—don’t overthink them."),
     ("Crush cans", "Flatten aluminum cans to increase bin capacity and reduce transport emissions."),
     ("Check plastic codes", "PET and HDPE are widely accepted; multi-layer plastics often aren’t."),
@@ -58,7 +62,7 @@ RECYCLING_TIPS = [
     ("Avoid black plastic", "Many facilities can’t detect black plastic—choose clear or colored alternatives."),
     ("Compost organics", "Keep food scraps out of recycling streams; compost where possible."),
     ("Return deposit bottles", "Use deposit return schemes where available for higher recycling rates."),
-    ("Keep caps separate", "Check your local rules; many now accept bottles with caps on, after squashing."),
+    ("Keep caps separate", "Check local rules; some accept bottles with caps on, after squashing."),
     ("No bagged recycling", "Loose items are best; bagged recyclables can be rejected by facilities."),
     ("Leave staples", "Small staples are okay on paper; remove big clips if easy."),
     ("Don’t smash glass", "Intact glass is safer and easier to sort than shards."),
@@ -66,9 +70,40 @@ RECYCLING_TIPS = [
     ("Donate before tossing", "Working items and containers might find a second life."),
     ("Refill stations", "Look for bulk/refill shops for detergents and pantry goods."),
     ("Bring back hangers", "Many stores accept hangers; reduce plastic hanger waste."),
+    ("Dry recyclables", "Moisture damages paper fibers—dry before binning."),
+    ("Combine errands", "Plan drop-offs with errands to save fuel."),
+    ("Eco labels", "Choose certified recyclable or compostable packaging."),
+    ("Glass color separation", "Separate clear and colored glass when required."),
+    ("Store recyclables neatly", "Stack neatly to prevent contamination from spills."),
+    ("Avoid mixed materials", "Items with foil + plastic layers are rarely recyclable."),
+    ("Support local recyclers", "Use nearby drop-offs to reduce carbon impact."),
+    ("Repair instead of replace", "Fix appliances before discarding."),
+    ("Teach your kids", "Explain why recycling matters early—it builds lifelong habits."),
+    ("Community bins", "Share bins with neighbors if you lack space."),
+    ("Audit your trash", "Review what you throw away; identify avoidable waste."),
+    ("Choose refill packs", "Buy in bulk to reduce single-use bottles."),
+    ("Reuse mailers", "Padded envelopes and boxes can often be reused."),
+    ("Bring your mug", "Coffee shops often give discounts for reusables."),
+    ("Label your bins", "Clear labels help others sort correctly."),
+    ("Host a recycling drive", "Collect from your building or office together."),
+    ("Avoid glitter", "Most glitter is microplastic—choose biodegradable."),
+    ("Skip receipts", "Opt for digital receipts when possible."),
+    ("Buy second-hand", "Thrift stores extend the life of goods."),
+    ("Reuse packaging", "Boxes and jars can serve storage purposes."),
+    ("Recycle scrap metal", "Don’t toss it—metal is infinitely recyclable."),
+    ("Carpool or bike", "Reduces indirect waste from car maintenance."),
+    ("Say no to straws", "Unless needed for accessibility, skip disposables."),
+    ("Compost coffee grounds", "They enrich soil and reduce methane emissions."),
+    ("Separate lids", "Plastic lids often have different melting points."),
+    ("Upcycle creatively", "Turn waste into art, planters, or organizers."),
+    ("Follow the 5Rs", "Refuse, Reduce, Reuse, Recycle, Rot."),
+    ("Celebrate small wins", "Consistency beats perfection in sustainability."),
 ]
 
-# At least 20 achievements (title, description)
+# ---------------------------------------------------------------------------
+# 🟡 ACHIEVEMENTS (expanded ~50)
+# ---------------------------------------------------------------------------
+
 ACHIEVEMENT_TEMPLATES = [
     ("Paper Saver I", "Recycled 10 paper/cardboard items in total."),
     ("Plastic Hunter I", "Recycled 10 plastic items in total."),
@@ -92,9 +127,39 @@ ACHIEVEMENT_TEMPLATES = [
     ("Goal Getter", "Reached a personal recycling goal."),
     ("Challenge Finisher", "Finished 3 challenges."),
     ("Community Favorite", "Received lots of likes on your helpful posts."),
+    ("Compost Captain", "Composted 5 batches successfully."),
+    ("Donation Hero", "Donated 10 reusable items."),
+    ("Refill Regular", "Used refill stations 10 times."),
+    ("Plastic-Free Month", "Logged zero plastic waste for 30 days."),
+    ("Green Thumb", "Started composting or gardening at home."),
+    ("Event Organizer", "Hosted a local recycling meetup or cleanup."),
+    ("E-Waste Eliminator", "Disposed of electronics properly 5 times."),
+    ("Streak Keeper", "Maintained 30 days of recycling activity."),
+    ("Carbon Neutral", "Balanced emissions via waste reduction."),
+    ("Data Contributor", "Uploaded 100 waste logs to the system."),
+    ("Challenge Master", "Completed 5 unique challenges."),
+    ("Friend Influencer", "Brought a new user to the platform."),
+    ("Sorting Pro", "Recycled 500 total items."),
+    ("Eco Mentor", "Gave 5 verified recycling tips."),
+    ("Waste Watcher", "Reduced daily waste output by 50%."),
+    ("City Hero", "Represented your city in recycling leaderboard."),
+    ("Eco Streak 100", "Maintained 100 days of continuous activity."),
+    ("Bin Organizer", "Customized your home sorting setup."),
+    ("Team Recycler", "Collaborated in a group challenge."),
+    ("Plastic-Free Champion", "Avoided single-use plastic for 60 days."),
+    ("Sustainability Advocate", "Shared 10 informative posts."),
+    ("Upcycle Artist", "Created 3 upcycled items."),
+    ("Waste-Free Weekend", "Produced zero landfill waste for 2 days."),
+    ("Glass Master III", "Recycled 200 glass items."),
+    ("Paper Champion III", "Recycled 200 paper items."),
+    ("CO₂ Saver III", "Saved 10 kg of CO₂."),
+    ("Ultimate Recycler", "Unlocked every base achievement."),
 ]
 
-# At least 20 challenges (title, description, target items, bias type or None)
+# ---------------------------------------------------------------------------
+# 🔵 CHALLENGES (expanded ~50)
+# ---------------------------------------------------------------------------
+
 CHALLENGE_TEMPLATES = [
     ("Plastic-Free Week", "Minimize single-use plastics for one week.", 20, "plastic"),
     ("Paper Purge", "Collect and recycle all paper/cardboard at home.", 30, "paper"),
@@ -119,9 +184,37 @@ CHALLENGE_TEMPLATES = [
     ("Metal Monday", "Collect and recycle metal every Monday.", 20, "metal"),
     ("Glass Gala", "Focus on glass this week and log 15 items.", 15, "glass"),
     ("Spring Clean", "Declutter and donate before recycling.", 30, None),
+    ("Compost Challenge", "Start and maintain composting for 7 days.", 7, None),
+    ("Zero-Landfill Week", "Send no waste to landfill for a week.", 10, None),
+    ("Refill Revolution", "Buy household items from refill shops 3 times.", 3, None),
+    ("Upcycle Project", "Create one new object using waste materials.", 5, None),
+    ("Green Office", "Encourage your workplace to recycle together.", 15, None),
+    ("Sustainable Sunday", "Dedicate Sundays to recycling/repurposing.", 10, None),
+    ("30-Day Eco Streak", "Log daily recycling activity for a month.", 30, None),
+    ("Plastic Detox", "Avoid plastic packaging entirely for 5 days.", 15, "plastic"),
+    ("Recycle Marathon", "Log 200 total recyclable items.", 200, None),
+    ("Clean Desk", "Organize office waste and recycle correctly.", 10, "paper"),
+    ("Neighborhood Hero", "Organize a local cleanup or drive.", 15, None),
+    ("Food Waste Fighter", "Track and compost all food waste for a week.", 10, None),
+    ("Zero Cup Week", "Use reusable mugs for 7 days.", 10, "plastic"),
+    ("Glass Goals", "Recycle 50 glass bottles this month.", 50, "glass"),
+    ("Aluminum Ace", "Collect 100 aluminum cans in 30 days.", 100, "metal"),
+    ("Eco Educator", "Teach 3 people how to recycle properly.", 3, None),
+    ("Plastic-Free Picnic", "Host an outdoor meal with no disposable plastics.", 10, "plastic"),
+    ("Community Drive", "Collect recyclables from neighbors.", 20, None),
+    ("Bin Beautifier", "Clean and label all home bins properly.", 10, None),
+    ("Digital Declutter", "Delete 500 old emails and go paperless.", 10, "paper"),
+    ("Reusable Rebel", "Use only reusable containers for 14 days.", 14, "plastic"),
+    ("Sorting Sprint", "Sort 100 waste items correctly.", 100, None),
+    ("Eco Team", "Join a team challenge for sustainability.", 15, None),
+    ("Green Pledge", "Commit publicly to reduce waste by 30%.", 10, None),
+    ("Backyard Recycler", "Set up an outdoor sorting station.", 15, None),
 ]
 
-# At least 20 comment strings
+# ---------------------------------------------------------------------------
+# 🔴 COMMENT BANK (expanded ~50)
+# ---------------------------------------------------------------------------
+
 COMMENT_BANK = [
     "Great work—keep sorting! 💚",
     "Rinsing glass really helps MRFs. Nice!",
@@ -147,9 +240,37 @@ COMMENT_BANK = [
     "This is inspiring—thanks for sharing.",
     "Your tips are super actionable.",
     "Consistency beats perfection—nice streak!",
+    "Love how detailed your sorting is!",
+    "Brilliant idea for labeling bins!",
+    "That refill station looks great—thanks for sharing.",
+    "Really cool to see office recycling in action.",
+    "Helping neighbors recycle is inspiring.",
+    "A clean stream means cleaner planet—awesome.",
+    "Good point about black plastic detection issues.",
+    "I need to try composting too!",
+    "Sustainable choices every day—respect.",
+    "That donation tip just saved me time.",
+    "The setup looks so aesthetic and functional!",
+    "Rinsing jars before bed—efficient habit!",
+    "Your CO₂ savings are impressive!",
+    "More posts like this, please!",
+    "Nice streak, keep it up!",
+    "I love the consistency—true eco hero!",
+    "Really liked how you explained sorting.",
+    "I’ll start flattening boxes like that.",
+    "This inspired me to create a community bin.",
+    "You’re raising the bar for all of us!",
+    "So many helpful ideas—thank you!",
+    "Reminds me to clean my bins today!",
+    "The reusable bottle commitment is great!",
+    "Love seeing sustainability become a habit.",
+    "That’s how change starts—awesome job.",
 ]
 
-# Seed captions for domain posts (≥20 short captions/ideas)
+# ---------------------------------------------------------------------------
+# 🟣 SEED CAPTIONS (expanded ~50)
+# ---------------------------------------------------------------------------
+
 SEED_CAPTIONS = [
     "Separated 6 plastic bottles and 3 cardboard boxes today. #plastic #paper #recycle",
     "Glass collection day in my block—4 jars and 2 bottles dropped off. #glass",
@@ -173,7 +294,36 @@ SEED_CAPTIONS = [
     "Refilled my water bottle the whole week—no PET used.",
     "Team effort at work: mini sorting station launched.",
     "Asked the local MRF about labels—learned a lot!",
+    "Reused jars for overnight oats before recycling.",
+    "Carried a travel mug all week—zero disposable cups.",
+    "Planted herbs in cleaned tin cans—upcycled planters!",
+    "Used cardboard scraps for crafts before recycling.",
+    "Recycling app streak: 10 days and counting!",
+    "Sorted all plastics by code—so satisfying.",
+    "Weekend cleanup with neighbors—collected 200 bottles!",
+    "Cut down packaging waste by buying bulk snacks.",
+    "Donated old clothes instead of throwing them away.",
+    "Tried compostable trash liners—worked great.",
+    "Flattened all cereal boxes—tiny step, big space gain.",
+    "Recycling game night—family sorting challenge!",
+    "Installed small bins in every room—no excuses now.",
+    "Shared eco-tips in our apartment chat group.",
+    "Refused free promotional flyers—paper saved!",
+    "Used reusable produce bags—felt great skipping plastic.",
+    "Glass bin filled perfectly sorted—looks beautiful.",
+    "Finally learned what NOT to recycle—feels good!",
+    "Made a DIY compost bin from a bucket.",
+    "Tracked weekly recycling totals—beat last week!",
+    "Reused bubble wrap for shipping gifts.",
+    "Joined an online zero-waste challenge—feeling motivated.",
+    "Cleaned labels off bottles—ready for drop-off.",
+    "Helped parents set up color-coded bins at home.",
+    "Cut single-use lunch packaging—went fully reusable.",
+    "Organized my drawers using upcycled boxes.",
+    "Repaired my old coffee maker instead of replacing it.",
+    "Participated in community cleanup—feels amazing!",
 ]
+
 
 MIN_POOL = 20  # Safety threshold for curated lists
 
@@ -218,13 +368,38 @@ def generate_mock_data(
             password=make_password(fake.password()),
             isAdmin=random.random() < 0.05,  # ~5% admin
             profile_image=fake.image_url(),
-            bio=random.choice([
-                "Learning to sort smarter.",
-                "Cutting single-use plastic step by step.",
-                "Glass and paper recycling fan.",
-                "Trying a zero-waste routine.",
-                "Helping neighbors recycle right.",
-            ]),
+            bio = random.choice([
+    "Learning to live more sustainably and reduce daily waste.",
+    "Passionate about recycling and sharing eco-friendly habits.",
+    "On a journey to cut single-use plastics from my routine.",
+    "Helping my neighborhood recycle smarter and cleaner.",
+    "Keeping track of how small actions reduce big waste.",
+    "Exploring ways to reuse and repurpose household materials.",
+    "Trying to make zero-waste living more achievable for everyone.",
+    "Experimenting with composting and local recycling programs.",
+    "Encouraging friends to log and improve their recycling habits.",
+    "Turning sustainability into a daily practice, not a chore.",
+    "Lover of clean bins, organized spaces, and circular systems.",
+    "Reducing my footprint one sorted item at a time.",
+    "Finding balance between convenience and sustainability.",
+    "Believer in community-driven environmental change.",
+    "Working on becoming plastic-free by the end of the year.",
+    "Tracking my recycling progress to stay motivated.",
+    "Exploring minimalism through sustainable living.",
+    "Sharing tips for cleaner, smarter waste management.",
+    "Using small daily habits to make a big environmental impact.",
+    "Recycling advocate and lifelong learner about sustainability.",
+    "Spreading awareness about waste reduction in my community.",
+    "Loving the process of sorting, recycling, and reusing creatively.",
+    "Challenging myself to go one week without disposable plastics.",
+    "Documenting my journey to a more circular lifestyle.",
+    "Finding joy in turning waste into resources.",
+    "Participating in local cleanup events and recycling drives.",
+    "Building a low-waste home, one step at a time.",
+    "Experimenting with DIY reuse projects and upcycling.",
+    "Supporting local recycling initiatives and education.",
+    "Making sustainable living fun and approachable.",
+]),
             total_points=0,
             total_co2=0.0,
         )
@@ -259,15 +434,56 @@ def generate_mock_data(
     # Random community posts themed around waste types
     waste_keys = [k for k, _ in getattr(Waste, "WASTE_TYPES", [("plastic","Plastic"),("paper","Paper"),("glass","Glass"),("metal","Metal")])]
     post_phrases = [
-        "Sorted {n} pieces of {t} today.",
-        "Set a dedicated bin for {t}—sorting is faster now.",
-        "Rinsed and recycled a batch of {t}.",
-        "Tracked pickup times; no more overflowing {t}.",
-        "Swapped single-use with reusables; less {t} this week.",
-        "Kept the stream clean—no food residue on {t}.",
-        "Flattened bulky {t} packaging to save space.",
-        "Helped a friend start sorting {t} at home.",
-    ]
+    "Sorted {n} pieces of {t} today.",
+    "Rinsed and recycled {n} items of {t}.",
+    "Set a dedicated bin for {t}—sorting is faster now.",
+    "Tracked pickup times; no more overflowing {t}.",
+    "Swapped single-use with reusables; less {t} this week.",
+    "Kept the stream clean—no food residue on {t}.",
+    "Flattened bulky {t} packaging to save space.",
+    "Helped a friend start sorting {t} at home.",
+    "Logged {n} {t} items after a quick cleanup.",
+    "Separated {t} at the source; kitchen corner sorted.",
+    "Checked local rules; learned how to prepare {t} properly.",
+    "Avoided contamination—removed food from {t} before binning.",
+    "Batch-rinsed {t}; done in under five minutes.",
+    "Returned deposit bottles; fewer {t} in my recycling now.",
+    "Skipped black plastic—chose alternatives; reduced {t}.",
+    "Flattened boxes; {t} bin has room again.",
+    "Labelled bins so roommates sort {t} correctly.",
+    "Used a tote and bottle; prevented new {t} waste.",
+    "Scheduled a reminder for {t} collection day.",
+    "Donated containers before recycling; less {t} overall.",
+    "Moved to e-bills; less {t} in the mailbox.",
+    "Refill station run—cut down on {t} packaging.",
+    "Community cleanup: logged {n} pieces of {t} from the park.",
+    "Workplace station launched; colleagues now sort {t}.",
+    "Added a caddy under the sink to separate {t}.",
+    "Kept caps on per guidance; squashed {t} for pickup.",
+    "Quick tip shared about prepping {t}; got great feedback.",
+    "Organized a hallway bin to collect {t} for the floor.",
+    "Family effort: everyone logged {n} {t} items today.",
+    "Weekend purge: sorted old {t} into the right stream.",
+    "Tracked weekly totals; {t} entries trending up.",
+    "Switched a product to a reusable—no more {t} from it.",
+    "Asked the MRF about labels; updated how I sort {t}.",
+    "Removed non-recyclables mixed with {t}; clean bin now.",
+    "Set a goal to log {n} {t} this month.",
+    "Challenge progress: focused on {t} and hit today’s target.",
+    "Reused jars first, recycled {t} only when done.",
+    "Shared storage hacks to reduce {t} clutter at home.",
+    "Neighbor swap: traded containers to cut {t} waste.",
+    "E-waste drop-off cleared; kept it out of {t} stream.",
+    "Taught a friend how to prep {t}; they logged their first {n} items.",
+    "Bulk order with neighbors; less {t} packaging per person.",
+    "Rainy-day sort: cleaned and dried {t} before binning.",
+    "Mini-audit: fixed a few mistakes in how I sorted {t}.",
+    "Event cleanup crew: collected {n} {t} after the meetup.",
+    "Compost started; recycling stream has cleaner {t} now.",
+    "Carried a kit (tote & tumbler) and avoided new {t} all week.",
+    "Moved {t} bin closer to the action—sorting feels effortless.",
+    "End-of-month tally: {n} {t} items diverted from trash.",
+]
     # Generate up to num_posts random posts
     for _ in range(num_posts):
         t = random.choice(waste_keys)
