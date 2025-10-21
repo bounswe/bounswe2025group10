@@ -6,10 +6,12 @@ interface UserData {
   email: string;
   username: string;
   profile_picture?: string; // URL or relative path to profile picture
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isAdmin: boolean;
   userData: UserData | null;
   login: (email: string, password: string) => Promise<AuthResponse | null>;
   logout: () => Promise<void>;
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
 
   const fetchUserData = async () => {
@@ -35,7 +38,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       const token = await storage.getToken();
+      const adminStatus = await storage.getAdminStatus();
       setIsAuthenticated(!!token);
+      setIsAdmin(adminStatus);
       if (token) {
         await fetchUserData();
       }
@@ -53,6 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Saving tokens to storage...');
         await storage.setToken(response.token.access);
         await storage.setRefreshToken(response.token.refresh);
+        
+        // Save admin status
+        if (response.isAdmin !== undefined) {
+          await storage.setAdminStatus(response.isAdmin);
+          setIsAdmin(response.isAdmin);
+        }
         
         // Verify token was saved
         const savedToken = await storage.getToken();
@@ -74,11 +85,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     await storage.clearTokens();
     setIsAuthenticated(false);
+    setIsAdmin(false);
     setUserData(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userData, login, logout, fetchUserData }}>
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, userData, login, logout, fetchUserData }}>
       {children}
     </AuthContext.Provider>
   );

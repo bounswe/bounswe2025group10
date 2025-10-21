@@ -10,6 +10,11 @@ import { OtherUserProfileScreen } from '../screens/OtherUserProfileScreen';
 import { TipsScreen } from '../screens/TipsScreen';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
+import { AdminPanel } from '../screens/AdminPanel';
+import { PostModeration } from '../screens/PostModeration';
+import { UserModeration } from '../screens/UserModeration';
+import { ChallengeModeration } from '../screens/ChallengeModeration';
+import { CommentModeration } from '../screens/CommentModeration';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
@@ -122,7 +127,7 @@ const AuthStack = () => (
 );
 
 export const AppNavigator = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   return (
     <NavigationContainer>
@@ -134,51 +139,100 @@ export const AppNavigator = () => {
             animation: 'slide_from_right',
           }}
         >
-          <RootStack.Screen 
-            name={SCREEN_NAMES.MAIN_TABS} 
-            component={MainTabs}
-            options={{
-              title: 'Zero Waste App',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen 
-            name={SCREEN_NAMES.OTHER_PROFILE} 
-            component={OtherUserProfileScreen} 
-            options={{ 
-              headerShown: true, 
-              title: 'Profile',
-              gestureEnabled: true,
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen 
-            name={SCREEN_NAMES.TIPS} 
-            component={TipsScreen} 
-            options={{ 
-              headerShown: false,
-              gestureEnabled: true,
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen 
-            name={SCREEN_NAMES.ACHIEVEMENTS} 
-            component={AchievementsScreen} 
-            options={{ 
-              headerShown: false,
-              gestureEnabled: true,
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen 
-            name={SCREEN_NAMES.LEADERBOARD} 
-            component={LeaderboardScreen} 
-            options={{ 
-              headerShown: false,
-              gestureEnabled: true,
-              animation: 'slide_from_right',
-            }}
-          />
+          {isAdmin ? (
+            // Admin user sees admin panel and moderation screens
+            <>
+              <RootStack.Screen 
+                name="AdminPanel" 
+                component={AdminPanel}
+                options={{
+                  title: 'Admin Panel',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="PostModeration" 
+                component={PostModeration}
+                options={{
+                  title: 'Post Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="UserModeration" 
+                component={UserModeration}
+                options={{
+                  title: 'User Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="ChallengeModeration" 
+                component={ChallengeModeration}
+                options={{
+                  title: 'Challenge Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="CommentModeration" 
+                component={CommentModeration}
+                options={{
+                  title: 'Comment Moderation',
+                  headerShown: false,
+                }}
+              />
+            </>
+          ) : (
+            // Regular user sees normal app
+            <>
+              <RootStack.Screen 
+                name={SCREEN_NAMES.MAIN_TABS} 
+                component={MainTabs}
+                options={{
+                  title: 'Zero Waste App',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.OTHER_PROFILE} 
+                component={OtherUserProfileScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Profile',
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.TIPS} 
+                component={TipsScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.ACHIEVEMENTS} 
+                component={AchievementsScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.LEADERBOARD} 
+                component={LeaderboardScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+            </>
+          )}
         </RootStack.Navigator>
       ) : (
         <AuthStack />

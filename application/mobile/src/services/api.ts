@@ -20,6 +20,8 @@ export interface AuthResponse {
     access: string;
     refresh: string;
   };
+  isAdmin?: boolean;
+  username?: string;
   data?: {
     email: string;
     username: string;
@@ -232,6 +234,22 @@ export const profilePublicService = {
   getUserBio: async (username: string): Promise<any> => {
     const response = await api.get(`/api/profile/${username}/bio/`);
     return response.data; // { username, bio }
+  },
+};
+
+// Admin service for moderation functionality
+export const adminService = {
+  getReports: async (contentType?: string): Promise<any> => {
+    const url = contentType ? `/api/admin/reports/?content_type=${contentType}` : '/api/admin/reports/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  moderateContent: async (reportId: number, action: string): Promise<any> => {
+    const response = await api.post(`/api/admin/reports/${reportId}/moderate/`, {
+      action: action
+    });
+    return response.data;
   },
 };
 
