@@ -48,6 +48,11 @@ export const SCREEN_NAMES = {
   CHALLENGES: 'Challenges',
   PROFILE: 'Profile',
   
+  // Additional screens (to be created)
+  TIPS: 'Tips',
+  ACHIEVEMENTS: 'Achievements',
+  LEADERBOARD: 'Leaderboard',
+  
   // Modal/Detail screens
   OTHER_PROFILE: 'OtherProfile',
 } as const;

@@ -7,6 +7,9 @@ import { CommunityScreen } from '../screens/CommunityScreen';
 import { ChallengesScreen } from '../screens/ChallengesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { OtherUserProfileScreen } from '../screens/OtherUserProfileScreen';
+import { TipsScreen } from '../screens/TipsScreen';
+import { AchievementsScreen } from '../screens/AchievementsScreen';
+import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
@@ -147,7 +150,34 @@ export const AppNavigator = () => {
               title: 'Profile',
               gestureEnabled: true,
               animation: 'slide_from_right',
-            }} 
+            }}
+          />
+          <RootStack.Screen 
+            name={SCREEN_NAMES.TIPS} 
+            component={TipsScreen} 
+            options={{ 
+              headerShown: false,
+              gestureEnabled: true,
+              animation: 'slide_from_right',
+            }}
+          />
+          <RootStack.Screen 
+            name={SCREEN_NAMES.ACHIEVEMENTS} 
+            component={AchievementsScreen} 
+            options={{ 
+              headerShown: false,
+              gestureEnabled: true,
+              animation: 'slide_from_right',
+            }}
+          />
+          <RootStack.Screen 
+            name={SCREEN_NAMES.LEADERBOARD} 
+            component={LeaderboardScreen} 
+            options={{ 
+              headerShown: false,
+              gestureEnabled: true,
+              animation: 'slide_from_right',
+            }}
           />
         </RootStack.Navigator>
       ) : (
