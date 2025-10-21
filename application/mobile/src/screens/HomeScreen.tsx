@@ -17,7 +17,8 @@ import { useAuth } from '../context/AuthContext';
 import { wasteService, tipService, weatherService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
 import { ScreenWrapper } from '../components/ScreenWrapper';
-import { useAppNavigation } from '../hooks/useNavigation';
+import { useAppNavigation, SCREEN_NAMES } from '../hooks/useNavigation';
+import { MoreDropdown } from '../components/MoreDropdown';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -61,6 +62,24 @@ export const HomeScreen: React.FC = () => {
     await Promise.all([fetchWasteData(), fetchTips(), fetchWeather()]);
     setRefreshing(false);
   }, []);
+
+  // More dropdown handlers
+  const handleTipsPress = () => {
+    try {
+      navigateToScreen(SCREEN_NAMES.TIPS);
+    } catch (error) {
+      // Fallback if screen doesn't exist yet
+      Alert.alert('Coming Soon', 'Tips page will be available soon!');
+    }
+  };
+
+  const handleAchievementsPress = () => {
+    navigateToScreen(SCREEN_NAMES.ACHIEVEMENTS);
+  };
+
+  const handleLeaderboardPress = () => {
+    navigateToScreen(SCREEN_NAMES.LEADERBOARD);
+  };
 
   // fetch user waste totals
   const fetchWasteData = async () => {
@@ -172,6 +191,14 @@ export const HomeScreen: React.FC = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      rightComponent={
+        <MoreDropdown
+          onTipsPress={handleTipsPress}
+          onAchievementsPress={handleAchievementsPress}
+          onLeaderboardPress={handleLeaderboardPress}
+          testID="home-more-dropdown"
+        />
+      }
       testID="home-screen"
       accessibilityLabel="Home screen with waste tracking and tips"
     >

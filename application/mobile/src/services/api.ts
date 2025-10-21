@@ -150,11 +150,54 @@ export const tipService = {
     const response = await api.get('/api/tips/all/');
     return response.data;
   },
+
+  /**
+   * Create a new tip
+   */
+  createTip: async (title: string, description: string): Promise<any> => {
+    const response = await api.post('/api/tips/create/', { title, description });
+    return response.data;
+  },
+
+  /**
+   * Like a tip
+   */
+  likeTip: async (tipId: number): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/like/`, {});
+    return response.data;
+  },
+
+  /**
+   * Dislike a tip
+   */
+  dislikeTip: async (tipId: number): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/dislike/`, {});
+    return response.data;
+  },
+
+  /**
+   * Report a tip
+   */
+  reportTip: async (tipId: number, reason: string, description: string): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/report/`, { reason, description });
+    return response.data;
+  },
 };
 
 export const achievementService = {
   getUserAchievements: async (): Promise<any> => {
-    const response = await api.get('/api/challenges/enrolled/');
+    const response = await api.get('/api/achievements/');
+    return response.data;
+  },
+};
+
+export const leaderboardService = {
+  getLeaderboard: async (): Promise<any> => {
+    const response = await api.get('/api/waste/leaderboard/');
+    return response.data;
+  },
+  getUserBio: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/bio/`);
     return response.data;
   },
 };
