@@ -5,7 +5,6 @@ from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
-
 from api.models import (
     Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste,
     UserWastes, Report, TipLikes, PostLikes
@@ -41,6 +40,74 @@ WASTE_WEIGHTS = {
     "glass":   0.15,
     "metal":   0.15,
 }
+
+def themed_avatar_url(user_id: int | None = None) -> str:
+    """Generate a unique avatar URL using a placeholder service"""
+    # Use UI Avatars with initials to avoid gender mismatch
+    # Generate neutral, colorful avatars based on user_id
+    seed = user_id or random.randint(1, 1000)
+    colors = ['4CAF50', '2196F3', 'FF9800', '9C27B0', 'F44336', '00BCD4', 'FFEB3B', '8BC34A', 'E91E63', '3F51B5']
+    bg_color = colors[seed % len(colors)]
+    # Use recycling emoji or letter as placeholder
+    emoji = '♻️'
+    return f"https://ui-avatars.com/api/?name={emoji}&size=256&background={bg_color}&color=fff&bold=true"
+
+def themed_post_image_url(waste_type: str | None = None) -> str:
+    """Generate recycling/waste-themed post images"""
+    # Curated list of actual recycling/waste reduction images from Unsplash
+    # These are real photos that will properly display
+    recycling_images = {
+        "plastic": [
+            "https://images.unsplash.com/photo-1528323273322-d81458248d40?w=900&h=600&fit=crop",  # plastic bottles
+            "https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=900&h=600&fit=crop",  # recycling plastic
+            "https://images.unsplash.com/photo-1621451537084-482c73073a0f?w=900&h=600&fit=crop",  # plastic waste
+        ],
+        "paper": [
+            "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=900&h=600&fit=crop",  # cardboard boxes
+            "https://images.unsplash.com/photo-1572981779307-e4f7a7c3f700?w=900&h=600&fit=crop",  # paper recycling
+            "https://images.unsplash.com/photo-1604519972441-11e6ab863a0c?w=900&h=600&fit=crop",  # stacked paper
+        ],
+        "glass": [
+            "https://images.unsplash.com/photo-1572635196243-4dd75fbdbd7f?w=900&h=600&fit=crop",  # glass bottles
+            "https://images.unsplash.com/photo-1610876762825-bc2c5129b484?w=900&h=600&fit=crop",  # glass recycling
+            "https://images.unsplash.com/photo-1582802728194-c21e9d6e4569?w=900&h=600&fit=crop",  # glass jars
+        ],
+        "metal": [
+            "https://images.unsplash.com/photo-1581888227599-779811939961?w=900&h=600&fit=crop",  # aluminum cans
+            "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=900&h=600&fit=crop",  # metal recycling
+            "https://images.unsplash.com/photo-1569204803726-61b4dc8a8cfc?w=900&h=600&fit=crop",  # crushed cans
+        ],
+        "electronic": [
+            "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=900&h=600&fit=crop",  # e-waste
+            "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=900&h=600&fit=crop",  # old electronics
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&h=600&fit=crop",  # circuit boards
+        ],
+        "oil&fat": [
+            "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=900&h=600&fit=crop",  # cooking oil
+            "https://images.unsplash.com/photo-1556910110-a5a63dfd393c?w=900&h=600&fit=crop",  # oil containers
+            "https://images.unsplash.com/photo-1536304447766-da5a0e6d494f?w=900&h=600&fit=crop",  # kitchen waste
+        ],
+        "organic": [
+            "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=900&h=600&fit=crop",  # composting
+            "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=900&h=600&fit=crop",  # compost bin
+            "https://images.unsplash.com/photo-1585459871909-d3ce4c864f3e?w=900&h=600&fit=crop",  # organic waste
+        ],
+    }
+    
+    # General recycling images as fallback
+    general_recycling = [
+        "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=900&h=600&fit=crop",  # recycling bins
+        "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=900&h=600&fit=crop",  # recycling symbol
+        "https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=900&h=600&fit=crop",  # waste sorting
+        "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=900&h=600&fit=crop",  # recycling center
+    ]
+    
+    # Get images for specific waste type or use general
+    images = recycling_images.get(waste_type, general_recycling)
+    
+    # Return a random image from the appropriate category
+    return random.choice(images)
+
 
 # At least 20 curated recycling tips (title, body)
 # ---------------------------------------------------------------------------
@@ -161,55 +228,24 @@ ACHIEVEMENT_TEMPLATES = [
 # ---------------------------------------------------------------------------
 
 CHALLENGE_TEMPLATES = [
-    ("Plastic-Free Week", "Minimize single-use plastics for one week.", 20, "plastic"),
-    ("Paper Purge", "Collect and recycle all paper/cardboard at home.", 30, "paper"),
-    ("Glass Jar Revival", "Rinse and recycle or repurpose your glass jars.", 15, "glass"),
-    ("Metal Rush", "Flatten and recycle all beverage cans this month.", 25, "metal"),
-    ("100 Mixed Items", "Recycle any mix of materials to reach 100 items.", 100, None),
-    ("Zero E-Waste", "Take old batteries/e-waste to a proper drop-off.", 5, None),
-    ("Invite a Friend", "Invite someone to join and recycle with you.", 10, None),
-    ("Cardboard King", "Flatten and recycle moving/parcel boxes.", 40, "paper"),
-    ("Bottle Buster", "Recycle 30 plastic bottles responsibly.", 30, "plastic"),
-    ("Canteen Club", "Use a refillable bottle; cut bottle waste.", 20, "plastic"),
-    ("Jar Genius", "Recycle or reuse 20 glass containers.", 20, "glass"),
-    ("Can-Do Spirit", "Recycle 30 metal cans.", 30, "metal"),
-    ("No-Bag Pledge", "Avoid bagging recyclables for 2 weeks.", 25, None),
-    ("Deposit Dynamo", "Return 15 deposit bottles.", 15, "plastic"),
-    ("Clean Stream Week", "Zero contamination in your bin for a week.", 25, None),
-    ("Office Recycler", "Set up a small sorting station at work.", 20, None),
-    ("Label Learner", "Learn local rules; achieve 20 perfect sorts.", 20, None),
-    ("Bulk Buyer", "Use bulk/refill stations 5 times.", 5, None),
-    ("Hang On", "Return 20 plastic hangers to stores.", 20, "plastic"),
-    ("Paperless Push", "Switch a few bills/statements to digital.", 10, "paper"),
-    ("Metal Monday", "Collect and recycle metal every Monday.", 20, "metal"),
-    ("Glass Gala", "Focus on glass this week and log 15 items.", 15, "glass"),
-    ("Spring Clean", "Declutter and donate before recycling.", 30, None),
-    ("Compost Challenge", "Start and maintain composting for 7 days.", 7, None),
-    ("Zero-Landfill Week", "Send no waste to landfill for a week.", 10, None),
-    ("Refill Revolution", "Buy household items from refill shops 3 times.", 3, None),
-    ("Upcycle Project", "Create one new object using waste materials.", 5, None),
-    ("Green Office", "Encourage your workplace to recycle together.", 15, None),
-    ("Sustainable Sunday", "Dedicate Sundays to recycling/repurposing.", 10, None),
-    ("30-Day Eco Streak", "Log daily recycling activity for a month.", 30, None),
-    ("Plastic Detox", "Avoid plastic packaging entirely for 5 days.", 15, "plastic"),
-    ("Recycle Marathon", "Log 200 total recyclable items.", 200, None),
-    ("Clean Desk", "Organize office waste and recycle correctly.", 10, "paper"),
-    ("Neighborhood Hero", "Organize a local cleanup or drive.", 15, None),
-    ("Food Waste Fighter", "Track and compost all food waste for a week.", 10, None),
-    ("Zero Cup Week", "Use reusable mugs for 7 days.", 10, "plastic"),
-    ("Glass Goals", "Recycle 50 glass bottles this month.", 50, "glass"),
-    ("Aluminum Ace", "Collect 100 aluminum cans in 30 days.", 100, "metal"),
-    ("Eco Educator", "Teach 3 people how to recycle properly.", 3, None),
-    ("Plastic-Free Picnic", "Host an outdoor meal with no disposable plastics.", 10, "plastic"),
-    ("Community Drive", "Collect recyclables from neighbors.", 20, None),
-    ("Bin Beautifier", "Clean and label all home bins properly.", 10, None),
-    ("Digital Declutter", "Delete 500 old emails and go paperless.", 10, "paper"),
-    ("Reusable Rebel", "Use only reusable containers for 14 days.", 14, "plastic"),
-    ("Sorting Sprint", "Sort 100 waste items correctly.", 100, None),
-    ("Eco Team", "Join a team challenge for sustainability.", 15, None),
-    ("Green Pledge", "Commit publicly to reduce waste by 30%.", 10, None),
-    ("Backyard Recycler", "Set up an outdoor sorting station.", 15, None),
+    # (title, description, target_grams, bias_type)
+    ("Recycling Sprint 1kg",    "Recycle at least 1,000 grams.", 1000, "plastic"),
+    ("Diversion Drive 1.5kg",   "Recycle at least 1,500 grams.", 1500, "paper"),
+    ("Recovery Goal 2kg",       "Recycle at least 2,000 grams.", 2000, "glass"),
+    ("Material Marathon 1.2kg", "Recycle at least 1,200 grams.", 1200, "metal"),
+    ("Impact Target 1kg",       "Recycle at least 1,000 grams.", 1000, "electronic"),
+    ("Clean Stream Goal 1kg",   "Recycle at least 1,000 grams.", 1000, "oil&fat"),
+    ("Circularity Push 3kg",    "Recycle at least 3,000 grams.", 3000, "organic"),
+
+    ("Recycling Sprint 2kg",    "Recycle at least 2,000 grams.", 2000, "plastic"),
+    ("Diversion Drive 2.5kg",   "Recycle at least 2,500 grams.", 2500, "paper"),
+    ("Recovery Goal 1.5kg",     "Recycle at least 1,500 grams.", 1500, "glass"),
+    ("Material Marathon 2kg",   "Recycle at least 2,000 grams.", 2000, "metal"),
+    ("Impact Target 1.5kg",     "Recycle at least 1,500 grams.", 1500, "electronic"),
+    ("Clean Stream Goal 1.2kg", "Recycle at least 1,200 grams.", 1200, "oil&fat"),
+    ("Circularity Push 2.5kg",  "Recycle at least 2,500 grams.", 2500, "organic"),
 ]
+
 
 # ---------------------------------------------------------------------------
 # 🔴 COMMENT BANK (expanded ~50)
@@ -347,7 +383,7 @@ def generate_mock_data(
         email="test@gmail.com",
         password=make_password("test123"),
         isAdmin=False,
-        profile_image=fake.image_url(),
+        profile_image=themed_avatar_url(0),
         bio="Sharing my journey to reduce waste and recycle better.",
     )
     test_user.save()
@@ -367,7 +403,7 @@ def generate_mock_data(
             email=email,
             password=make_password(fake.password()),
             isAdmin=random.random() < 0.05,  # ~5% admin
-            profile_image=fake.image_url(),
+            profile_image=themed_avatar_url(len(users)),
             bio = random.choice([
     "Learning to live more sustainably and reduce daily waste.",
     "Passionate about recycling and sharing eco-friendly habits.",
@@ -422,7 +458,7 @@ def generate_mock_data(
     for text in SEED_CAPTIONS[:max(MIN_POOL, min(len(SEED_CAPTIONS), 3))]:
         post = Posts(
             text=text,
-            image=fake.image_url(),
+            image=themed_post_image_url(),
             creator=test_user,
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
@@ -490,7 +526,7 @@ def generate_mock_data(
         text = random.choice(post_phrases).format(n=random.randint(2, 12), t=t)
         post = Posts(
             text=text,
-            image=fake.image_url(),
+            image=themed_post_image_url(t),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
@@ -617,7 +653,7 @@ def generate_mock_data(
     create_ach = max(num_achievements, MIN_POOL)
     for i in range(create_ach):
         title, desc = ach_pool[i % len(ach_pool)]
-        a = Achievements(title=title, description=desc, icon=fake.image_url())
+        a = Achievements(title=title, description=desc, icon=themed_avatar_url(1000 + i))
         a.save()
         achievements.append(a)
 
@@ -634,23 +670,47 @@ def generate_mock_data(
             ua.save()
             user_achievements.append(ua)
 
-    # ----------------------------- CHALLENGES --------------------------------
     challenges = []
     chall_pool = CHALLENGE_TEMPLATES[:]
+
+    REQUIRED_TYPES = ["plastic", "paper", "glass", "metal", "electronic", "oil&fat", "organic"]
+    TARGET_CHOICES = [1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 8000, 10000]
+    TITLE_SEEDS = [
+        "Recycling Sprint", "Diversion Drive", "Recovery Goal", "Material Marathon",
+        "Impact Target", "Clean Stream Goal", "Circularity Push", "Zero-Landfill Push",
+        "Footprint Cut", "Waste Offset", "Eco Milestone", "Sustainability Target"
+    ]
+
+    def make_generic_title(target):
+        # e.g., 2000 -> "2kg", 4500 -> "4.5kg"
+        kg = (target / 1000.0)
+        suffix = f"{kg:g}kg"
+        return f"{random.choice(TITLE_SEEDS)} {suffix}"
+
+    def make_generic_desc(target):
+        return f"Recycle at least {target} grams."
+
+    # Fill up to MIN_POOL with generic entries; keep internal bias but never mention it in text
     while len(chall_pool) < MIN_POOL:
-        chall_pool.append((
-            fake.sentence(nb_words=2),
-            fake.text(max_nb_chars=120),
-            random.randint(10, 120),
-            random.choice([None, "plastic", "paper", "glass", "metal"])
-        ))
+        bias = random.choice(REQUIRED_TYPES + [None])  # may include a generic/mixed slot
+        target = random.choice(TARGET_CHOICES)
+        title = make_generic_title(target)
+        desc = make_generic_desc(target)
+        chall_pool.append((title, desc, target, bias))
+
+    # Hard guarantee: at least one challenge for each required type
+    present_types = {b for (_, _, _, b) in chall_pool if b in REQUIRED_TYPES}
+    for missing in set(REQUIRED_TYPES) - present_types:
+        target = random.choice([1000, 1500, 2000, 2500, 3000])
+        chall_pool.append((make_generic_title(target), make_generic_desc(target), target, missing))
+
     create_ch = max(num_challenges, MIN_POOL)
     for i in range(create_ch):
         title, desc, target, bias = chall_pool[i % len(chall_pool)]
         reward = Achievements(
             title=f"Completed: {title}",
             description=f"For finishing the '{title}' challenge.",
-            icon=fake.image_url(),
+            icon=themed_avatar_url(2000 + i),
         )
         reward.save()
         ch = Challenge(
@@ -664,6 +724,7 @@ def generate_mock_data(
         )
         ch.save()
         challenges.append(ch)
+
 
     # Public challenges: many members; private: creator only
     for ch in challenges:
