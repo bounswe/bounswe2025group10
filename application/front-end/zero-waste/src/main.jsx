@@ -5,7 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import App from "./App";
-import { AuthProvider } from "./Login/AuthContent";
+import { AuthProvider } from "./providers/AuthContext";
 import ToastProvider from "./providers/ToastProvider";
 
 ReactDOM.createRoot(document.getElementById("root")).render(

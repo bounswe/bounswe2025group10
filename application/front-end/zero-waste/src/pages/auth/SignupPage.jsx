@@ -1,9 +1,9 @@
 import "../App.css";
 import { useState, React} from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "./AuthContent";
+import { useAuth } from "../../providers/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { showToast } from "../util/toast.js";
+import { showToast } from "../../utils/toast.js";
 
 
 export default function SignupPage() {

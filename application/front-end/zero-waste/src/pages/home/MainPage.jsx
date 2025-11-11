@@ -15,8 +15,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import Navbar from "../components/Navbar";
-import WeatherWidget from "./WeatherWidget";
+import Navbar from "../../components/layout/Navbar";
+import WeatherWidget from "../../components/features/WeatherWidget";
 import axios from "axios";
 
 const CustomDropdown = ({ value, onChange, options }) => {

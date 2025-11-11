@@ -1,10 +1,10 @@
 // src/pages/Challenges.jsx
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import SkeletonCard from "../components/SkeletonCard";
+import SkeletonCard from "../components/ui/SkeletonCard";
 import { useAuth } from "../Login/AuthContent";
-import { showToast } from "../util/toast.js";
-import Navbar from "../components/Navbar";
+import { showToast } from "../utils/toast.js";
+import Navbar from "../components/layout/Navbar";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL;

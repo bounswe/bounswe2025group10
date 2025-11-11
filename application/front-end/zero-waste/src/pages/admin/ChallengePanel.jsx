@@ -1,56 +1,57 @@
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { useAuth } from "../Login/AuthContent";
-import CommentCard from "./CommentCard";
+import { useAuth } from "../../providers/AuthContext";
+import ChallengeCard from "../../components/features/AdminChallengeCard";
 import { useState } from "react";
 
-function CommentPanel({ children }) {
+function ChallengePanel({ children }) {
   const { token } = useAuth();
-  const [comments,setComments]=useState([])
   const apiUrl = import.meta.env.VITE_API_URL; //get api 
-
-  // ▸▸  COMMENTS ──────────────────────────────
-  const getComments= async ()=>{
-    try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-    
-      const data = await response.json();
-      console.log(data);
-      setComments(data.results.filter(item => item.content_type === "comments"));
-    } catch (error) {
-      console.error("Failed to fetch admin reports:", error);
-    }
-  }
-    getComments() //get comments
+  const [challenges,setChallenges]=useState([])
+    // ▸▸ CHALLENGES ──────────────────────────────
+    const getChallenges= async ()=>{
+      try {
+        const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
       
-   //deletes given post given 
-  const deleteComment=async (comment_id)=>{
-    try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/${comment_id}/moderate/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "delete_media" })
-      });
-    
-      const data = await response.json();
-      console.log(data);
-  }
-  catch (error) {
-    console.error("Error deleting comment:", error);
-  }
-  }
-  // ────────────────────────────────────────────
+        const data = await response.json();
+        console.log(data);
 
+        setChallenges(data.results.filter(item => item.content_type === "challenge"));
+
+      } catch (error) {
+        console.error("Failed to fetch admin reports:", error);
+      }
+    }
+      getChallenges() //get comments
+        
+     //deletes given post given 
+    const deleteChallenge=async (challenge_id)=>{
+      try {
+        const response = await fetch(`${apiUrl}/api/admin/reports/${challenge_id}/moderate/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: "delete_media" })
+        });
+      
+        const data = await response.json();
+        console.log(data);
+    }
+    catch (error) {
+      console.error("Error deleting challenge:", error);
+    }
+    }
+    // ────────────────────────────────────────────────
+  
   return (
     <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
       <Row>
@@ -107,18 +108,20 @@ function CommentPanel({ children }) {
         {/* Main content area */}
         <Col xs={12} md={9} className="p-5">
           <div className="mb-4">
-            <h2 className="text-success fw-bold">📋 Comments</h2>
+            <h2 className="text-success fw-bold">📋 Challenges</h2>
             <hr />
           </div>
-          {/* Centered mock comment cards */}
+          {/* Centered mock challenges list */}
           <div className="d-flex flex-column align-items-center">
-            {comments.map((c) => (
-              <CommentCard
-                key={c.id}
-                commentId={c.id}
-                username={c.author_id}
-                description={c.description}
-                onDelete={(id) => deleteComment(c.id)}
+            {challenges.map((ch) => (
+              <ChallengeCard
+                key={ch.id}
+                challengeId={ch.id}
+
+                name={ch.content.title}
+                duration={ch.content.current_progress}
+
+                onDelete={(id) => deleteChallenge(ch.id)}
               />
             ))}
           </div>
@@ -129,4 +132,4 @@ function CommentPanel({ children }) {
   );
 }
 
-export default CommentPanel;
+export default ChallengePanel;

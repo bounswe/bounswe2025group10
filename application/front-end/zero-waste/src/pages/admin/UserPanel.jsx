@@ -1,8 +1,8 @@
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { useAuth } from "../Login/AuthContent";
-import UserCard from "./UserCard";
+import { useAuth } from "../../providers/AuthContext";
+import UserCard from "../../components/features/UserCard";
 import { useState } from "react";
 
 function UserPanel({ children }) {

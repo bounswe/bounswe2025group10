@@ -1,10 +1,10 @@
 // src/profile/ProfilePage.jsx
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/layout/Navbar";
 import { Card, Button, Form, Image } from "react-bootstrap";
 import { useAuth } from "../Login/AuthContent";
-import { showToast } from "../util/toast";
+import { showToast } from "../../utils/toast";
 import dayjs from "dayjs";
 import Spinner from "react-bootstrap/Spinner";
 import relativeTime from "dayjs/plugin/relativeTime";

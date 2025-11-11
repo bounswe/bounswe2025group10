@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/layout/Navbar";
 import Spinner from "react-bootstrap/Spinner";
 import { motion } from "framer-motion";
 

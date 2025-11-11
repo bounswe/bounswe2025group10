@@ -4,8 +4,8 @@
 import "../App.css";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthContent";
-import { showToast } from "../util/toast.js";
+import { useAuth } from "../../providers/AuthContext";
+import { showToast } from "../../utils/toast.js";
 
 export default function LoginPage() {
   const { login }   = useAuth();

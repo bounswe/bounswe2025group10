@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../Login/AuthContent";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/layout/Navbar";
 import axios from "axios";
 
 const DEFAULT_PROFILE_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";

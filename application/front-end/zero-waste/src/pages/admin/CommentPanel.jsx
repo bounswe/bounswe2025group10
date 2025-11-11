@@ -1,63 +1,55 @@
-/**
- * AdminPanel.jsx  –  mock version with Picsum images
- * ---------------------------------------------------
- * Shows a green-themed sidebar and a list of demo posts.
- * Image URLs now use picsum.photos (no redirect issues).
- */
-
 import React from "react";
 import { Nav, Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { useAuth } from "../Login/AuthContent";
-import PostCard from "./PostCard";
+import { useAuth } from "../../providers/AuthContext";
+import CommentCard from "../../components/features/CommentCard";
 import { useState } from "react";
 
-function AdminPanel({ children }) {
-
-  const token = localStorage.getItem("accessToken"); // reserved for real API calls later
+function CommentPanel({ children }) {
+  const { token } = useAuth();
+  const [comments,setComments]=useState([])
   const apiUrl = import.meta.env.VITE_API_URL; //get api 
-  
-  const [posts,setPosts]=useState([])
-  const getPosts= async ()=>{
-  try {
-    const response = await fetch(`${apiUrl}/api/admin/reports/`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-  
-    const data = await response.json();
-    console.log(data);
-    setPosts(data.results.filter(item => item.content_type === "posts"));
-  } catch (error) {
-    console.error("Failed to fetch admin reports:", error);
-  }
-}
-  getPosts()
-    
- //deletes given post given 
-const deletePost=async (post_id)=>{
-  try {
-    const response = await fetch(`${apiUrl}/api/admin/reports/${post_id}/moderate/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({ action: "delete_media" })
-    });
-  
-    const data = await response.json();
-    console.log(data);
-}
-catch (error) {
-  console.error("Error deleting post:", error);
-}
-}
 
-  /* ─────────────────────────────────────────────────────────── */
+  // ▸▸  COMMENTS ──────────────────────────────
+  const getComments= async ()=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    
+      const data = await response.json();
+      console.log(data);
+      setComments(data.results.filter(item => item.content_type === "comments"));
+    } catch (error) {
+      console.error("Failed to fetch admin reports:", error);
+    }
+  }
+    getComments() //get comments
+      
+   //deletes given post given 
+  const deleteComment=async (comment_id)=>{
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/${comment_id}/moderate/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "delete_media" })
+      });
+    
+      const data = await response.json();
+      console.log(data);
+  }
+  catch (error) {
+    console.error("Error deleting comment:", error);
+  }
+  }
+  // ────────────────────────────────────────────
 
   return (
     <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
@@ -115,26 +107,21 @@ catch (error) {
         {/* Main content area */}
         <Col xs={12} md={9} className="p-5">
           <div className="mb-4">
-            <h2 className="text-success fw-bold">📋 Posts</h2>
+            <h2 className="text-success fw-bold">📋 Comments</h2>
             <hr />
           </div>
-
-          {/* Mock posts - centered */}
+          {/* Centered mock comment cards */}
           <div className="d-flex flex-column align-items-center">
-
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              image={post.content?.image || "https://via.placeholder.com/400x300?text=No+Image"}
-              title={`Report: ${post.reason}`}
-              description={post.content?.text ?? "No description provided."}
-              onDelete={() => deletePost(post.id)}
-            />
-          ))}
-
+            {comments.map((c) => (
+              <CommentCard
+                key={c.id}
+                commentId={c.id}
+                username={c.author_id}
+                description={c.description}
+                onDelete={(id) => deleteComment(c.id)}
+              />
+            ))}
           </div>
-
-          {/* Nested children (if any) */}
           {children}
         </Col>
       </Row>
@@ -142,4 +129,4 @@ catch (error) {
   );
 }
 
-export default AdminPanel;
+export default CommentPanel;

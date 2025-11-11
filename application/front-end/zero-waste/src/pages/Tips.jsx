@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
-import SkeletonCard from "../components/SkeletonCard";
-import { showToast } from "../util/toast";
+import Navbar from "../components/layout/Navbar";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import { showToast } from "../utils/toast";
 import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL;

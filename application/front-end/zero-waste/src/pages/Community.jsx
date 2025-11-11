@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
-import SkeletonCard from "../components/SkeletonCard";
+import Navbar from "../components/layout/Navbar";
+import SkeletonCard from "../components/ui/SkeletonCard";
 import { useAuth } from "../Login/AuthContent";
-import { showToast } from "../util/toast";
+import { showToast } from "../utils/toast";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
