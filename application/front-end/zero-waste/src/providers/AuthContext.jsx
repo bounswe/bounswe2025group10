@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { toBoolean } from "@/util/helper.js";
+import { toBoolean } from "@/utils/helper.js";
 
 // Create Auth context
 export const AuthContext = createContext(null);

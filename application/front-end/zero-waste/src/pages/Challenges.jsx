@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SkeletonCard from "../components/ui/SkeletonCard";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "../providers/AuthContext";
 import { showToast } from "../utils/toast.js";
 import Navbar from "../components/layout/Navbar";
 import axios from "axios";

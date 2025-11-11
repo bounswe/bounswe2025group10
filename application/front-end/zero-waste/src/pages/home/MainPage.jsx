@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "../../providers/AuthContext";
 import "./MainPage.css";
 import WasteHelperInput from "./WasteHelperInput";
 import {

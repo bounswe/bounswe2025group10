@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, Button, Spinner } from "react-bootstrap";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "../../providers/AuthContext";
 
 export default function Post({ post, onToggleLike }) {
   const { apiUrl, token } = useAuth();

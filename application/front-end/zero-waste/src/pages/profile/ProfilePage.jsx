@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../../components/layout/Navbar";
 import { Card, Button, Form, Image } from "react-bootstrap";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "../../providers/AuthContext";
 import { showToast } from "../../utils/toast";
 import dayjs from "dayjs";
 import Spinner from "react-bootstrap/Spinner";

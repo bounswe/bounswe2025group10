@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../Login/AuthContent";
+import { useAuth } from "../providers/AuthContext";
 import Navbar from "../components/layout/Navbar";
 import axios from "axios";
 
