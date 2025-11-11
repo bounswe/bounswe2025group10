@@ -186,6 +186,6 @@ class FollowUnfollowTestCase(TestCase):
             
             self.assertEqual(
                 response.status_code, 
-                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_403_FORBIDDEN,
                 f"Endpoint {endpoint} should require authentication"
             )
