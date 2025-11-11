@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = '@auth_token';
 const REFRESH_TOKEN_KEY = '@refresh_token';
+const ADMIN_STATUS_KEY = '@admin_status';
 
 export const storage = {
   setToken: async (token: string): Promise<void> => {
@@ -38,11 +39,29 @@ export const storage = {
     }
   },
 
+  setAdminStatus: async (isAdmin: boolean): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(ADMIN_STATUS_KEY, isAdmin.toString());
+    } catch (error) {
+      console.error('Error saving admin status:', error);
+    }
+  },
+
+  getAdminStatus: async (): Promise<boolean> => {
+    try {
+      const status = await AsyncStorage.getItem(ADMIN_STATUS_KEY);
+      return status === 'true';
+    } catch (error) {
+      console.error('Error getting admin status:', error);
+      return false;
+    }
+  },
+
   clearTokens: async (): Promise<void> => {
     try {
-      await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_TOKEN_KEY]);
+      await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_TOKEN_KEY, ADMIN_STATUS_KEY]);
     } catch (error) {
       console.error('Error clearing tokens:', error);
     }
   },
-}; 
+};

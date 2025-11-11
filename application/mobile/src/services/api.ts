@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
-import { Platform } from 'react-native';
+import { API_URL } from '@env';
 
 // Types
 export interface LoginCredentials {
@@ -20,6 +20,8 @@ export interface AuthResponse {
     access: string;
     refresh: string;
   };
+  isAdmin?: boolean;
+  username?: string;
   data?: {
     email: string;
     username: string;
@@ -27,8 +29,8 @@ export interface AuthResponse {
 }
 
 // API Configuration
-// Use the deployed backend for all requests
-export const API_URL = 'https://134-209-253-215.sslip.io';
+// API_URL is imported from environment variables (.env file)
+// To change the backend URL, update the .env file
 
 const api = axios.create({
   baseURL: API_URL,
@@ -43,9 +45,13 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const token = await storage.getToken();
+      console.log('Retrieved token from storage:', token ? 'Token exists' : 'No token');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Added Authorization header:', `Bearer ${token.substring(0, 20)}...`);
+      } else {
+        console.log('No token available, request will be sent without Authorization header');
       }
       console.log('Making request to:', config.url, 'with headers:', config.headers);
       return config;
@@ -73,7 +79,7 @@ api.interceptors.response.use(
       console.error('Response error:', {
         status: error.response.status,
         data: error.response.data,
-        url: error.config?.url
+        url: error.config?.url,
       });
     } else if (error.request) {
       // The request was made but no response was received
@@ -117,11 +123,15 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<any> => {
-    const response = await api.get('/api/waste/get');
+    console.log('Fetching user wastes...');
+    const response = await api.get('/api/waste/get/');
+    console.log('Waste data response:', response.status, response.data);
     return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
+    console.log('Adding user waste:', { waste_type, amount });
     const response = await api.post('/api/waste/', { waste_type, amount });
+    console.log('Add waste response:', response.status, response.data);
     return response.data;
   },
 };
@@ -142,11 +152,54 @@ export const tipService = {
     const response = await api.get('/api/tips/all/');
     return response.data;
   },
+
+  /**
+   * Create a new tip
+   */
+  createTip: async (title: string, description: string): Promise<any> => {
+    const response = await api.post('/api/tips/create/', { title, description });
+    return response.data;
+  },
+
+  /**
+   * Like a tip
+   */
+  likeTip: async (tipId: number): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/like/`, {});
+    return response.data;
+  },
+
+  /**
+   * Dislike a tip
+   */
+  dislikeTip: async (tipId: number): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/dislike/`, {});
+    return response.data;
+  },
+
+  /**
+   * Report a tip
+   */
+  reportTip: async (tipId: number, reason: string, description: string): Promise<any> => {
+    const response = await api.post(`/api/tips/${tipId}/report/`, { reason, description });
+    return response.data;
+  },
 };
 
 export const achievementService = {
   getUserAchievements: async (): Promise<any> => {
-    const response = await api.get('/api/challenges/enrolled/');
+    const response = await api.get('/api/achievements/');
+    return response.data;
+  },
+};
+
+export const leaderboardService = {
+  getLeaderboard: async (): Promise<any> => {
+    const response = await api.get('/api/waste/leaderboard/');
+    return response.data;
+  },
+  getUserBio: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/bio/`);
     return response.data;
   },
 };
@@ -184,6 +237,22 @@ export const profilePublicService = {
   },
 };
 
+// Admin service for moderation functionality
+export const adminService = {
+  getReports: async (contentType?: string): Promise<any> => {
+    const url = contentType ? `/api/admin/reports/?content_type=${contentType}` : '/api/admin/reports/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  moderateContent: async (reportId: number, action: string): Promise<any> => {
+    const response = await api.post(`/api/admin/reports/${reportId}/moderate/`, {
+      action: action
+    });
+    return response.data;
+  },
+};
+
 // External weather API (Open-Meteo)
 export const weatherService = {
   /**
@@ -196,4 +265,4 @@ export const weatherService = {
   },
 };
 
-export default api; 
+export default api;
