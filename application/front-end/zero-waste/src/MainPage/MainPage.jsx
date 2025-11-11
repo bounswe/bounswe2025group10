@@ -9,6 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   Cell,
+  PieChart,
+  Pie,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 import Navbar from "../components/Navbar";
 import WeatherWidget from "./WeatherWidget";
@@ -192,27 +196,13 @@ export default function MainPage() {
                 <div className="points-info-card">
                   <h4 className="points-info-title">Points per 100g</h4>
                   <ul className="points-info-list">
-                    <li>
-                      <strong>Plastic:</strong> 30 points
-                    </li>
-                    <li>
-                      <strong>Paper:</strong> 15 points
-                    </li>
-                    <li>
-                      <strong>Glass:</strong> 20 points
-                    </li>
-                    <li>
-                      <strong>Metal:</strong> 35 points
-                    </li>
-                    <li>
-                      <strong>Electronic:</strong> 60 points
-                    </li>
-                    <li>
-                      <strong>Oil & Fats:</strong> 45 points
-                    </li>
-                    <li>
-                      <strong>Organic:</strong> 10 points
-                    </li>
+                    <li><strong>Plastic:</strong> 30 points</li>
+                    <li><strong>Paper:</strong> 15 points</li>
+                    <li><strong>Glass:</strong> 20 points</li>
+                    <li><strong>Metal:</strong> 35 points</li>
+                    <li><strong>Electronic:</strong> 60 points</li>
+                    <li><strong>Oil & Fats:</strong> 45 points</li>
+                    <li><strong>Organic:</strong> 10 points</li>
                   </ul>
                 </div>
               )}
@@ -255,6 +245,7 @@ export default function MainPage() {
 
         {/* Tips and Progress Section */}
         <section className="grid gap-6 sm:grid-cols-2">
+          {/* Sustainability Tips */}
           <div className="tips-progress-card">
             <h2 className="tips-progress-title">Sustainability Tips</h2>
             <ul className="list-unstyled">
@@ -268,35 +259,155 @@ export default function MainPage() {
                 ))}
             </ul>
           </div>
+
           <div className="tips-progress-card">
             <h2 className="tips-progress-title">Your Progress</h2>
-            <BarChart width={500} height={300} data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="type"
-                angle={-15}
-                textAnchor="end"
-                height={80}
-                interval={0}
-              />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="quantity">
-                {Array.isArray(data) &&
-                  data.map((entry, index) => {
-                    let barClass = "";
-                    if (entry.type === "Plastic") barClass = "bar-plastic";
-                    if (entry.type === "Glass") barClass = "bar-glass";
-                    if (entry.type === "Paper") barClass = "bar-paper";
-                    if (entry.type === "Metal") barClass = "bar-metal";
-                    if (entry.type === "Electronic")
-                      barClass = "bar-electronic";
-                    if (entry.type === "Oil & fats") barClass = "bar-oil-fats";
-                    if (entry.type === "Organic") barClass = "bar-organic";
-                    return <Cell key={index} className={barClass} />;
-                  })}
-              </Bar>
-            </BarChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="type"
+                  angle={-15}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="quantity">
+                  {Array.isArray(data) &&
+                    data.map((entry, index) => {
+                      let barClass = "";
+                      if (entry.type === "Plastic") barClass = "bar-plastic";
+                      if (entry.type === "Glass") barClass = "bar-glass";
+                      if (entry.type === "Paper") barClass = "bar-paper";
+                      if (entry.type === "Metal") barClass = "bar-metal";
+                      if (entry.type === "Electronic")
+                        barClass = "bar-electronic";
+                      if (entry.type === "Oil & fats") barClass = "bar-oil-fats";
+                      if (entry.type === "Organic") barClass = "bar-organic";
+                      return <Cell key={index} className={barClass} />;
+                    })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+
+            {/*Pie Chart + Table + Text Summary */}
+            <div className="mt-6">
+              <h3 className="tips-progress-title">Waste Distribution (Pie)</h3>
+              {data && data.reduce((sum, item) => sum + item.quantity, 0) === 0 ? (
+                <div className="chart-placeholder">
+                  <p>No waste data yet — add some to see your distribution 🍃</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={data}
+                      dataKey="quantity"
+                      nameKey="type"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={100}
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        percent > 0 ? `${(percent * 100).toFixed(0)}%` : ""
+                      }
+                      labelPosition="inside"
+                    >
+                      {data.map((entry, index) => {
+                        const type = entry.type
+                          .toLowerCase()
+                          .replace("&", "and")
+                          .replace(/\s+/g, "-");
+                        const colorMap = {
+                          plastic: "#ffadad",
+                          paper: "#a0c4ff",
+                          glass: "#ffd6a5",
+                          metal: "#9bf6ff",
+                          electronic: "#bdb2ff",
+                          "oil-and-fats": "#fdffb6",
+                          organic: "#1c8207ff",
+                        };
+                        return <Cell key={index} fill={colorMap[type] || "#ccc"} />;
+                      })}
+                    </Pie>
+                    <Legend
+                      payload={data.map((entry) => {
+                        const type = entry.type
+                          .toLowerCase()
+                          .replace("&", "and")
+                          .replace(/\s+/g, "-");
+                        const colorMap = {
+                          plastic: "#ffadad",
+                          paper: "#a0c4ff",
+                          glass: "#ffd6a5",
+                          metal: "#9bf6ff",
+                          electronic: "#bdb2ff",
+                          "oil-and-fats": "#fdffb6",
+                          organic: "#1c8207ff",
+                        };
+                        return {
+                          id: entry.type,
+                          type: "square",
+                          value: entry.type,
+                          color: colorMap[type] || "#ccc",
+                        };
+                      })}
+                      verticalAlign="bottom"
+                      align="center"
+                      wrapperStyle={{
+                        fontSize: "0.9rem",
+                        color: "#1e5631",
+                        marginTop: "1rem",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+
+              {/* Table */}
+              <div className="mt-4">
+                <h3 className="tips-progress-title">Tabular Summary</h3>
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>Waste Type</th>
+                      <th>Total Quantity (g)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((item, i) => (
+                      <tr key={i}>
+                        <td>{item.type}</td>
+                        <td>{item.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Text Summary */}
+              <div className="mt-4">
+                <h3 className="tips-progress-title">Summary</h3>
+                {data.length > 0 ? (
+                  <p>
+                    You’ve logged a total of{" "}
+                    <strong>
+                      {data.reduce((a, b) => a + b.quantity, 0)} grams
+                    </strong>{" "}
+                    of waste. Your top recycled type is{" "}
+                    <strong>
+                      {data.reduce((a, b) => (a.quantity > b.quantity ? a : b)).type}
+                    </strong>
+                    !
+                  </p>
+                ) : (
+                  <p>No data yet — start logging waste to see your progress!</p>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </main>
