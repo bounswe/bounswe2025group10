@@ -9,8 +9,8 @@ CONTAINER_NAME="zero-waste-frontend"
 HOST_IP="${HOST_IP:-$(curl -s ifconfig.me || echo "YOUR_DROPLET_IP")}"
 
 # Preferred port can be overridden: FRONTEND_PORT=8080 ./deploy_frontend.sh
-PREFERRED_PORT="${FRONTEND_PORT:-80}"
-FALLBACK_PORT="8080"
+PREFERRED_PORT="${FRONTEND_PORT:-3000}"
+FALLBACK_PORT="3001"
 
 require() {
   command -v "$1" >/dev/null 2>&1 || { echo "Error: $1 is not installed."; exit 1; }
