@@ -11,6 +11,7 @@ from .post import post_views
 from .comment import comment_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
+from .profile import follow_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
 from .activities.views.activity_view import ActivityEventViewSet
@@ -31,6 +32,28 @@ urlpatterns = [
     path('api/profile/<str:username>/bio/', profile_views.user_bio, name='user-bio'),
     # Public profile picture retrieval endpoint
     path('api/profile/<str:username>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
+    
+    # Follow/Unfollow Endpoints
+    # ----------------------------------------
+    
+    # POST: Follow a user by username
+    path('api/profile/<str:username>/follow/', follow_views.follow_user, name='follow-user'),
+    
+    # POST: Unfollow a user by username
+    path('api/profile/<str:username>/unfollow/', follow_views.unfollow_user, name='unfollow-user'),
+    
+    # GET: Get list of followers for a specific user
+    path('api/profile/<str:username>/followers/', follow_views.get_followers, name='get-followers'),
+    
+    # GET: Get list of users that a specific user is following
+    path('api/profile/<str:username>/following/', follow_views.get_following, name='get-following'),
+    
+    # GET: Check if authenticated user is following a specific user
+    path('api/profile/<str:username>/follow-status/', follow_views.check_follow_status, name='check-follow-status'),
+    
+    # GET: Get follow statistics for the authenticated user
+    path('api/profile/follow-stats/', follow_views.get_follow_stats, name='follow-stats'),
+    
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     

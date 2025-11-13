@@ -228,6 +228,28 @@ class TipLikes(models.Model):
         unique_together = (('user', 'tip'),)  
 
 
+class Follow(models.Model):
+    """
+    Represents a follow relationship between users.
+    follower: The user who is following
+    following: The user being followed
+    """
+    follower = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='following_set')
+    following = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='followers_set')
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'Follows'
+        unique_together = (('follower', 'following'),)  # Prevent duplicate follows
+        indexes = [
+            models.Index(fields=['follower'], name='idx_follower'),
+            models.Index(fields=['following'], name='idx_following'),
+        ]
+    
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
+
+
 # activity model from .activities.models.activity_model import ActivityEvent, Visibility
 # activities/models.py
 import uuid
