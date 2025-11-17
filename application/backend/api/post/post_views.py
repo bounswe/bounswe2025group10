@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
 from .post_serializer import PostSerializer
 from ..models import Posts, Comments, PostLikes, SavedPosts
@@ -103,16 +104,37 @@ def create_post(request):
 @permission_classes([AllowAny])
 def get_all_posts(request):
     """
-    Get all posts ordered by most recent first.
+    Get all posts ordered by most recent first with pagination.
+    Query parameters:
+    - page: page number (default: 1)
+    - page_size: number of items per page (default: 10, max: 100)
     """
     try:
         posts = Posts.objects.all().order_by('-date')
-        serializer = PostSerializer(posts, many=True, context={'request': request})
         
-        return Response({
-            'message': 'Posts retrieved successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
+        # Initialize paginator
+        paginator = PageNumberPagination()
+        
+        # Allow custom page size via query parameter
+        page_size = request.query_params.get('page_size', 60)
+        try:
+            page_size = int(page_size)
+            # Limit max page size to prevent abuse
+            if page_size > 60:
+                page_size = 60
+            elif page_size < 1:
+                page_size = 60
+        except (ValueError, TypeError):
+            page_size = 10
+            
+        paginator.page_size = page_size
+        
+        # Paginate the queryset
+        paginated_posts = paginator.paginate_queryset(posts, request)
+        serializer = PostSerializer(paginated_posts, many=True, context={'request': request})
+        
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
     
     except Exception as e:
         return Response(
