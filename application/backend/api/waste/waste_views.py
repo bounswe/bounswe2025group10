@@ -310,7 +310,7 @@ def create_suspicious_waste(request):
         
 
         # Create the suspicious waste report
-        waste = Waste.objects.get(type=waste_type) if waste_type else None
+        waste = Waste.objects.filter(type=waste_type).first() if waste_type else None
         suspicious_waste = SuspiciousWaste.objects.create(
             user=request.user,
             amount=amount,
