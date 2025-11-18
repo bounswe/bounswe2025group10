@@ -100,6 +100,9 @@ urlpatterns = [
     
     # GET: Retrieve all posts saved by the current user
     path("api/posts/saved/", post_views.get_saved_posts, name="get_saved_posts"),
+
+    # GET: Retrieve top 5 posts with the highest number of likes
+    path("api/posts/top-liked/", post_views.get_top_liked_posts, name="get_top_liked_posts"),
     
     # Comment Management Endpoints
     # ----------------------------------------
