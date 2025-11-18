@@ -4,7 +4,7 @@ from django.db import migrations
 
 def create_waste_types(apps, schema_editor):
     Waste = apps.get_model('api', 'Waste')
-    waste_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL']
+    waste_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']
     for waste_type in waste_types:
         Waste.objects.create(type=waste_type)
 

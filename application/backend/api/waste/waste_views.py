@@ -13,10 +13,13 @@ from django.utils import timezone
 
 # Point coefficients for different waste types
 point_coefficients = {
-    'PLASTIC': 0.03,  # 3 points per 100g
-    'PAPER': 0.02,    # 2 points per 100g
-    'GLASS': 0.015,   # 1.5 points per 100g
-    'METAL': 0.04,    # 4 points per 100g
+    'PLASTIC': 0.3,  # 30 points per 100g
+    'PAPER': 0.15,    # 15 points per 100g
+    'GLASS': 0.2,     # 20 points per 100g
+    'METAL': 0.35,    # 35 points per 100g
+    'ELECTRONIC': 0.6, # 60 points per 100g
+    'OIL&FATS': 0.45,   # 45 points per 100g
+    'ORGANIC': 0.1,   # 10 points per 100g
 }
 
 
@@ -27,7 +30,7 @@ def create_user_waste(request):
     Create a new waste record for the authenticated user.
     
     Required POST data:
-    - waste_type: str (PLASTIC, PAPER, GLASS, METAL)
+    - waste_type: str (PLASTIC, PAPER, GLASS, METAL, etc.)
     - amount: float (positive number)
     """
     serializer = UserWasteSerializer(data=request.data)
@@ -114,7 +117,7 @@ def get_user_wastes(request):
     
     Returns:
         Response with waste data grouped by type, including:
-        - waste_type: The type of waste (PLASTIC, PAPER, GLASS, METAL)
+        - waste_type: The type of waste (PLASTIC, PAPER, GLASS, METAL, etc.)
         - total_amount: Total amount for this waste type
         - records: List of individual waste records
     """
@@ -241,6 +244,9 @@ WASTE_TYPE_TO_ACTIVITY_ID = {
     'PAPER': 'waste_type_paper_and_cardboard-disposal_method_landfill',
     'GLASS': 'waste-type_glass-disposal_method_landfilled',
     'METAL': 'waste_type_scrap_metal_steel_cans-disposal_method_landfill',
+    'ELECTRONIC': 'waste-type_weee_mixed-disposal_method_landfill',
+    'OIL&FATS': 'waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na',
+    'ORGANIC': 'waste-type_mixed_food_and_organic_garden-disposal_method_landfill',
 }
 
 def get_co2_emission(amount_kg, waste_type):

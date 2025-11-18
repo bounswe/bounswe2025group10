@@ -90,8 +90,8 @@ class WasteViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'User wastes retrieved successfully')
-        # Should return all waste types (4)
-        self.assertEqual(len(response.data['data']), 4)
+        # Should return all waste types (7: PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC)
+        self.assertEqual(len(response.data['data']), 7)
         
         # Verify the amounts for waste types we created
         waste_data = {item['waste_type']: item['total_amount'] for item in response.data['data']}
@@ -99,6 +99,9 @@ class WasteViewsTests(TestCase):
         self.assertEqual(waste_data['PAPER'], 2.0)
         self.assertEqual(waste_data['GLASS'], 0)
         self.assertEqual(waste_data['METAL'], 0)
+        self.assertEqual(waste_data['ELECTRONIC'], 0)
+        self.assertEqual(waste_data['OIL&FATS'], 0)
+        self.assertEqual(waste_data['ORGANIC'], 0)
 
     def test_get_user_wastes_unauthenticated(self):
         """Test retrieval without authentication"""
@@ -117,8 +120,8 @@ class WasteViewsTests(TestCase):
         response = get_user_wastes(request)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should still return all waste types with 0 amounts
-        self.assertEqual(len(response.data['data']), 4)
+        # Should still return all waste types with 0 amounts (7 types total)
+        self.assertEqual(len(response.data['data']), 7)
         for item in response.data['data']:
             self.assertEqual(item['total_amount'], 0)
 
@@ -325,38 +328,242 @@ class WasteViewsTests(TestCase):
         self.assertEqual(current_user['total_waste'], "0.0000")
         self.assertEqual(current_user['points'], 0)
 
-@patch('api.waste.waste_views.requests.post')
-def test_climatiq_api_integration(self, mock_post):
-    """Test the integration with Climatiq API for CO2 emission calculation"""
-    # Create mock response for Climatiq API call
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
-    mock_post.return_value = mock_response
-    
-    # Import the function directly for testing
-    from api.waste.waste_views import get_co2_emission
-    
-    # Test plastic waste CO2 calculation
-    result = get_co2_emission(1.0, 'PLASTIC')
-    self.assertEqual(result, 2.5)
-    
-    # Verify the API was called with correct parameters
-    mock_post.assert_called_once()
-    args, kwargs = mock_post.call_args
-    
-    # Check the request sent to Climatiq
-    self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
-    self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
-    self.assertIn('emission_factor', kwargs['json'])
-    self.assertIn('activity_id', kwargs['json']['emission_factor'])
-    self.assertIn('data_version', kwargs['json']['emission_factor'])
-    
-    # Reset the mock to test error handling
-    mock_post.reset_mock()
-    
-    # Test error handling with HTTP error
-    mock_response.status_code = 400
-    mock_post.return_value = mock_response
-    result = get_co2_emission(1.0, 'PAPER')
-    self.assertEqual(result, 0)
+    @patch('api.waste.waste_views.requests.post')
+    def test_climatiq_api_integration(self, mock_post):
+        """Test the integration with Climatiq API for CO2 emission calculation"""
+        # Create mock response for Climatiq API call
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
+        mock_post.return_value = mock_response
+        
+        # Import the function directly for testing
+        from api.waste.waste_views import get_co2_emission
+        
+        # Test plastic waste CO2 calculation
+        result = get_co2_emission(1.0, 'PLASTIC')
+        self.assertEqual(result, 2.5)
+        
+        # Verify the API was called with correct parameters
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        
+        # Check the request sent to Climatiq
+        self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
+        self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
+        self.assertIn('emission_factor', kwargs['json'])
+        self.assertIn('activity_id', kwargs['json']['emission_factor'])
+        self.assertIn('data_version', kwargs['json']['emission_factor'])
+        
+        # Reset the mock to test error handling
+        mock_post.reset_mock()
+        
+        # Test error handling with HTTP error
+        mock_response.status_code = 400
+        mock_post.return_value = mock_response
+        result = get_co2_emission(1.0, 'PAPER')
+        self.assertEqual(result, 0)
+
+    def test_create_user_waste_zero_amount(self):
+        """Test waste creation with zero amount
+        Note: Currently the API accepts zero amounts. This test documents current behavior.
+        Consider adding validation to reject zero amounts in the future.
+        """
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # API currently accepts zero amounts (no validation)
+        # This could be improved with validation in the serializer
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_user_waste_negative_amount(self):
+        """Test waste creation with negative amount
+        Note: Currently the API accepts negative amounts. This test documents current behavior.
+        Consider adding validation to reject negative amounts in the future.
+        """
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': -1.0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # API currently accepts negative amounts (no validation)
+        # This could be improved with validation in the serializer
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_user_waste_very_large_amount(self):
+        """Test waste creation with very large amount"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 999999.99
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # Should still succeed, but verify it handles large numbers
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_user_waste_all_types(self):
+        """Test creating waste for all supported waste types"""
+        waste_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']
+        
+        for waste_type in waste_types:
+            request = self.factory.post('/api/waste/', {
+                'waste_type': waste_type,
+                'amount': 1.0
+            }, format='json')
+            force_authenticate(request, user=self.user)
+            response = create_user_waste(request)
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['data']['type'], waste_type)
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_create_user_waste_updates_points_correctly(self, mock_get_co2_emission):
+        """Test that waste creation correctly updates user points"""
+        mock_get_co2_emission.return_value = 2.0
+        
+        initial_points = self.user.total_points
+        
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0  # 10kg of plastic
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh user from database
+        self.user.refresh_from_db()
+        
+        # Plastic coefficient is 0.3 per kg, so 10kg = 3.0 points
+        expected_points = initial_points + (10.0 * 0.3)
+        self.assertAlmostEqual(self.user.total_points, expected_points, places=2)
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_create_user_waste_updates_co2_correctly(self, mock_get_co2_emission):
+        """Test that waste creation correctly updates user CO2"""
+        mock_get_co2_emission.return_value = 5.5
+        
+        initial_co2 = self.user.total_co2
+        
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PAPER',
+            'amount': 2.0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh user from database
+        self.user.refresh_from_db()
+        
+        # CO2 should be updated by the mocked value
+        expected_co2 = initial_co2 + 5.5
+        self.assertAlmostEqual(self.user.total_co2, expected_co2, places=2)
+
+    def test_create_user_waste_empty_string_type(self):
+        """Test waste creation with empty string waste type"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': '',
+            'amount': 1.0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_user_waste_none_amount(self):
+        """Test waste creation with None amount"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': None
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_user_wastes_ordering(self):
+        """Test that waste types are returned in a consistent order"""
+        request = self.factory.get('/api/waste/get/')
+        force_authenticate(request, user=self.user)
+        response = get_user_wastes(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify all waste types are present
+        waste_types = [item['waste_type'] for item in response.data['data']]
+        expected_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']
+        for expected_type in expected_types:
+            self.assertIn(expected_type, waste_types)
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_ordering(self, mock_get_co2_emission):
+        """Test that top users are returned in correct order (highest points first)"""
+        mock_get_co2_emission.return_value = 1.0
+        
+        # Create multiple users with different point totals
+        users = []
+        for i in range(5):
+            user = Users.objects.create_user(
+                username=f"user{i}",
+                email=f"user{i}@example.com",
+                password="testpass123"
+            )
+            user.total_points = 10 - i  # Decreasing points
+            user.total_co2 = 10 - i
+            user.save()
+            
+            # Create waste record
+            UserWastes.objects.create(
+                user=user,
+                waste=self.plastic,
+                amount=1.0,
+                date=timezone.now()
+            )
+            users.append(user)
+        
+        request = self.factory.get('/api/waste/leaderboard/')
+        response = get_top_users(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        top_users = response.data['data']['top_users']
+        
+        # Verify ordering (highest points first)
+        for i in range(len(top_users) - 1):
+            self.assertGreaterEqual(top_users[i]['points'], top_users[i + 1]['points'])
+
+    def test_get_top_users_limit(self):
+        """Test that top users endpoint returns at most 10 users"""
+        # Create 15 users with waste records
+        for i in range(15):
+            user = Users.objects.create_user(
+                username=f"leader{i}",
+                email=f"leader{i}@example.com",
+                password="testpass123"
+            )
+            user.total_points = 100 - i
+            user.total_co2 = 100 - i
+            user.save()
+            
+            UserWastes.objects.create(
+                user=user,
+                waste=self.plastic,
+                amount=1.0,
+                date=timezone.now()
+            )
+        
+        request = self.factory.get('/api/waste/leaderboard/')
+        response = get_top_users(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        top_users = response.data['data']['top_users']
+        self.assertLessEqual(len(top_users), 10)

@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='Waste',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('PLASTIC', 'Plastic'), ('PAPER', 'Paper'), ('GLASS', 'Glass'), ('METAL', 'Metal')], max_length=50)),
+                ('type', models.CharField(choices=[('PLASTIC', 'Plastic'), ('PAPER', 'Paper'), ('GLASS', 'Glass'), ('METAL', 'Metal'), ('ELECTRONIC', 'Electronic'), ('OIL&FATS', 'Oil & Fats'), ('ORGANIC', 'Organic')], max_length=50)),
             ],
             options={
                 'db_table': 'Waste',

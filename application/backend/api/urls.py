@@ -1,6 +1,7 @@
 # Import necessary views and path
 from django.urls import path
 # Import JWT token views from rest_framework_simplejwt
+from .activities.views.user_activity_view import UserActivityEventsView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
 from .report_system.report_views import ReportCreateView
@@ -12,6 +13,7 @@ from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
+from .activities.views.activity_view import ActivityEventViewSet
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -144,5 +146,9 @@ urlpatterns = [
     path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
 
     # Opentdb Trivia API Endpoints
-    path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question')
+    path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question'),
+
+    #get activity events
+    path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
+    path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
 ]
