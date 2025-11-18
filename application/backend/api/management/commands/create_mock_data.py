@@ -1,3 +1,67 @@
+"""
+Django management command to generate realistic mock/demo data for the Zero Waste application.
+
+USAGE EXAMPLES:
+---------------
+
+1. Generate full dataset with default values (100 users, 100 posts, etc.):
+   python manage.py create_mock_data
+
+2. Generate a small test dataset:
+   python manage.py create_mock_data --num-users=10 --num-posts=20 --num-tips=10
+
+3. Generate reproducible data using a seed:
+   python manage.py create_mock_data --seed=42
+
+4. Preview data generation without saving to database (dry-run):
+   python manage.py create_mock_data --dry-run --seed=42
+
+5. Generate only specific data types using modes:
+   python manage.py create_mock_data --mode=users --num-users=50
+   python manage.py create_mock_data --mode=posts --num-posts=30
+   python manage.py create_mock_data --mode=follows --num-users=30
+   python manage.py create_mock_data --mode=wastes --num-max-wastes-per-user=20
+   python manage.py create_mock_data --mode=tips --num-tips=15
+   python manage.py create_mock_data --mode=challenges --num-challenges=10
+
+6. Combine options for custom scenarios:
+   python manage.py create_mock_data --mode=full --num-users=50 --num-posts=80 --seed=123 --dry-run
+
+AVAILABLE MODES:
+----------------
+- full: Generate all data types (default)
+- users: Generate only users
+- posts: Generate users + posts + comments
+- follows: Generate users + posts + follow relationships (activity-based)
+- wastes: Generate users + waste entries
+- tips: Generate only tips
+- challenges: Generate users + achievements + challenges
+
+AVAILABLE OPTIONS:
+------------------
+--num-users=N                    Number of users to generate (default: 100)
+--num-posts=N                    Number of posts to generate (default: 100)
+--num-max-comments-per-post=N    Max comments per post (default: 7)
+--num-tips=N                     Number of tips to generate (default: 30)
+--num-max-wastes-per-user=N      Max waste entries per user (default: 30)
+--num-achievements=N             Number of achievements to generate (default: 25)
+--num-challenges=N               Number of challenges to generate (default: 40)
+--max-challenge-target-amount=N  Max challenge target amount (default: 50)
+--reported-content-percent=F     Percentage of content to report, 0.0-1.0 (default: 0.05)
+--seed=N                         Set RNG seed for reproducible output
+--dry-run                        Run and rollback (no DB changes, useful for testing)
+--mode=MODE                      Generation mode (see above)
+
+NOTES:
+------
+- The script creates a test user (username: test_user, password: test123, email: test@gmail.com)
+- Follow relationships are activity-based: active users get more followers
+- All curated content (tips, captions, images) is recycling/sustainability themed
+- Minimum 20 items guaranteed for tips, achievements, challenges, and captions
+- Use --dry-run to validate data without persisting changes
+- Use --seed for reproducible data across runs (useful for testing/demos)
+"""
+
 from django.core.management.base import BaseCommand
 from faker import Faker
 import random
@@ -7,7 +71,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 from api.models import (
     Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste,
-    UserWastes, Report, TipLikes, PostLikes
+    UserWastes, Report, TipLikes, PostLikes, Follow
 )
 from challenges.models import Challenge, UserChallenge
 
@@ -775,20 +839,225 @@ def generate_mock_data(
                 date_reported=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             )
 
+    # ---------------------------- FOLLOW RELATIONSHIPS -----------------------
+    # Create realistic follow relationships between users
+    # Users tend to follow others who are active, similar interests, or popular
+    follows = []
+    
+    # Calculate "popularity score" based on activity
+    user_activity = {}
+    for user in users:
+        post_count = Posts.objects.filter(creator=user).count()
+        comment_count = Comments.objects.filter(author=user).count()
+        activity_score = post_count * 3 + comment_count  # Posts weighted more than comments
+        user_activity[user.id] = activity_score
+    
+    # Sort users by activity (more active users get more followers)
+    users_by_activity = sorted(users, key=lambda u: user_activity.get(u.id, 0), reverse=True)
+    
+    for user in users:
+        # Each user follows between 0-15 other users (weighted towards active users)
+        num_to_follow = random.randint(0, 15)
+        
+        # Higher chance of following more active users
+        # Create a weighted list where more active users appear more times
+        weighted_candidates = []
+        for candidate in users:
+            if candidate.id == user.id:  # Can't follow yourself
+                continue
+            
+            # Weight by activity score
+            weight = max(1, user_activity.get(candidate.id, 0) // 2)
+            weighted_candidates.extend([candidate] * weight)
+        
+        # Also add all users at least once to ensure everyone has a chance
+        for candidate in users:
+            if candidate.id != user.id:
+                weighted_candidates.append(candidate)
+        
+        if weighted_candidates:
+            # Sample without replacement to avoid duplicates
+            num_to_follow = min(num_to_follow, len(set(weighted_candidates)))
+            followed_users = []
+            attempts = 0
+            max_attempts = num_to_follow * 3
+            
+            while len(followed_users) < num_to_follow and attempts < max_attempts:
+                candidate = random.choice(weighted_candidates)
+                if candidate not in followed_users and candidate.id != user.id:
+                    followed_users.append(candidate)
+                attempts += 1
+            
+            # Create Follow relationships
+            for followed_user in followed_users:
+                # Check if relationship doesn't already exist
+                if not Follow.objects.filter(follower=user, following=followed_user).exists():
+                    follow = Follow.objects.create(
+                        follower=user,
+                        following=followed_user,
+                        created_at=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                    )
+                    follows.append(follow)
+    
+    # Ensure test_user has some followers and is following some users
+    if not Follow.objects.filter(follower=test_user).exists():
+        # Make test_user follow some active users
+        test_follows = random.sample([u for u in users_by_activity[:10] if u.id != test_user.id], min(5, len(users) - 1))
+        for followed in test_follows:
+            Follow.objects.get_or_create(
+                follower=test_user,
+                following=followed,
+                defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+    
+    if not Follow.objects.filter(following=test_user).exists():
+        # Make some users follow test_user
+        test_followers = random.sample([u for u in users if u.id != test_user.id], min(8, len(users) - 1))
+        for follower in test_followers:
+            Follow.objects.get_or_create(
+                follower=follower,
+                following=test_user,
+                defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+
 
 class Command(BaseCommand):
     help = 'Generate mock data (English, recycling-focused, rich variety)'
 
-    def handle(self, *args, **kwargs):
-        generate_mock_data(
-            num_users=100,
-            num_posts=100,
-            num_max_comments_per_post=7,
-            num_tips=30,             # will still create at least 20
-            num_max_wastes_per_user=30,
-            num_achievements=25,     # at least 20 will be created
-            num_challenges=40,       # at least 20 will be created
-            max_challenge_target_amount=50,
-            reported_content_percent=0.05,
+    def add_arguments(self, parser):
+        parser.add_argument("--num-users", type=int, default=100, help="Number of users to generate")
+        parser.add_argument("--num-posts", type=int, default=100, help="Number of posts to generate")
+        parser.add_argument("--num-max-comments-per-post", type=int, default=7, help="Maximum comments per post")
+        parser.add_argument("--num-tips", type=int, default=30, help="Number of tips to generate")
+        parser.add_argument("--num-max-wastes-per-user", type=int, default=30, help="Maximum waste entries per user")
+        parser.add_argument("--num-achievements", type=int, default=25, help="Number of achievements to generate")
+        parser.add_argument("--num-challenges", type=int, default=40, help="Number of challenges to generate")
+        parser.add_argument("--max-challenge-target-amount", type=int, default=50, help="Max challenge target amount")
+        parser.add_argument("--reported-content-percent", type=float, default=0.05, help="Percentage of content to report (0.0-1.0)")
+        parser.add_argument("--seed", type=int, default=None, help="Set RNG seed for reproducible output")
+        parser.add_argument("--dry-run", action="store_true", help="Run and rollback (no DB changes)")
+        parser.add_argument("--mode", choices=["full", "users", "posts", "follows", "wastes", "tips", "challenges"], default="full",
+                            help="Run only a subset useful for iteration")
+
+    def handle(self, *args, **options):
+        seed = options.get("seed")
+        dry_run = options.get("dry_run")
+        mode = options.get("mode", "full")
+
+        # Apply seed for reproducibility
+        if seed is not None:
+            random.seed(seed)
+            try:
+                fake.seed_instance(seed)
+            except Exception:
+                pass
+            self.stdout.write(self.style.NOTICE(f"Using seed={seed}"))
+
+        kwargs = dict(
+            num_users=options["num_users"],
+            num_posts=options["num_posts"],
+            num_max_comments_per_post=options["num_max_comments_per_post"],
+            num_tips=options["num_tips"],
+            num_max_wastes_per_user=options["num_max_wastes_per_user"],
+            num_achievements=options["num_achievements"],
+            num_challenges=options["num_challenges"],
+            max_challenge_target_amount=options["max_challenge_target_amount"],
+            reported_content_percent=options["reported_content_percent"],
         )
-        self.stdout.write(self.style.SUCCESS("English recycling mock data generated."))
+
+        self.stdout.write(self.style.NOTICE(f"Mode={mode} | Params: {', '.join(f'{k}={v}' for k, v in kwargs.items())}"))
+        
+        # Wrap in atomic so we can rollback on dry-run
+        with transaction.atomic():
+            try:
+                if mode == "full":
+                    generate_mock_data(**kwargs)
+                elif mode == "users":
+                    # Generate only users (needed for other modes)
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "posts":
+                    # Generate users and posts (posts need users)
+                    generate_mock_data(
+                        num_users=max(10, kwargs["num_users"] // 10),  # Need some users for posts
+                        num_posts=kwargs["num_posts"], 
+                        num_max_comments_per_post=kwargs["num_max_comments_per_post"],
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "follows":
+                    # Generate users to create follow relationships
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=max(5, kwargs["num_posts"] // 10),  # Need some posts for activity-based following
+                        num_max_comments_per_post=2,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "wastes":
+                    # Generate users and waste entries
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=kwargs["num_max_wastes_per_user"],
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "tips":
+                    # Generate only tips (no users needed)
+                    generate_mock_data(
+                        num_users=0, 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=kwargs["num_tips"],
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "challenges":
+                    # Generate users and challenges
+                    generate_mock_data(
+                        num_users=max(10, kwargs["num_users"] // 10),  # Need some users for challenges
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=kwargs["num_achievements"],  # Challenges need achievements for rewards
+                        num_challenges=kwargs["num_challenges"],
+                        max_challenge_target_amount=kwargs["max_challenge_target_amount"],
+                        reported_content_percent=0.0
+                    )
+                
+                if dry_run:
+                    # Mark rollback for the current transaction
+                    transaction.set_rollback(True)
+                    self.stdout.write(self.style.WARNING("🔄 Dry-run: rolling back changes (no data persisted)"))
+                else:
+                    self.stdout.write(self.style.SUCCESS(f"✅ Mock data generated successfully (mode: {mode})"))
+                    
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f"❌ Error during generation: {e}"))
+                raise
