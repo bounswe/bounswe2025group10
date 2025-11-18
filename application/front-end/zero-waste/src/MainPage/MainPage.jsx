@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../Login/AuthContent";
 import "./MainPage.css";
+import WasteHelperInput from "./WasteHelperInput";
 import {
   BarChart,
   Bar,
@@ -64,50 +65,49 @@ export default function MainPage() {
   const [sustainabilityTips, setSustainabilityTips] = useState([]);
   const [showPointsInfo, setShowPointsInfo] = useState(false);
 
-  useEffect(() => {
-    const fetchTips = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/tips/get_recent_tips`
-        );
-        setSustainabilityTips(response.data.data);
-      } catch (error) {
-        console.error("Failed to fetch tips:", error);
+const fetchWasteData = async () => {
+  try {
+    const token = localStorage.getItem("accessToken");
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/waste/get/`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
       }
-    };
+    );
 
-    const fetchWasteData = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/waste/get/`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+    const backendData = response?.data?.data;
+    if (!Array.isArray(backendData)) {
+      console.error("Waste data is not an array:", backendData);
+      return;
+    }
 
-        const backendData = response?.data?.data;
-        if (!Array.isArray(backendData)) {
-          console.error("Waste data is not an array:", backendData);
-          return;
-        }
-        const chartData = backendData.map((item) => ({
-          type:
-            item.waste_type.charAt(0) + item.waste_type.slice(1).toLowerCase(),
-          quantity: item.total_amount,
-        }));
+    const chartData = backendData.map((item) => ({
+      type: item.waste_type.charAt(0) + item.waste_type.slice(1).toLowerCase(),
+      quantity: item.total_amount,
+    }));
 
-        setData(chartData);
-      } catch (error) {
-        console.error("Failed to fetch waste data:", error);
-      }
-    };
+    setData(chartData);
+  } catch (error) {
+    console.error("Failed to fetch waste data:", error);
+  }
+};
 
-    fetchTips();
-    fetchWasteData();
-  }, []);
+
+useEffect(() => {
+  const fetchTips = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/tips/get_recent_tips`
+      );
+      setSustainabilityTips(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch tips:", error);
+    }
+  };
+
+  fetchTips();
+  fetchWasteData();
+}, []);
 
   const handleAddWaste = async () => {
     if (!wasteType || !wasteQuantity) return;
@@ -178,70 +178,23 @@ export default function MainPage() {
         </div>
 
         {/* Input Section */}
-        <section className="mb-8">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="waste-input-card" style={{ position: "relative" }}>
-              <div className="waste-label-container">
-                <label className="waste-label" htmlFor="waste-type">
-                  Waste Type
-                </label>
-                <button
-                  className="points-info-button"
-                  onClick={() => setShowPointsInfo(!showPointsInfo)}
-                >
-                  Points ⓘ
-                </button>
-              </div>
-              {showPointsInfo && (
-                <div className="points-info-card">
-                  <h4 className="points-info-title">Points per 100g</h4>
-                  <ul className="points-info-list">
-                    <li><strong>Plastic:</strong> 30 points</li>
-                    <li><strong>Paper:</strong> 15 points</li>
-                    <li><strong>Glass:</strong> 20 points</li>
-                    <li><strong>Metal:</strong> 35 points</li>
-                    <li><strong>Electronic:</strong> 60 points</li>
-                    <li><strong>Oil & Fats:</strong> 45 points</li>
-                    <li><strong>Organic:</strong> 10 points</li>
-                  </ul>
-                </div>
-              )}
-              <CustomDropdown
-                value={wasteType}
-                onChange={(e) => setWasteType(e.target.value)}
-                options={[
-                  { value: "", label: "Select type" },
-                  { value: "PLASTIC", label: "Plastic" },
-                  { value: "PAPER", label: "Paper" },
-                  { value: "GLASS", label: "Glass" },
-                  { value: "METAL", label: "Metal" },
-                  { value: "ELECTRONIC", label: "Electronic" },
-                  { value: "OIL&FATS", label: "Oil & Fats" },
-                  { value: "ORGANIC", label: "Organic" },
-                ]}
-              />
-            </div>
-            <div className="waste-input-card">
-              <label className="waste-label" htmlFor="waste-quantity">
-                Waste Quantity (grams)
-              </label>
-              <input
-                id="waste-quantity"
-                type="number"
-                className="waste-input"
-                value={wasteQuantity}
-                onChange={(e) => setWasteQuantity(e.target.value)}
-                placeholder="e.g., 500"
-                step="25"
-              />
-            </div>
-            <div className="waste-button-card">
-              <button className="waste-add-button" onClick={handleAddWaste}>
-                Add Waste
-              </button>
-            </div>
-          </div>
-        </section>
+<section className="mb-8">
+<WasteHelperInput
+  onSubmit={async ({ waste_type, amount }) => {
+    const token = localStorage.getItem("accessToken");
+
+    await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/waste/`,
+      { waste_type, amount },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    await fetchWasteData();
+  }}
+/>
+
+</section>
+
 
         {/* Tips and Progress Section */}
         <section className="grid gap-6 sm:grid-cols-2">
