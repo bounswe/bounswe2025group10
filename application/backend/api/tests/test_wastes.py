@@ -588,7 +588,7 @@ class WasteViewsTests(TestCase):
             '/api/waste/report_suspicious/',
             {
                 'amount': 500000,
-                "waste": waste_obj.id,   
+                "waste": waste_obj.type,   
                 "date": "2024-10-10",
                 'photo': self.generate_dummy_image(),  # see next point
             },
