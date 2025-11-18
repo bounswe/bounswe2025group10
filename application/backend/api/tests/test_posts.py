@@ -354,3 +354,161 @@ class PostViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'User reaction retrieved successfully')
         self.assertEqual(response.data['data']['reaction_type'], 'LIKE')
+
+    def test_create_post_empty_text(self):
+        """Test post creation with empty text string"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {'text': ''}
+        
+        response = self.client.post(url, data, format='multipart')
+        # Should fail validation
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_post_very_long_text(self):
+        """Test post creation with very long text"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {'text': 'A' * 10000}  # Very long text
+        
+        response = self.client.post(url, data, format='multipart')
+        # Should still succeed if there's no length limit
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_post_special_characters(self):
+        """Test post creation with special characters"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {'text': 'Special chars: !@#$%^&*()_+-=[]{}|;:,.<>?'}
+        
+        response = self.client.post(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        latest_post = Posts.objects.latest('id')
+        self.assertEqual(latest_post.text, data['text'])
+
+    def test_create_post_unicode_characters(self):
+        """Test post creation with unicode characters"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {'text': 'Unicode: 你好世界 🌍 🎉 émojis'}
+        
+        response = self.client.post(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        latest_post = Posts.objects.latest('id')
+        self.assertEqual(latest_post.text, data['text'])
+
+    def test_like_then_dislike_post(self):
+        """Test liking a post then disliking it should replace like with dislike"""
+        self.client.force_authenticate(user=self.user1)
+        post = self.posts[0]
+        
+        # First like
+        like_url = reverse('like_post', kwargs={'post_id': post.id})
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        post.refresh_from_db()
+        self.assertEqual(post.like_count, 1)
+        self.assertEqual(post.dislike_count, 0)
+        
+        # Then dislike - should remove like and add dislike
+        dislike_url = reverse('dislike_post', kwargs={'post_id': post.id})
+        response = self.client.post(dislike_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        post.refresh_from_db()
+        self.assertEqual(post.like_count, 0)
+        self.assertEqual(post.dislike_count, 1)
+
+    def test_dislike_then_like_post(self):
+        """Test disliking a post then liking it should replace dislike with like"""
+        self.client.force_authenticate(user=self.user1)
+        post = self.posts[0]
+        
+        # First dislike
+        dislike_url = reverse('dislike_post', kwargs={'post_id': post.id})
+        response = self.client.post(dislike_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        post.refresh_from_db()
+        self.assertEqual(post.like_count, 0)
+        self.assertEqual(post.dislike_count, 1)
+        
+        # Then like - should remove dislike and add like
+        like_url = reverse('like_post', kwargs={'post_id': post.id})
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        post.refresh_from_db()
+        self.assertEqual(post.like_count, 1)
+        self.assertEqual(post.dislike_count, 0)
+
+    def test_like_post_not_found(self):
+        """Test liking a non-existent post"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('like_post', kwargs={'post_id': 99999})
+        response = self.client.post(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def test_save_post_already_saved(self):
+        """Test saving a post that's already saved"""
+        # First save
+        SavedPosts.objects.create(user=self.user1, post=self.posts[0])
+        
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('save_post', kwargs={'post_id': self.posts[0].id})
+        response = self.client.post(url)
+        
+        # Should handle gracefully (either 201 or 400 depending on implementation)
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_get_all_posts_ordering(self):
+        """Test that posts are returned in correct order (most recent first)"""
+        # Create a new post
+        new_post = Posts.objects.create(
+            creator=self.user1,
+            text="Newest post",
+            date=timezone.now(),
+            like_count=0,
+            dislike_count=0
+        )
+        
+        url = reverse('get_all_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Newest post should be first
+        self.assertEqual(response.data['data'][0]['id'], new_post.id)
+
+    def test_get_user_posts_only_own_posts(self):
+        """Test that get_user_posts only returns posts by the authenticated user"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('get_user_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # All returned posts should be by user1
+        # The serializer returns 'creator' as ID and 'creator_username' as username
+        for post_data in response.data['data']:
+            self.assertEqual(post_data['creator'], self.user1.id)
+            self.assertEqual(post_data['creator_username'], self.user1.username)
+
+    def test_get_post_detail_includes_comments(self):
+        """Test that post detail includes comments"""
+        # Add a comment to the post
+        from api.models import Comments
+        Comments.objects.create(
+            post=self.posts[0],
+            author=self.user2,
+            content="Test comment",
+            date=timezone.now()
+        )
+        
+        url = reverse('get_post_detail', kwargs={'post_id': self.posts[0].id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('comments', response.data['data'])
+        self.assertEqual(len(response.data['data']['comments']), 1)
+        self.assertEqual(response.data['data']['comments'][0]['content'], 'Test comment')

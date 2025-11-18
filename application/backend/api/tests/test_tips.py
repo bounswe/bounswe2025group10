@@ -198,3 +198,131 @@ class TipViewsTests(TestCase):
         url = reverse('dislike_tip', args=[self.tips[0].id])
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_tip_empty_title(self):
+        """Test tip creation with empty title"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': '',
+            'description': 'Valid description'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_tip_very_long_title(self):
+        """Test tip creation with very long title"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': 'A' * 500,  # Very long title
+            'description': 'Valid description'
+        }
+        response = self.client.post(url, data, format='json')
+        # Should either succeed or fail based on validation
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_tip_special_characters(self):
+        """Test tip creation with special characters"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': 'Special: !@#$%^&*()',
+            'description': 'Description with special chars: <>?[]{}'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_tip_unicode_characters(self):
+        """Test tip creation with unicode characters"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': 'Unicode: 你好世界 🌍',
+            'description': 'Description with émojis 🎉'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_like_then_dislike_tip(self):
+        """Test liking a tip then disliking it should replace like with dislike"""
+        self.client.force_authenticate(user=self.user)
+        tip = self.tips[0]
+        initial_likes = tip.like_count
+        initial_dislikes = tip.dislike_count
+        
+        # First like
+        like_url = reverse('like_tip', args=[tip.id])
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip.refresh_from_db()
+        self.assertEqual(tip.like_count, initial_likes + 1)
+        
+        # Then dislike - should remove like and add dislike
+        dislike_url = reverse('dislike_tip', args=[tip.id])
+        response = self.client.post(dislike_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip.refresh_from_db()
+        self.assertEqual(tip.like_count, initial_likes)
+        self.assertEqual(tip.dislike_count, initial_dislikes + 1)
+
+    def test_dislike_then_like_tip(self):
+        """Test disliking a tip then liking it should replace dislike with like"""
+        self.client.force_authenticate(user=self.user)
+        tip = self.tips[0]
+        initial_likes = tip.like_count
+        initial_dislikes = tip.dislike_count
+        
+        # First dislike
+        dislike_url = reverse('dislike_tip', args=[tip.id])
+        response = self.client.post(dislike_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip.refresh_from_db()
+        self.assertEqual(tip.dislike_count, initial_dislikes + 1)
+        
+        # Then like - should remove dislike and add like
+        like_url = reverse('like_tip', args=[tip.id])
+        response = self.client.post(like_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip.refresh_from_db()
+        self.assertEqual(tip.like_count, initial_likes + 1)
+        self.assertEqual(tip.dislike_count, initial_dislikes)
+
+    def test_like_tip_not_found(self):
+        """Test liking a non-existent tip"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('like_tip', args=[99999])
+        response = self.client.post(url)
+        # Should return error
+        self.assertIn(response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_500_INTERNAL_SERVER_ERROR])
+
+    def test_get_all_tips_includes_reaction_data(self):
+        """Test that get_all_tips includes user reaction data when authenticated"""
+        self.client.force_authenticate(user=self.user)
+        request = self.factory.get('/api/tips/all/')
+        request.user = self.user
+        
+        response = get_all_tips(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # All tips should have reaction fields
+        for tip_data in response.data['data']:
+            self.assertIn('is_user_liked', tip_data)
+            self.assertIn('is_user_disliked', tip_data)
+
+    def test_get_recent_tips_limit(self):
+        """Test that get_recent_tips returns at most 3 tips"""
+        # Create 5 tips
+        for i in range(5):
+            Tips.objects.create(
+                title=f"Tip {i}",
+                text=f"Description {i}",
+                like_count=0,
+                dislike_count=0
+            )
+        
+        request = self.factory.get('/api/tips/')
+        response = get_recent_tips(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data['data']), 3)
