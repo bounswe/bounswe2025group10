@@ -471,3 +471,26 @@ def get_saved_posts(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+
+def get_top_liked_posts(request):
+    """
+    Get top 5 posts with the highest number of likes.
+    """
+    try:
+        top_posts = Posts.objects.all().order_by('-like_count')[:5]
+        serializer = PostSerializer(top_posts, many=True, context={'request': request})
+        
+        return Response({
+            'message': 'Top liked posts retrieved successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
