@@ -304,13 +304,13 @@ def create_suspicious_waste(request):
     try:
         amount = request.data.get('amount', 0)
         date=timezone.now()
-        waste_id=request.data.get('waste', None)
+        waste_type=request.data.get('waste', None)
         image = request.FILES.get('photo', None)
 
         
 
         # Create the suspicious waste report
-        waste = Waste.objects.get(id=waste_id) if waste_id else None
+        waste = Waste.objects.get(type=waste_type) if waste_type else None
         suspicious_waste = SuspiciousWaste.objects.create(
             user=request.user,
             amount=amount,
