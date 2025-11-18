@@ -5,7 +5,7 @@ Welcome to the codebase of the **Zero Waste Challenge**, a gamified platform des
 ## 🚀 Project Video Recordings
 
 1) [User Web Application](https://www.youtube.com/watch?v=_MOUUgUt5oI)
-2) [Mobile Application] (https://www.youtube.com/watch?v=m-UfFU4DWHM)
+2) [Mobile Application](https://www.youtube.com/watch?v=m-UfFU4DWHM)
 
 ## 🚀 Project Overview
 
