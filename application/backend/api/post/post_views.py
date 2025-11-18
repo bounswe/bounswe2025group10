@@ -475,7 +475,6 @@ def get_saved_posts(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-
 def get_top_liked_posts(request):
     """
     Get top 5 posts with the highest number of likes.

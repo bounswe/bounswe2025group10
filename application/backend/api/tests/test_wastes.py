@@ -1,3 +1,4 @@
+from email.mime import image
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
@@ -7,6 +8,9 @@ from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_us
 from django.utils import timezone
 from unittest.mock import patch, MagicMock
 from django.db.models import F
+from io import BytesIO
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class WasteViewsTests(TestCase):
     def setUp(self):
@@ -567,3 +571,51 @@ class WasteViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         top_users = response.data['data']['top_users']
         self.assertLessEqual(len(top_users), 10)
+
+    def generate_dummy_image(self,name="test.jpg"):
+        file = BytesIO()
+        image = Image.new('RGB', (200, 200), color='red')
+        image.save(file, 'JPEG')
+        file.seek(0)
+        return SimpleUploadedFile(name, file.read(), content_type='image/jpeg')
+
+    def test_record_suspicious_waste(self):
+        """Helper method to record suspicious waste"""
+
+        waste_obj = Waste.objects.create(type="PLASTIC")
+
+        request = self.factory.post(
+            '/api/waste/report_suspicious/',
+            {
+                'amount': 500000,
+                "waste": waste_obj.id,   
+                "date": "2024-10-10",
+                'photo': self.generate_dummy_image(),  # see next point
+            },
+            format='multipart',
+)
+
+        force_authenticate(request, user=self.user)
+        from api.waste.waste_views import create_suspicious_waste
+        response = create_suspicious_waste(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+    def test_get_suspicious_wastes_admin(self):
+        """Helper method to get suspicious wastes as admin"""
+        # Create admin user
+        admin_user = Users.objects.create_superuser(
+            username="admin1234",
+            email="admin1234@example.com",
+            password="adminpass123"
+        )
+        request = self.factory.get('/api/waste/suspicious_wastes/')
+        force_authenticate(request, user=admin_user)
+        from api.waste.waste_views import get_suspicious_wastes,create_suspicious_waste
+
+        # First, create a suspicious waste to ensure there's data
+        self.test_record_suspicious_waste()
+       
+        response = get_suspicious_wastes(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data['data']), 1)
