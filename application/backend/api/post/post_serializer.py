@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from django.conf import settings
 from ..models import Posts, SavedPosts, PostLikes
+from ..utils.translation import translate_text, get_requested_language
 
 class PostSerializer(serializers.ModelSerializer):
     creator_username = serializers.ReadOnlyField(source='creator.username')
@@ -13,8 +14,32 @@ class PostSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Posts
-        fields = ['id', 'text', 'image', 'image_url', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked']
+        fields = ['id', 'text', 'image', 'image_url', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'is_user_liked', 'is_user_disliked', 'language']
         read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'image_url', 'is_user_liked', 'is_user_disliked']
+    
+    def to_representation(self, instance):
+        """
+        Override to_representation to translate text if a different language is requested.
+        """
+        representation = super().to_representation(instance)
+        request = self.context.get('request')
+        
+        if request:
+            requested_lang = get_requested_language(request)
+            original_lang = instance.language or 'en'
+            
+            # Translate text if requested language differs from original
+            if requested_lang and requested_lang != original_lang and representation.get('text'):
+                representation['text'] = translate_text(
+                    representation['text'],
+                    original_lang,
+                    requested_lang
+                )
+                # Add a field to indicate this was translated
+                representation['translated_to'] = requested_lang
+                representation['original_language'] = original_lang
+        
+        return representation
     
     def get_image_url(self, obj):
         request = self.context.get('request')
