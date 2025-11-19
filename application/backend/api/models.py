@@ -30,6 +30,7 @@ class CustomUserManager(BaseUserManager):
 class Users(AbstractUser):
     class Meta:
         db_table = 'Users'
+        app_label = 'api'
         
     # Primary key
     id = models.AutoField(primary_key=True)

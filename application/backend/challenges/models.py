@@ -13,6 +13,7 @@ class Challenge(models.Model):
 
     class Meta:
         db_table = 'Challenge'
+        ordering = ['-id']
 
 
 class UserChallenge(models.Model):
@@ -23,3 +24,4 @@ class UserChallenge(models.Model):
     class Meta:
         db_table = 'UserChallenge'
         unique_together = (('user', 'challenge'),) # these two together becomes primary key
+        ordering = ['-joined_date']

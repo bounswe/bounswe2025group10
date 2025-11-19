@@ -157,8 +157,8 @@ class PostViewsTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Posts retrieved successfully')
-        self.assertEqual(len(response.data['data']), 3)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 3)
         # Posts should be ordered by most recent (but they were all created at the same time)
         # So we'll just check if all posts are returned
 
@@ -479,7 +479,7 @@ class PostViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Newest post should be first
-        self.assertEqual(response.data['data'][0]['id'], new_post.id)
+        self.assertEqual(response.data['results'][0]['id'], new_post.id)
 
     def test_get_user_posts_only_own_posts(self):
         """Test that get_user_posts only returns posts by the authenticated user"""
