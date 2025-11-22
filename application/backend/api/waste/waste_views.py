@@ -2,12 +2,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 import requests
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
@@ -140,6 +140,7 @@ def create_user_waste(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 @extend_schema(
     summary="Get user's waste statistics",
@@ -442,46 +443,35 @@ WASTE_TYPE_TO_ACTIVITY_ID = {
     'OIL&FATS': 'waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na',
     'ORGANIC': 'waste-type_mixed_food_and_organic_garden-disposal_method_landfill',
 }
+from django.conf import settings
 
 def get_co2_emission(amount_kg, waste_type):
     """
-    Calls Climatiq API to convert waste amount (kg) to CO2 emission (kg CO2e) for a specific waste type.
+    Local CO2 emission calculator using internal carbon factors
+    that mimic Climatiq activity_id structure.
     """
-    if not CLIMATIQ_API_KEY:
-        return 0
-        
-    activity_id = WASTE_TYPE_TO_ACTIVITY_ID.get(waste_type, 'waste_type_disposal_mixed_unspecified')
-    url = 'https://api.climatiq.io/data/v1/estimate'
-    headers = {
-        'Authorization': f'Bearer {CLIMATIQ_API_KEY}',
-        'Content-Type': 'application/json',
-    }
-    data = {
-        "emission_factor": {
-            "activity_id": activity_id,
-            "data_version": "21.21",
-        },
-        "parameters": {
-            "weight": amount_kg,
-            "weight_unit": "kg"
-        }
-    }
-    try:
-        response = requests.post(url, json=data, headers=headers)
-        if response.status_code == 200:
-            result = response.json()
-            return result.get('co2e', 0)
-        else:
-            # Handle non-200 responses
-            return 0
-    except Exception:
-        # Handle any other exceptions (network errors, etc.)
-        return 0
+    # Get mapped activity id
+    activity_id = settings.WASTE_TYPE_TO_ACTIVITY_ID.get(
+        waste_type,
+        'waste_type_disposal_mixed_unspecified'
+    )
+
+    # Get factor from local registry
+    factor = settings.LOCAL_EMISSION_FACTORS.get(activity_id)
+
+    # If unknown type → return 0
+    if factor is None:
+        return 0.0
+
+    # CO2e = weight * factor
+    co2e = amount_kg * factor
+
+    # Apply rounding
+    return round(co2e, settings.CARBON_DECIMALS)
     
 #import parsers for file upload
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
-
 
 @extend_schema(
     summary="Report suspicious waste",
