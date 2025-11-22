@@ -1,5 +1,7 @@
 # Import necessary views and path
 from django.urls import path
+
+from api.invite import invite_views
 # Import JWT token views from rest_framework_simplejwt
 from .activities.views.user_activity_view import UserActivityEventsView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -182,4 +184,7 @@ urlpatterns = [
     #get activity events
     path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
     path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
+
+    path("api/invite/send/", invite_views.send_invitation_email, name="send_invitation_email"),
 ]
+

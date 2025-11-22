@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from datetime import timedelta
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -231,3 +233,13 @@ LOCAL_EMISSION_FACTORS = {
 
 
 CARBON_DECIMALS = 6
+
+
+# email settings for invitation emails
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp-relay.brevo.com"       
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "9c45cb001@smtp-brevo.com"
+EMAIL_HOST_PASSWORD = "bskyBVOhTWMa17c"
+DEFAULT_FROM_EMAIL = "no_reply@zerowaste.ink"
