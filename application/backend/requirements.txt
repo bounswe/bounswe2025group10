@@ -17,4 +17,5 @@ tzdata==2025.2
 urllib3==2.4.0
 Faker==37.1.0
 django-filter>=24.2
-Pillow
+Pillow==11.0.0
+drf-spectacular==0.27.2

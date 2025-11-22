@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 from ..models import Report
 from .serializers import (
@@ -25,6 +26,11 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
+@extend_schema(
+    tags=['Reports - Admin'],
+    summary="Manage reports (Admin only)",
+    description="Admin endpoints for viewing and moderating user reports."
+)
 class ModerateReportsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     list:   GET /api/admin/reports/
@@ -38,6 +44,63 @@ class ModerateReportsViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ReportReadSerializer
     permission_classes = [IsAdminUser]
     pagination_class = StandardResultsSetPagination
+
+    @extend_schema(
+        summary="List all reports",
+        description="Retrieve paginated list of all reports with optional filtering by content type and reporter.",
+        parameters=[
+            OpenApiParameter(
+                name='type',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description='Filter by content type (post, comment, tip, challenge)'
+            ),
+            OpenApiParameter(
+                name='reporter_id',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description='Filter by reporter user ID'
+            ),
+            OpenApiParameter(
+                name='page',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description='Page number'
+            ),
+            OpenApiParameter(
+                name='page_size',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description='Number of items per page (max 100)'
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=ReportReadSerializer(many=True),
+                description="Reports retrieved successfully"
+            ),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden - admin only")
+        }
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Get report details",
+        description="Retrieve detailed information about a specific report.",
+        responses={
+            200: OpenApiResponse(
+                response=ReportReadSerializer,
+                description="Report details retrieved successfully"
+            ),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden - admin only"),
+            404: OpenApiResponse(description="Report not found")
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
         """
@@ -56,6 +119,34 @@ class ModerateReportsViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
     # ----------------------------- Moderation ---------------------------------
+    @extend_schema(
+        summary="Moderate a report",
+        description="Perform moderation action on reported content: delete the content, ban the user, or ignore the report.",
+        request=ModerationActionSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Moderation action completed successfully",
+                examples=[
+                    OpenApiExample(
+                        'Delete media',
+                        value={'detail': 'Media deleted.'}
+                    ),
+                    OpenApiExample(
+                        'Ban user',
+                        value={'detail': 'User 25 deactivated.'}
+                    ),
+                    OpenApiExample(
+                        'Ignore report',
+                        value={'detail': 'Report marked as resolved – no action taken.'}
+                    )
+                ]
+            ),
+            400: OpenApiResponse(description="Bad request - unable to determine media owner"),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden - admin only"),
+            404: OpenApiResponse(description="Report not found")
+        }
+    )
     @action(detail=True, methods=["post"], url_path="moderate")
     def moderate(self, request, pk=None):
         """

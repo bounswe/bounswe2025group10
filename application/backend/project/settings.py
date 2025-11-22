@@ -190,11 +190,30 @@ if 'test' in sys.argv:
 
 
 # Carbon emission factors (real values)
-CARBON_FACTORS = {
-    # kg CO2e per item, production/manufacturing stage
-    "pet_bottle_500ml": 0.034,   # lower end of NIH/NEMS range (fabrication only)
-    "pet_bottle_500ml_max": 0.046,  # upper end (fabrication only)
-    "aluminum_can_12oz": 0.0687,    # derived from EPA WARM v16 + EPA can mass
-    "glass_beer_bottle_12oz": 0.138 # derived from EPA WARM v16 + EPA bottle mass
+# Local “Climatiq-style” emission factors (kg CO2e per kg or per item)
+# Highly reliable global-average landfill emission factors (kg CO2e per kg)
+LOCAL_EMISSION_FACTORS = {
+    # Plastic – inert in landfill; modern estimates: 0.009–0.033 kg/kg (DEFRA 2024, ADEME)
+    "waste-type_plastics-disposal_method_landfill": 0.02,
+
+    # Paper & cardboard – high methane generation; ~1.1–1.6 kg/kg (DEFRA 2025, EPA WARM)
+    "waste_type_paper_and_cardboard-disposal_method_landfill": 1.16,
+
+    # Glass – inert; ~0.009 kg/kg (DEFRA 2024 landfill factor)
+    "waste-type_glass-disposal_method_landfilled": 0.009,
+
+    # Metal (steel cans) – inert; ~0.009 kg/kg (DEFRA 2024)
+    "waste_type_scrap_metal_steel_cans-disposal_method_landfill": 0.009,
+
+    # Electronics (mixed WEEE) – inert unless containing refrigerants; ~0.021 kg/kg (DEFRA 2024)
+    "waste-type_weee_mixed-disposal_method_landfill": 0.021,
+
+    # Used vegetable cooking oil purification – LCA-based (Ecoinvent v3): ~1.1 kg/kg
+    "waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na": 1.10,
+
+    # Organic food & garden waste – high methane; ~0.656 kg/kg (DEFRA 2024)
+    "waste-type_mixed_food_and_organic_garden-disposal_method_landfill": 0.656,
 }
+
+
 CARBON_DECIMALS = 6
