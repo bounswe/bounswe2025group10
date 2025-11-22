@@ -1,12 +1,56 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from .models import Challenge, UserChallenge
 from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
 
+@extend_schema(
+    tags=['Challenges'],
+    responses={
+        200: OpenApiResponse(
+            response=ChallengeSerializer(many=True),
+            description="Challenges retrieved successfully"
+        ),
+        201: OpenApiResponse(
+            response=ChallengeSerializer,
+            description="Challenge created successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'id': 5,
+                        'title': '100kg Plastic Recycling Challenge',
+                        'description': 'Recycle 100kg of plastic waste',
+                        'target_amount': 100.0,
+                        'current_progress': 0.0,
+                        'is_public': True,
+                        'reward': 3,
+                        'creator': 1
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required for creation")
+    }
+)
 class ChallengeListCreateView(generics.ListCreateAPIView):
     queryset = Challenge.objects.all()
     serializer_class = ChallengeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @extend_schema(
+        summary="List all challenges",
+        description="Retrieve all challenges. Authenticated users see public challenges and their own private challenges. Unauthenticated users see only public challenges."
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Create a new challenge",
+        description="Create a new challenge. Automatically generates a reward achievement if not provided. Sets the creator to the authenticated user."
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
     def get_queryset(self):
         '''
@@ -27,6 +71,22 @@ class ChallengeListCreateView(generics.ListCreateAPIView):
         serializer.save(creator=self.request.user)
 
 
+@extend_schema(
+    summary="Update a challenge",
+    description="Update challenge details. Public challenges can only be updated by admins. Private challenges can only be updated by their creator. Cannot manually update current_progress.",
+    request=ChallengeSerializer,
+    responses={
+        200: OpenApiResponse(
+            response=ChallengeSerializer,
+            description="Challenge updated successfully"
+        ),
+        400: OpenApiResponse(description="Bad request - cannot manually update current_progress"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        403: OpenApiResponse(description="Forbidden - insufficient permissions"),
+        404: OpenApiResponse(description="Challenge not found")
+    },
+    tags=['Challenges']
+)
 class ChallengeUpdateView(generics.UpdateAPIView):
     queryset = Challenge.objects.all()
     serializer_class = ChallengeSerializer
@@ -66,6 +126,17 @@ class ChallengeUpdateView(generics.UpdateAPIView):
         return super().update(request, *args, **kwargs)
     
 
+@extend_schema(
+    summary="Delete a challenge",
+    description="Delete a challenge. Public challenges can only be deleted by admins. Private challenges can only be deleted by their creator.",
+    responses={
+        204: OpenApiResponse(description="Challenge deleted successfully"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        403: OpenApiResponse(description="Forbidden - insufficient permissions"),
+        404: OpenApiResponse(description="Challenge not found")
+    },
+    tags=['Challenges']
+)
 class ChallengeDeleteView(generics.DestroyAPIView):
     queryset = Challenge.objects.all()
     permission_classes = [permissions.IsAuthenticated] # Only authenticated users can delete challenges
@@ -94,6 +165,30 @@ class ChallengeDeleteView(generics.DestroyAPIView):
         return super().destroy(request, *args, **kwargs)
     
 
+@extend_schema(
+    summary="Join a challenge",
+    description="Enroll the authenticated user in a challenge. Users can only join public challenges or challenges they created. Cannot join a challenge twice.",
+    request=ChallengeParticipationSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=ChallengeParticipationSerializer,
+            description="Successfully joined challenge",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'challenge': 5,
+                        'joined_date': '2025-11-22T14:30:00Z'
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - already participating or challenge not public"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Challenge not found")
+    },
+    tags=['Challenges']
+)
 class ChallengeParticipationView(generics.CreateAPIView):
     queryset = UserChallenge.objects.all()
     serializer_class = ChallengeParticipationSerializer
@@ -105,6 +200,33 @@ class ChallengeParticipationView(generics.CreateAPIView):
         return context
 
 
+@extend_schema(
+    summary="Get enrolled challenges",
+    description="Retrieve all challenges that the authenticated user is currently enrolled in.",
+    responses={
+        200: OpenApiResponse(
+            response=ChallengeParticipationSerializer(many=True),
+            description="Enrolled challenges retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value=[
+                        {
+                            'challenge': 5,
+                            'joined_date': '2025-11-20T10:00:00Z'
+                        },
+                        {
+                            'challenge': 8,
+                            'joined_date': '2025-11-21T14:30:00Z'
+                        }
+                    ]
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required")
+    },
+    tags=['Challenges']
+)
 class ChallengeEnrolledView(generics.ListAPIView):
     serializer_class = ChallengeParticipationSerializer
     permission_classes = [permissions.IsAuthenticated] # Only authenticated users can view their enrolled challenges

@@ -2,11 +2,53 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from .comment_serializer import CommentSerializer
 from ..models import Comments, Posts
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
+@extend_schema(
+    summary="Create a comment on a post",
+    description="Create a new comment on a specific post. Requires authentication.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to comment on'
+        )
+    ],
+    request=CommentSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=CommentSerializer,
+            description="Comment created successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Comment created successfully',
+                        'data': {
+                            'id': 1,
+                            'content': 'Great post! Very informative.',
+                            'date': '2025-11-22T14:30:00Z',
+                            'post': 5,
+                            'author': 3,
+                            'author_username': 'john_doe',
+                            'author_profile_image': '/media/users/john_doe.jpg'
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - missing or invalid comment content"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Comments']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_comment(request, post_id):
@@ -58,6 +100,56 @@ def create_comment(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get all comments for a post",
+    description="Retrieve all comments for a specific post, ordered by date (oldest first). No authentication required.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to retrieve comments for'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=CommentSerializer(many=True),
+            description="Comments retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Comments retrieved successfully',
+                        'data': [
+                            {
+                                'id': 1,
+                                'content': 'Great post! Very informative.',
+                                'date': '2025-11-22T10:15:00Z',
+                                'post': 5,
+                                'author': 3,
+                                'author_username': 'john_doe',
+                                'author_profile_image': '/media/users/john_doe.jpg'
+                            },
+                            {
+                                'id': 2,
+                                'content': 'Thanks for sharing this!',
+                                'date': '2025-11-22T14:30:00Z',
+                                'post': 5,
+                                'author': 7,
+                                'author_username': 'jane_smith',
+                                'author_profile_image': '/media/users/jane_smith.jpg'
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Comments']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_post_comments(request, post_id):
