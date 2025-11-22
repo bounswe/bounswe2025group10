@@ -30,6 +30,7 @@
     "submit": "Submit",
     "create": "Create",
     "creating": "Creating...",
+    "adding": "Adding...",
     "reset": "Reset",
     "report": "Report",
     "next": "Next",
@@ -225,5 +226,39 @@
     "noPosts": "No posts yet.",
     "earned": "Earned",
     "profileImageAlt": "Profile image"
+  },
+  "wasteHelper": {
+    "title": "Add Waste",
+    "wasteType": "Waste Type",
+    "measurementMethod": "Measurement Method",
+    "methods": {
+      "grams": "Enter Grams",
+      "unit": "Select by Item"
+    },
+    "quantityGrams": "Quantity (grams)",
+    "itemType": "Item Type",
+    "itemCount": "How many?",
+    "add": "Add Waste",
+    "selectType": "Select type",
+    "selectMethod": "Select method",
+    "chooseItem": "Choose Item",
+    "items": {
+      "plasticBottle": "Plastic Bottle",
+      "plasticBag": "Plastic Bag",
+      "plasticCup": "Plastic Cup",
+      "paperSheet": "Paper Sheet (A4)",
+      "notebook": "Notebook",
+      "glassBottle": "Glass Bottle",
+      "glassJar": "Glass Jar",
+      "aluminumCan": "Aluminum Can",
+      "metalSpoon": "Metal Spoon",
+      "phoneCharger": "Phone Charger",
+      "usbCable": "USB Cable",
+      "cookingOil": "Used Cooking Oil",
+      "butterWrapper": "Butter Wrapper",
+      "bananaPeel": "Banana Peel",
+      "appleCore": "Apple Core",
+      "foodScraps": "Food Scraps"
+    }
   }
 }

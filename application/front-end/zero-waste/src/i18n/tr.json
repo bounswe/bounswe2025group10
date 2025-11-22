@@ -30,6 +30,7 @@
     "submit": "Gönder",
     "create": "Oluştur",
     "creating": "Oluşturuluyor...",
+    "adding": "Ekleniyor...",
     "reset": "Sıfırla",
     "report": "Bildir",
     "next": "Sonraki",
@@ -225,5 +226,39 @@
     "noPosts": "Henüz gönderi yok.",
     "earned": "Kazanıldı",
     "profileImageAlt": "Profil resmi"
+  },
+  "wasteHelper": {
+    "title": "Atık Ekle",
+    "wasteType": "Atık Türü",
+    "measurementMethod": "Ölçüm Yöntemi",
+    "methods": {
+      "grams": "Gram Girin",
+      "unit": "Adet ile Seç"
+    },
+    "quantityGrams": "Miktar (gram)",
+    "itemType": "Öğe Türü",
+    "itemCount": "Kaç adet?",
+    "add": "Atık Ekle",
+    "selectType": "Tür seçin",
+    "selectMethod": "Yöntem seçin",
+    "chooseItem": "Öğe Seçin",
+    "items": {
+      "plasticBottle": "Plastik Şişe",
+      "plasticBag": "Plastik Poşet",
+      "plasticCup": "Plastik Bardak",
+      "paperSheet": "Kağıt Yaprak (A4)",
+      "notebook": "Defter",
+      "glassBottle": "Cam Şişe",
+      "glassJar": "Cam Kavanoz",
+      "aluminumCan": "Alüminyum Kutu",
+      "metalSpoon": "Metal Kaşık",
+      "phoneCharger": "Şarj Aleti",
+      "usbCable": "USB Kablosu",
+      "cookingOil": "Atık Yağ",
+      "butterWrapper": "Tereyağı Ambalajı",
+      "bananaPeel": "Muz Kabuğu",
+      "appleCore": "Elma Çöpü",
+      "foodScraps": "Yemek Artığı"
+    }
   }
 }

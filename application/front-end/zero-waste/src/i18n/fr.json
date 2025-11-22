@@ -30,6 +30,7 @@
     "submit": "Soumettre",
     "create": "Créer",
     "creating": "Création...",
+    "adding": "Ajout...",
     "reset": "Réinitialiser",
     "report": "Signaler",
     "next": "Suivant",
@@ -224,5 +225,39 @@
     "profileImageAlt": "Image de profil",
     "yourPosts": "Vos Publications",
     "noPosts": "Aucune publication pour le moment"
+  },
+  "wasteHelper": {
+    "title": "Ajouter un Déchet",
+    "wasteType": "Type de Déchet",
+    "measurementMethod": "Méthode de Mesure",
+    "methods": {
+      "grams": "Entrer Grammes",
+      "unit": "Sélectionner par Article"
+    },
+    "quantityGrams": "Quantité (grammes)",
+    "itemType": "Type d'Article",
+    "itemCount": "Combien ?",
+    "add": "Ajouter un Déchet",
+    "selectType": "Sélectionner le type",
+    "selectMethod": "Sélectionner la méthode",
+    "chooseItem": "Choisir l'Article",
+    "items": {
+      "plasticBottle": "Bouteille en Plastique",
+      "plasticBag": "Sac en Plastique",
+      "plasticCup": "Gobelet en Plastique",
+      "paperSheet": "Feuille de Papier (A4)",
+      "notebook": "Cahier",
+      "glassBottle": "Bouteille en Verre",
+      "glassJar": "Bocal en Verre",
+      "aluminumCan": "Canette en Aluminium",
+      "metalSpoon": "Cuillère en Métal",
+      "phoneCharger": "Chargeur de Téléphone",
+      "usbCable": "Câble USB",
+      "cookingOil": "Huile de Cuisson Usagée",
+      "butterWrapper": "Emballage de Beurre",
+      "bananaPeel": "Peau de Banane",
+      "appleCore": "Trognon de Pomme",
+      "foodScraps": "Restes de Nourriture"
+    }
   }
 }

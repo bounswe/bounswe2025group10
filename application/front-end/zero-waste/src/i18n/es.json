@@ -30,6 +30,7 @@
     "submit": "Enviar",
     "create": "Crear",
     "creating": "Creando...",
+    "adding": "Agregando...",
     "reset": "Restablecer",
     "report": "Reportar",
     "next": "Siguiente",
@@ -224,5 +225,39 @@
     "profileImageAlt": "Imagen de perfil",
     "yourPosts": "Tus Publicaciones",
     "noPosts": "Aún no hay publicaciones"
+  },
+  "wasteHelper": {
+    "title": "Agregar Residuo",
+    "wasteType": "Tipo de Residuo",
+    "measurementMethod": "Método de Medición",
+    "methods": {
+      "grams": "Ingresar Gramos",
+      "unit": "Seleccionar por Artículo"
+    },
+    "quantityGrams": "Cantidad (gramos)",
+    "itemType": "Tipo de Artículo",
+    "itemCount": "¿Cuántos?",
+    "add": "Agregar Residuo",
+    "selectType": "Seleccionar tipo",
+    "selectMethod": "Seleccionar método",
+    "chooseItem": "Elegir Artículo",
+    "items": {
+      "plasticBottle": "Botella de Plástico",
+      "plasticBag": "Bolsa de Plástico",
+      "plasticCup": "Vaso de Plástico",
+      "paperSheet": "Hoja de Papel (A4)",
+      "notebook": "Cuaderno",
+      "glassBottle": "Botella de Vidrio",
+      "glassJar": "Frasco de Vidrio",
+      "aluminumCan": "Lata de Aluminio",
+      "metalSpoon": "Cuchara de Metal",
+      "phoneCharger": "Cargador de Teléfono",
+      "usbCable": "Cable USB",
+      "cookingOil": "Aceite de Cocina Usado",
+      "butterWrapper": "Envoltura de Mantequilla",
+      "bananaPeel": "Cáscara de Plátano",
+      "appleCore": "Corazón de Manzana",
+      "foodScraps": "Restos de Comida"
+    }
   }
 }

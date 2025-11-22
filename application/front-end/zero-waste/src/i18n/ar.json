@@ -30,6 +30,7 @@
     "submit": "إرسال",
     "create": "إنشاء",
     "creating": "جارٍ الإنشاء...",
+    "adding": "جارٍ الإضافة...",
     "reset": "إعادة تعيين",
     "report": "إبلاغ",
     "next": "التالي",
@@ -225,5 +226,39 @@
     "noPosts": "لا توجد منشورات بعد.",
     "earned": "تم الحصول عليها",
     "profileImageAlt": "صورة الملف الشخصي"
+  },
+  "wasteHelper": {
+    "title": "إضافة نفايات",
+    "wasteType": "نوع النفايات",
+    "measurementMethod": "طريقة القياس",
+    "methods": {
+      "grams": "أدخل الجرامات",
+      "unit": "اختر بالعنصر"
+    },
+    "quantityGrams": "الكمية (جرام)",
+    "itemType": "نوع العنصر",
+    "itemCount": "كم العدد؟",
+    "add": "إضافة نفايات",
+    "selectType": "اختر النوع",
+    "selectMethod": "اختر الطريقة",
+    "chooseItem": "اختر العنصر",
+    "items": {
+      "plasticBottle": "زجاجة بلاستيكية",
+      "plasticBag": "كيس بلاستيكي",
+      "plasticCup": "كوب بلاستيكي",
+      "paperSheet": "ورقة (A4)",
+      "notebook": "دفتر",
+      "glassBottle": "زجاجة زجاجية",
+      "glassJar": "برطمان زجاجي",
+      "aluminumCan": "علبة ألومنيوم",
+      "metalSpoon": "ملعقة معدنية",
+      "phoneCharger": "شاحن هاتف",
+      "usbCable": "كابل USB",
+      "cookingOil": "زيت طهي مستعمل",
+      "butterWrapper": "غلاف زبدة",
+      "bananaPeel": "قشر موز",
+      "appleCore": "لب تفاحة",
+      "foodScraps": "بقايا طعام"
+    }
   }
 }
