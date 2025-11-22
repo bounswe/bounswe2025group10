@@ -39,18 +39,18 @@ class TipViewsTests(TestCase):
         response = get_all_tips(request)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Tips retrieved successfully')
-        self.assertEqual(len(response.data['data']), self.initial_tip_count)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), self.initial_tip_count)
         # Tips should be ordered by most recent (highest id) first
-        self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
-        self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
+        self.assertEqual(response.data['results'][0]['title'], "Test Tip 4")
+        self.assertEqual(response.data['results'][1]['title'], "Test Tip 3")
         
         # Check for the new fields
-        self.assertIn('is_user_liked', response.data['data'][0])
-        self.assertIn('is_user_disliked', response.data['data'][0])
+        self.assertIn('is_user_liked', response.data['results'][0])
+        self.assertIn('is_user_disliked', response.data['results'][0])
         # By default, user hasn't liked/disliked any tips
-        self.assertFalse(response.data['data'][0]['is_user_liked'])
-        self.assertFalse(response.data['data'][0]['is_user_disliked'])
+        self.assertFalse(response.data['results'][0]['is_user_liked'])
+        self.assertFalse(response.data['results'][0]['is_user_disliked'])
 
     def test_get_recent_tips_success(self):
         """Test successful retrieval of recent tips"""
@@ -306,7 +306,7 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # All tips should have reaction fields
-        for tip_data in response.data['data']:
+        for tip_data in response.data['results']:
             self.assertIn('is_user_liked', tip_data)
             self.assertIn('is_user_disliked', tip_data)
 

@@ -1,8 +1,15 @@
 # activities/views.py
 from rest_framework import viewsets, permissions, filters, decorators, response, status
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from ...models import ActivityEvent
 from ..serializers.activity_serializer import ActivityEventSerializer
+
+class ActivityEventPagination(PageNumberPagination):
+    """Custom pagination class that allows client to control page size"""
+    page_size = 60
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class ActivityEventViewSet(viewsets.ModelViewSet):
     """
@@ -15,6 +22,7 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
     queryset = ActivityEvent.objects.all().order_by("-published_at")
     serializer_class = ActivityEventSerializer
     permission_classes = [permissions.IsAdminUser]
+    pagination_class = ActivityEventPagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = {
@@ -44,15 +52,40 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
         ser = self.get_serializer(qs, many=True)
         return response.Response(ser.data, status=status.HTTP_200_OK)
 
+    def get_paginated_response(self, data):
+        """
+        Override to return AS2-formatted paginated response instead of DRF default.
+        """
+        # Use the paginator's page object to get the count
+        # The paginator is set by paginate_queryset() in the list() method
+        if hasattr(self, 'paginator') and self.paginator is not None:
+            try:
+                count = self.paginator.page.paginator.count
+            except (AttributeError, TypeError):
+                count = len(data)
+        else:
+            count = len(data)
+        
+        # Return AS2-formatted response
+        return response.Response({
+            "@context": "https://www.w3.org/ns/activitystreams",
+            "type": "OrderedCollection",
+            "totalItems": count,
+            "items": data,
+        })
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         total = queryset.count()
 
+        # Try to paginate - this may raise NotFound if page doesn't exist
+        # Let DRF handle that naturally, but if pagination succeeds, return AS2 format
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
+        # No pagination - return AS2 collection
         serializer = self.get_serializer(queryset, many=True)
         data = {
             "@context": "https://www.w3.org/ns/activitystreams",

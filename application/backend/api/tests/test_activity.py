@@ -85,7 +85,6 @@ class ActivityEventViewSetTests(APITestCase):
     def url_list(self):
         return reverse("activity-event-list")
 
-    @classmethod
     def setUp(self):
         # Create admin user
         self.admin_user = User.objects.create_superuser(
@@ -187,20 +186,27 @@ class ActivityEventViewSetTests(APITestCase):
         With PAGE_SIZE=2, first page should have 2 items, and 'next' should exist.
         """
         url = self.url_list()
-        res1 = self.client.get(url)
+        res1 = self.client.get(url, {"page_size": 2})  # Use query parameter to force page size
         self.assertEqual(res1.status_code, status.HTTP_200_OK)
         if "@context" in res1.data:  # AS2 response
            self.assertIn("totalItems", res1.data)
            self.assertIn("items", res1.data)
+           # Check that we got at most 2 items on this page
+           self.assertLessEqual(len(res1.data["items"]), 2)
         else:  # paginated DRF response
            self.assertIn("count", res1.data)
            self.assertIn("results", res1.data)
+           self.assertLessEqual(len(res1.data["results"]), 2)
 
         # Fetch page 2
-        res2 = self.client.get(url, {"page": 2})
+        res2 = self.client.get(url, {"page": 2, "page_size": 2})
         self.assertEqual(res2.status_code, status.HTTP_200_OK)
-        self.assertIn("totalItems", res2.data)
-        self.assertGreaterEqual(len(res2.data["items"]), 1)
+        if "@context" in res2.data:  # AS2 response
+            self.assertIn("totalItems", res2.data)
+            self.assertGreaterEqual(len(res2.data["items"]), 1)
+        else:  # paginated DRF response
+            self.assertIn("count", res2.data)
+            self.assertIn("results", res2.data)
 
     # -------------------- AS2 COLLECTION SHAPE (non-paginated) --------------------
 
