@@ -156,6 +156,18 @@ class Waste(models.Model):
     def __str__(self):
         return self.type
 
+class SuspiciousWaste(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    waste = models.ForeignKey(Waste, on_delete=models.PROTECT)
+    amount = models.FloatField(blank=False, null=False)
+    date = models.DateTimeField(default=timezone.now)
+    photo = models.ImageField(upload_to='suspicious_waste_photos/')  # Store relative path to photo
+    class Meta:
+        db_table = 'SuspiciousWaste'
+        ordering = ['-amount']
+
+
+
 class UserWastes(models.Model):
     user = models.ForeignKey('Users', on_delete=models.CASCADE)
     waste = models.ForeignKey(Waste, on_delete=models.PROTECT)

@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ..models import Tips, TipLikes
@@ -11,17 +12,39 @@ from .tip_serializer import TipSerializer
 @permission_classes([IsAuthenticated])  
 def get_all_tips(request):
     """
-    Get all tips.
+    Get all tips with pagination.
+    Query parameters:
+    - page: page number (default: 1)
+    - page_size: number of items per page (default: 10, max: 100)
     Returns:
-        Response with all tips and user's reaction status.
+        Response with paginated tips and user's reaction status.
     """
     try:
         tips = Tips.objects.all().order_by('-id')
-        serializer = TipSerializer(tips, many=True, context={'request': request})
-        return Response({
-            'message': 'Tips retrieved successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
+        
+        # Initialize paginator
+        paginator = PageNumberPagination()
+        
+        # Allow custom page size via query parameter
+        page_size = request.query_params.get('page_size', 60)
+        try:
+            page_size = int(page_size)
+            # Limit max page size to prevent abuse
+            if page_size > 60:
+                page_size = 60
+            elif page_size < 1:
+                page_size = 60
+        except (ValueError, TypeError):
+            page_size = 10
+            
+        paginator.page_size = page_size
+        
+        # Paginate the queryset
+        paginated_tips = paginator.paginate_queryset(tips, request)
+        serializer = TipSerializer(paginated_tips, many=True, context={'request': request})
+        
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
     except Exception as e:
         return Response({
             'error': str(e)

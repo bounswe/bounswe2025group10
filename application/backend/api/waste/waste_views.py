@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import UserWastes, Waste, Users, UserAchievements
+from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 import requests
 from django.utils import timezone
+from rest_framework.permissions import IsAdminUser
 
 
 # Point coefficients for different waste types
@@ -283,3 +284,93 @@ def get_co2_emission(amount_kg, waste_type):
     except Exception:
         # Handle any other exceptions (network errors, etc.)
         return 0
+    
+#import parsers for file upload
+from rest_framework.decorators import parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def create_suspicious_waste(request):
+    """
+    Create a suspicious waste report for the authenticated user.
+    
+    Required POST data:
+    - description: str
+    - image: file (required)
+    """
+    try:
+        amount = request.data.get('amount', 0)
+        date=timezone.now()
+        waste_type=request.data.get('waste', None)
+        image = request.FILES.get('photo', None)
+
+        
+
+        # Create the suspicious waste report
+        waste = Waste.objects.filter(type=waste_type).first() if waste_type else None
+        suspicious_waste = SuspiciousWaste.objects.create(
+            user=request.user,
+            amount=amount,
+            date=date,
+            waste=waste,
+            photo=image
+        )
+
+        return Response(
+            {'message': 'Suspicious waste report created successfully'},
+            status=status.HTTP_201_CREATED
+        )
+    
+    except Exception as e:
+        print(e)
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_suspicious_wastes(request):
+    """
+    Get all suspicious waste reports (admin only).
+    """
+    try:
+        reports = SuspiciousWaste.objects.all().order_by('-date')
+        response_data = []
+
+        for report in reports:
+            profile_picture = None
+            if report.user.profile_image:
+                if report.user.profile_image.startswith(('http://', 'https://')):
+                    profile_picture = report.user.profile_image
+                else:
+                    from django.conf import settings
+                    profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{report.user.profile_image}"
+
+            response_data.append({
+                'id': report.id,
+                'username': report.user.username,
+                'amount': report.amount,
+                'waste_type': report.waste.type if report.waste else None,
+                'profile_picture': profile_picture,
+                'photo_url': request.build_absolute_uri(report.photo.url) if report.photo else None,
+                'reported_at': report.date,
+            })
+
+        return Response(
+            {
+                'message': 'Suspicious waste reports retrieved successfully',
+                'data': response_data
+            },
+            status=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        print(e)
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

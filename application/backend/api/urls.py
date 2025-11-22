@@ -100,6 +100,9 @@ urlpatterns = [
     
     # GET: Retrieve all posts saved by the current user
     path("api/posts/saved/", post_views.get_saved_posts, name="get_saved_posts"),
+
+    # GET: Retrieve top 5 posts with the highest number of likes
+    path("api/posts/top-liked/", post_views.get_top_liked_posts, name="get_top_liked_posts"),
     
     # Comment Management Endpoints
     # ----------------------------------------
@@ -121,6 +124,11 @@ urlpatterns = [
     
     # GET: Retrieve all waste entries logged by the current user
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+
+      # POST: Report suspicious waste item with description and image
+    path("api/waste/report_suspicious/", waste_views.create_suspicious_waste, name="create_suspicious_waste"),
+
+    path("api/waste/suspicious/list/", waste_views.get_suspicious_wastes, name="list_suspicious_wastes"),
     
     # Tips Management Endpoints
     # ----------------------------------------
