@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ProtectedUserRoute from "./routes/ProtectedUserRoute";
-import MainPage from "./pages/home/MainPage";
+import MainPage from "./pages/MainPage";
 import AdminPanel from "./pages/admin/AdminPanel";
 import ChallengePanel from "./pages/admin/ChallengePanel";
 import CommentPanel from "./pages/admin/CommentPanel";
