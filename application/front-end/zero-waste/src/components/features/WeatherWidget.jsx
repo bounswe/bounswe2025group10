@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useLanguage } from "../../providers/LanguageContext";
+import { useTheme } from "../../providers/ThemeContext";
 
 const WeatherWidget = () => {
+  const { t } = useLanguage();
+  const { currentTheme } = useTheme();
   const [weather, setWeather] = useState(null);
   const [weatherTip, setWeatherTip] = useState("");
 
@@ -21,18 +25,18 @@ const WeatherWidget = () => {
   // Generate sustainability tip based on weather
   const getWeatherBasedTip = (temperature, weatherCode) => {
     if (weatherCode >= 51 && weatherCode <= 67) {
-      return "Rainy weather is perfect for collecting rainwater! Set up containers to water your plants naturally.";
+      return t("weather.tips.rainy");
     }
     if (temperature > 25) {
-      return "Hot weather tip: Use natural ventilation and fans instead of AC when possible to reduce energy consumption.";
+      return t("weather.tips.hot");
     }
     if (temperature < 10) {
-      return "Cold weather tip: Layer clothing and use blankets instead of cranking up the heat to save energy.";
+      return t("weather.tips.cold");
     }
     if (weatherCode >= 0 && weatherCode <= 3) {
-      return "Sunny day! Perfect for air-drying clothes instead of using the dryer to save energy.";
+      return t("weather.tips.sunny");
     }
-    return "Every day is a good day to reduce waste and live sustainably!";
+    return t("weather.tips.default");
   };
 
   useEffect(() => {
@@ -44,11 +48,13 @@ const WeatherWidget = () => {
         );
         
         const currentWeather = response.data.current;
-        setWeather({
+        const weatherData = {
           temperature: Math.round(currentWeather.temperature_2m),
           weatherCode: currentWeather.weather_code,
-          emoji: getWeatherEmoji(currentWeather.weather_code)
-        });
+          emoji: getWeatherEmoji(currentWeather.weather_code),
+          rawTemperature: currentWeather.temperature_2m
+        };
+        setWeather(weatherData);
         
         setWeatherTip(getWeatherBasedTip(currentWeather.temperature_2m, currentWeather.weather_code));
       } catch (error) {
@@ -59,23 +65,50 @@ const WeatherWidget = () => {
     fetchWeather();
   }, []);
 
+  // Update weather tip when language changes
+  useEffect(() => {
+    if (weather) {
+      setWeatherTip(getWeatherBasedTip(weather.rawTemperature, weather.weatherCode));
+    }
+  }, [t, weather]);
+
   // Don't render anything if weather data hasn't loaded yet
   if (!weather) {
     return null;
   }
 
   return (
-    <div className="weather-widget card p-3" style={{ maxWidth: '400px' }}>
-      <div className="d-flex align-items-center">
-        <span className="fs-2 me-3">{weather.emoji}</span>
-        <div className="d-flex flex-column">
-          <div className="d-flex align-items-center mb-1">
-            <div className="fw-bold me-2">{weather.temperature}°C</div>
-            <small className="text-muted">Istanbul</small>
+    <div 
+      className="rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm border max-w-sm"
+      style={{
+        backgroundColor: currentTheme.background,
+        borderColor: currentTheme.border
+      }}
+    >
+      <div className="flex items-center gap-2 sm:gap-3">
+        <span className="text-3xl sm:text-4xl flex-shrink-0">{weather.emoji}</span>
+        <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div 
+              className="font-bold text-lg sm:text-xl"
+              style={{ color: currentTheme.text }}
+            >
+              {weather.temperature}°C
+            </div>
+            <small 
+              className="text-xs opacity-70"
+              style={{ color: currentTheme.text }}
+            >
+              Istanbul
+            </small>
           </div>
-          <div className="weather-tip">
-            <small className="text-success">
-              💡 {weatherTip}
+          <div className="flex items-start gap-1">
+            <span className="text-sm flex-shrink-0">💡</span>
+            <small 
+              className="text-xs leading-tight"
+              style={{ color: currentTheme.secondary }}
+            >
+              {weatherTip}
             </small>
           </div>
         </div>
