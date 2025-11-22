@@ -1,113 +1,161 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
-import SkeletonCard from "../components/SkeletonCard";
-import { showToast } from "../util/toast";
-import axios from "axios";
-
-const BASE_URL = import.meta.env.VITE_API_URL;
+import Navbar from "../components/layout/Navbar";
+import { showToast } from "../utils/toast";
+import { useAuth } from "../providers/AuthContext";
+import { useTheme } from "../providers/ThemeContext";
+import { useLanguage } from "../providers/LanguageContext";
+import { useApi } from "../hooks/useApi";
+import { tipsService } from "../services/tipsService";
 
 export default function Tips() {
-  const [tips, setTips] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const { token } = useAuth();
+  const { currentTheme } = useTheme();
+  const { t, isRTL } = useLanguage();
+
+  const {
+    data: tipsResponse,
+    loading: isLoading,
+    error,
+    execute: refetchTips,
+    setData: setTipsResponse,
+  } = useApi(
+    () => tipsService.getTips(token),
+    {
+      initialData: { results: [] },
+      showErrorToast: true,
+      errorMessage: 'Failed to fetch tips',
+    }
+  );
+
+  // Extract tips array from paginated response
+  const tips = tipsResponse?.results || [];
+  const setTips = (newTips) => {
+    setTipsResponse({ ...tipsResponse, results: newTips });
+  };
+
+  const {
+    loading: isCreating,
+    execute: createTip,
+  } = useApi(
+    (tipData) => tipsService.createTip(tipData, token),
+    {
+      showSuccessToast: true,
+      successMessage: 'Tip created successfully!',
+      onSuccess: () => {
+        setNewTip({ title: "", description: "" });
+        setShowCreateForm(false);
+        refetchTips();
+      },
+    }
+  );
+
   const [newTip, setNewTip] = useState({ title: "", description: "" });
-  const [error, setError] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [reportingId, setReportingId] = useState(null);
   const [reason, setReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
+  const [shouldScrollToTop, setShouldScrollToTop] = useState(false);
+  const mainContainerRef = useRef(null);
 
-  const fetchTips = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await axios.get(`${BASE_URL}/api/tips/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setTips(response.data.data);
-    } catch (err) {
-      setError(err.message);
-      showToast("Error fetching tips: " + err.message, "error");
-    } finally {
-      setIsLoading(false);
+  // Scroll to top when pagination occurs
+  useEffect(() => {
+    if (shouldScrollToTop && mainContainerRef.current) {
+      mainContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setShouldScrollToTop(false);
+    }
+  }, [tips, shouldScrollToTop]);
+
+  // Pagination handlers
+  const handleNextPage = async () => {
+    if (tipsResponse?.next) {
+      try {
+        const data = await tipsService.getTipsFromUrl(tipsResponse.next, token);
+        setTipsResponse(data);
+        setShouldScrollToTop(true);
+      } catch (error) {
+        showToast(t('common.error', 'An error occurred'), "error");
+      }
     }
   };
 
-  const handleCreateTip = async () => {
-    if (!newTip.title.trim() || !newTip.description.trim()) {
-      showToast("Title and description are required.", "error");
-      return;
-    }
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await axios.post(
-        `${BASE_URL}/api/tips/create/`,
-        {
-          title: newTip.title,
-          description: newTip.description,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      await fetchTips();
-      showToast("Tip created successfully!", "success");
-      setNewTip({ title: "", description: "" });
-      setIsCreating(false);
-    } catch (err) {
-      setError(err.message);
-      showToast("Error creating tip: " + err.message, "error");
+  const handlePreviousPage = async () => {
+    if (tipsResponse?.previous) {
+      try {
+        const data = await tipsService.getTipsFromUrl(tipsResponse.previous, token);
+        setTipsResponse(data);
+        setShouldScrollToTop(true);
+      } catch (error) {
+        showToast(t('common.error', 'An error occurred'), "error");
+      }
     }
   };
 
   const handleLike = async (tipId) => {
     try {
-      const token = localStorage.getItem("accessToken");
-      await axios.post(`${BASE_URL}/api/tips/${tipId}/like/`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      await fetchTips(); // Re-fetch updated data
+      const tip = tips.find(t => t.id === tipId);
+      const wasLiked = tip?.is_user_liked;
+
+      await tipsService.likeTip(tipId, token);
+
+      // Update local state
+      setTips(tips.map(t => {
+        if (t.id === tipId) {
+          return {
+            ...t,
+            is_user_liked: !wasLiked,
+            is_user_disliked: false,
+            like_count: wasLiked ? t.like_count - 1 : t.like_count + 1,
+            dislike_count: t.is_user_disliked ? t.dislike_count - 1 : t.dislike_count
+          };
+        }
+        return t;
+      }));
+
+      showToast(wasLiked ? t('tips.unliked', 'Unliked') : t('tips.liked', 'Liked!'), "success");
     } catch (err) {
-      showToast("Error liking tip: " + err.message, "error");
+      showToast(t('tips.errorUpdatingLike', 'Error updating like'), "error");
     }
   };
 
 
   const handleDislike = async (tipId) => {
     try {
-      const token = localStorage.getItem("accessToken");
-      await axios.post(`${BASE_URL}/api/tips/${tipId}/dislike/`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      await fetchTips(); // Re-fetch updated data
+      const tip = tips.find(t => t.id === tipId);
+      const wasDisliked = tip?.is_user_disliked;
+
+      await tipsService.dislikeTip(tipId, token);
+
+      // Update local state
+      setTips(tips.map(t => {
+        if (t.id === tipId) {
+          return {
+            ...t,
+            is_user_disliked: !wasDisliked,
+            is_user_liked: false,
+            dislike_count: wasDisliked ? t.dislike_count - 1 : t.dislike_count + 1,
+            like_count: t.is_user_liked ? t.like_count - 1 : t.like_count
+          };
+        }
+        return t;
+      }));
+
+      showToast(wasDisliked ? t('tips.undisliked', 'Undisliked') : t('tips.disliked', 'Disliked'), "success");
     } catch (err) {
-      showToast("Error disliking tip: " + err.message, "error");
+      showToast(t('tips.errorUpdatingDislike', 'Error updating dislike'), "error");
     }
   };
 
   const handleReport = async (tipId, reason, description) => {
+    if (!reason.trim() || !description.trim()) {
+      showToast(t('tips.provideReasonDescription', 'Please provide both reason and description'), "error");
+      return;
+    }
     try {
-      const token = localStorage.getItem("accessToken");
-      await axios.post(
-        `${BASE_URL}/api/tips/${tipId}/report/`,
-        {
-          reason,
-          description,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      showToast("Report submitted successfully.", "success");
+      await tipsService.reportTip(tipId, { reason, description }, token);
+      showToast(t('tips.tipReportedSuccess', 'Tip reported successfully'), "success");
     } catch (err) {
-      showToast("Error reporting tip: " + err.message, "error");
+      showToast(t('tips.errorReportingTip', 'Error reporting tip'), "error");
     }
   };
 
@@ -118,65 +166,163 @@ export default function Tips() {
   };
 
   useEffect(() => {
-    fetchTips();
+    refetchTips();
   }, []);
 
   return (
-    <div className="main-bg min-vh-100 d-flex flex-column">
-      <Navbar active="Tips" />
-      <motion.main className="container mx-auto px-4 py-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Sustainability Tips</h1>
-          <button
-            onClick={() => setIsCreating(true)}
-            className="rounded-xl bg-green-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-green-600"
+    <Navbar active="tips">
+      <motion.main
+        ref={mainContainerRef}
+        className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h1
+            className="text-2xl sm:text-3xl font-bold"
+            style={{ color: currentTheme.text }}
           >
-            Create Tip
+            {t('tips.title', 'Sustainability Tips')}
+          </h1>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
+            style={{
+              backgroundColor: currentTheme.secondary,
+              color: currentTheme.background
+            }}
+          >
+            {t('tips.createTip', 'Create Tip')}
           </button>
         </header>
 
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tips.map((tip) => (
-            <div
-              key={tip.id}
-              className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900"
-            >
-              <div className="p-4 flex-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold">{tip.title}</h3>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{tip.description}</p>
-                  </div>
-                  <button
-                    onClick={() => setReportingId(tip.id)}
-                    className="rounded-full p-1 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-200"
-                    title="Report this tip"
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+              {t('tips.loadingTips', 'Loading tips...')}
+            </div>
+          </div>
+        ) : tips.length === 0 ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+              {t('tips.noTips', 'No tips yet. Be the first to share!')}
+            </div>
+          </div>
+        ) : (
+          <section className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {tips.map((tip, index) => (
+              <motion.article
+                key={tip.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="relative flex flex-col rounded-xl border shadow-md hover:shadow-lg transition-shadow duration-300"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
+              >
+                {/* Report button */}
+                <button
+                  onClick={() => setReportingId(tip.id)}
+                  className="absolute top-2 z-10 rounded-lg p-1.5 backdrop-blur-sm transition-opacity hover:opacity-100 opacity-60"
+                  style={{
+                    backgroundColor: currentTheme.background + 'E6',
+                    border: `1px solid ${currentTheme.border}`,
+                    ...(isRTL ? { left: '0.5rem' } : { right: '0.5rem' })
+                  }}
+                  title={t('common.report', 'Report this tip')}
+                >
+                  <span className="text-sm">⚠️</span>
+                </button>
+
+                {/* Content container */}
+                <div className="flex flex-col flex-1 p-4">
+                  <h3
+                    className="text-lg font-bold mb-2 pr-6"
+                    style={{ color: currentTheme.text }}
                   >
-                    &#9888;
+                    {tip.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed break-words flex-1"
+                    style={{ color: currentTheme.text, opacity: 0.85 }}
+                  >
+                    {tip.description}
+                  </p>
+                </div>
+
+                {/* Interaction buttons */}
+                <div
+                  className="flex items-center gap-2 border-t px-4 py-2 mt-auto"
+                  style={{ borderColor: currentTheme.border }}
+                >
+                  <button
+                    onClick={() => handleLike(tip.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                    style={{
+                      backgroundColor: tip.is_user_liked ? currentTheme.secondary + '15' : 'transparent',
+                      color: tip.is_user_liked ? currentTheme.secondary : currentTheme.text,
+                      fontWeight: tip.is_user_liked ? '600' : '500'
+                    }}
+                  >
+                    <span>👍</span>
+                    <span className="text-sm">{tip.like_count}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDislike(tip.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                    style={{
+                      backgroundColor: tip.is_user_disliked ? currentTheme.secondary + '15' : 'transparent',
+                      color: tip.is_user_disliked ? currentTheme.secondary : currentTheme.text,
+                      fontWeight: tip.is_user_disliked ? '600' : '500',
+                      opacity: tip.is_user_disliked ? 1 : 0.7
+                    }}
+                  >
+                    <span>👎</span>
+                    <span className="text-sm">{tip.dislike_count}</span>
                   </button>
                 </div>
-              </div>
-              <div className="mt-auto flex items-center gap-4 border-t border-zinc-100 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                <button
-                  onClick={() => handleLike(tip.id)}
-                  className={`flex items-center gap-1 transition ${tip.is_user_liked ? "text-green-600 font-semibold" : "hover:text-green-600"}`}
-                >
-                  👍 {tip.like_count}
-                </button>
-                <button
-                  onClick={() => handleDislike(tip.id)}
-                  className={`flex items-center gap-1 transition ${tip.is_user_disliked ? "text-red-600 font-semibold" : "hover:text-red-600"}`}
-                >
-                  👎 {tip.dislike_count}
-                </button>
-              </div>
-            </div>
-          ))}
-        </section>
+              </motion.article>
+            ))}
+          </section>
+        )}
+
+        {/* Pagination Controls */}
+        {!isLoading && tips.length > 0 && (tipsResponse?.next || tipsResponse?.previous) && (
+          <div className="flex justify-center items-center gap-4 mt-8 mb-4">
+            <button
+              onClick={handlePreviousPage}
+              disabled={!tipsResponse?.previous}
+              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+              style={{
+                backgroundColor: tipsResponse?.previous ? currentTheme.secondary : currentTheme.border,
+                color: tipsResponse?.previous ? '#fff' : currentTheme.text
+              }}
+            >
+              ← {t('common.previous', 'Previous')}
+            </button>
+            <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+              {tipsResponse?.count ? `${tips.length} of ${tipsResponse.count}` : ''}
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={!tipsResponse?.next}
+              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+              style={{
+                backgroundColor: tipsResponse?.next ? currentTheme.secondary : currentTheme.border,
+                color: tipsResponse?.next ? '#fff' : currentTheme.text
+              }}
+            >
+              {t('common.next', 'Next')} →
+            </button>
+          </div>
+        )}
 
         {/* Create Tip Modal */}
         <AnimatePresence>
-          {isCreating && (
+          {showCreateForm && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -187,47 +333,81 @@ export default function Tips() {
                 initial={{ y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
+                className="w-full max-w-md rounded-lg border p-6"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
               >
-                <h2 className="text-lg font-semibold text-green-700">Create Tip</h2>
+                <h2
+                  className="text-lg font-semibold mb-4"
+                  style={{ color: currentTheme.text }}
+                >
+                  {t('tips.createTip', 'Create Tip')}
+                </h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                      Title
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: currentTheme.text }}
+                    >
+                      {t('tips.title', 'Title')}
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter tip title"
+                      placeholder={t('tips.titlePlaceholder', 'Enter tip title')}
                       value={newTip.title}
                       onChange={(e) => setNewTip({ ...newTip, title: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-700">
-                      Description
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: currentTheme.text }}
+                    >
+                      {t('tips.description', 'Description')}
                     </label>
                     <textarea
                       rows={4}
-                      placeholder="Enter tip description"
+                      placeholder={t('tips.descriptionPlaceholder', 'Enter tip description')}
                       value={newTip.description}
                       onChange={(e) => setNewTip({ ...newTip, description: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 mt-6">
                   <button
-                    onClick={() => setIsCreating(false)}
-                    className="rounded-lg border px-4 py-2 text-sm transition hover:bg-zinc-200 dark:hover:bg-zinc-200"
+                    onClick={() => setShowCreateForm(false)}
+                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                    style={{
+                      borderColor: currentTheme.border,
+                      color: currentTheme.text
+                    }}
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
-                    onClick={handleCreateTip}
-                    className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-green-600"
+                    onClick={() => createTip(newTip)}
+                    disabled={isCreating}
+                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      backgroundColor: currentTheme.secondary,
+                      color: currentTheme.background
+                    }}
                   >
-                    Create
+                    {isCreating ? t('common.creating', 'Creating...') : t('common.create', 'Create')}
                   </button>
                 </div>
               </motion.div>
@@ -239,29 +419,85 @@ export default function Tips() {
         <AnimatePresence>
           {reportingId !== null && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-                <h2 className="text-lg font-semibold">Report Tip</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-600">
-                  Let us know what’s wrong with this tip.
+              <motion.div
+                initial={{ y: 40, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                className="w-full max-w-md rounded-lg border p-6"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
+              >
+                <h2
+                  className="text-lg font-semibold mb-2"
+                  style={{ color: currentTheme.text }}
+                >
+                  {t('tips.reportTip', 'Report Tip')}
+                </h2>
+                <p
+                  className="text-sm mb-4"
+                  style={{ color: currentTheme.text, opacity: 0.7 }}
+                >
+                  {t('tips.reportDescription', "Let us know what's wrong with this tip.")}
                 </p>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Reason</label>
-                  <select value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100">
-                    <option value="">Select a reason</option>
-                    <option value="SPAM">Spam</option>
-                    <option value="INAPPROPRIATE">Inappropriate</option>
-                    <option value="HARASSMENT">Harassment</option>
-                    <option value="MISLEADING">Misleading or Fake</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: currentTheme.text }}
+                    >
+                      {t('tips.reason', 'Reason')}
+                    </label>
+                    <select
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    >
+                      <option value="">{t('tips.selectReason', 'Select a reason')}</option>
+                      <option value="SPAM">{t('tips.spam', 'Spam')}</option>
+                      <option value="INAPPROPRIATE">{t('tips.inappropriate', 'Inappropriate')}</option>
+                      <option value="HARASSMENT">{t('tips.harassment', 'Harassment')}</option>
+                      <option value="MISLEADING">{t('tips.misleading', 'Misleading or Fake')}</option>
+                      <option value="OTHER">{t('tips.other', 'Other')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: currentTheme.text }}
+                    >
+                      {t('tips.description', 'Description')}
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder={t('tips.explainBriefly', 'Please explain briefly…')}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
-                  <textarea rows={5} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder="Please explain briefly…" className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100" />
-                </div>
-                <div className="mt-6 flex justify-end gap-3">
-                  <button onClick={closeModals} className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700 shadow-sm transition hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10">
-                    Cancel
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={closeModals}
+                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                    style={{
+                      borderColor: currentTheme.border,
+                      color: currentTheme.text
+                    }}
+                  >
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={() => {
@@ -270,9 +506,13 @@ export default function Tips() {
                       closeModals();
                     }}
                     disabled={!reason || !reportDescription.trim()}
-                    className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: currentTheme.secondary,
+                      color: currentTheme.background
+                    }}
                   >
-                    Submit
+                    {t('common.submit', 'Submit')}
                   </button>
                 </div>
               </motion.div>
@@ -280,6 +520,6 @@ export default function Tips() {
           )}
         </AnimatePresence>
       </motion.main>
-    </div>
+    </Navbar>
   );
 }
