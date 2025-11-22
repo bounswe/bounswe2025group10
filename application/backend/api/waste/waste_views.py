@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 import requests
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
@@ -24,6 +25,36 @@ point_coefficients = {
 }
 
 
+@extend_schema(
+    summary="Log waste disposal",
+    description="Record waste disposal for the authenticated user. Automatically calculates points and CO2 emissions, updates user totals, and progresses challenges. Awards achievements when challenges are completed.",
+    request=UserWasteSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=UserWasteSerializer,
+            description="Waste recorded successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Waste recorded successfully',
+                        'data': {
+                            'id': 15,
+                            'waste_type': 'PLASTIC',
+                            'type': 'PLASTIC',
+                            'amount': 2.5,
+                            'date': '2025-11-22T14:30:00Z'
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - invalid waste type or amount"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Waste Management']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_user_waste(request):
@@ -110,6 +141,90 @@ def create_user_waste(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+@extend_schema(
+    summary="Get user's waste statistics",
+    description="Retrieve comprehensive waste disposal statistics for the authenticated user. Returns data grouped by waste type (PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC) with total amounts in kilograms for each category.",
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'waste_type': {'type': 'string', 'enum': ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']},
+                                'total_amount': {'type': 'number', 'format': 'float'}
+                            }
+                        }
+                    }
+                }
+            },
+            description="User wastes retrieved successfully. Returns array of waste type objects with total amounts.",
+            examples=[
+                OpenApiExample(
+                    'Complete waste statistics',
+                    value={
+                        'message': 'User wastes retrieved successfully',
+                        'data': [
+                            {
+                                'waste_type': 'PLASTIC',
+                                'total_amount': 15.5
+                            },
+                            {
+                                'waste_type': 'PAPER',
+                                'total_amount': 8.2
+                            },
+                            {
+                                'waste_type': 'GLASS',
+                                'total_amount': 3.0
+                            },
+                            {
+                                'waste_type': 'METAL',
+                                'total_amount': 2.3
+                            },
+                            {
+                                'waste_type': 'ELECTRONIC',
+                                'total_amount': 0.5
+                            },
+                            {
+                                'waste_type': 'OIL&FATS',
+                                'total_amount': 1.2
+                            },
+                            {
+                                'waste_type': 'ORGANIC',
+                                'total_amount': 12.8
+                            }
+                        ]
+                    },
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'User with no waste records',
+                    value={
+                        'message': 'User wastes retrieved successfully',
+                        'data': [
+                            {'waste_type': 'PLASTIC', 'total_amount': 0},
+                            {'waste_type': 'PAPER', 'total_amount': 0},
+                            {'waste_type': 'GLASS', 'total_amount': 0},
+                            {'waste_type': 'METAL', 'total_amount': 0},
+                            {'waste_type': 'ELECTRONIC', 'total_amount': 0},
+                            {'waste_type': 'OIL&FATS', 'total_amount': 0},
+                            {'waste_type': 'ORGANIC', 'total_amount': 0}
+                        ]
+                    },
+                    response_only=True
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Waste Management']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_wastes(request):
@@ -154,6 +269,85 @@ def get_user_wastes(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema(
+    summary="Get top users leaderboard",
+    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). If authenticated, also returns current user's stats and ranking.",
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'top_users': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'rank': {'type': 'integer'},
+                                        'username': {'type': 'string'},
+                                        'total_waste': {'type': 'string'},
+                                        'profile_picture': {'type': 'string', 'nullable': True},
+                                        'points': {'type': 'integer'}
+                                    }
+                                }
+                            },
+                            'current_user': {
+                                'type': 'object',
+                                'nullable': True,
+                                'properties': {
+                                    'username': {'type': 'string'},
+                                    'total_waste': {'type': 'string'},
+                                    'profile_picture': {'type': 'string', 'nullable': True},
+                                    'points': {'type': 'integer'},
+                                    'rank': {'type': 'integer'}
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            description="Top users retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Top users retrieved successfully',
+                        'data': {
+                            'top_users': [
+                                {
+                                    'rank': 1,
+                                    'username': 'eco_champion',
+                                    'total_waste': '125.4567',
+                                    'profile_picture': 'http://localhost:8000/media/users/5/profile.jpg',
+                                    'points': 450
+                                },
+                                {
+                                    'rank': 2,
+                                    'username': 'green_warrior',
+                                    'total_waste': '98.3210',
+                                    'profile_picture': 'http://localhost:8000/media/users/3/profile.jpg',
+                                    'points': 380
+                                }
+                            ],
+                            'current_user': {
+                                'username': 'john_doe',
+                                'total_waste': '45.1234',
+                                'profile_picture': 'http://localhost:8000/media/users/7/profile.jpg',
+                                'points': 150,
+                                'rank': 15
+                            }
+                        }
+                    }
+                )
+            ]
+        ),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Waste Management']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_top_users(request):
@@ -279,7 +473,35 @@ def get_co2_emission(amount_kg, waste_type):
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 
-
+@extend_schema(
+    summary="Report suspicious waste",
+    description="Create a suspicious waste report with photo evidence. Used for reporting unusual or potentially fraudulent waste disposal.",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'amount': {'type': 'number', 'description': 'Amount of waste in kg'},
+                'waste': {'type': 'string', 'description': 'Waste type (PLASTIC, PAPER, GLASS, etc.)'},
+                'photo': {'type': 'string', 'format': 'binary', 'description': 'Photo evidence of suspicious waste'}
+            },
+            'required': ['photo']
+        }
+    },
+    responses={
+        201: OpenApiResponse(
+            description="Suspicious waste report created successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={'message': 'Suspicious waste report created successfully'}
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Waste Management - Admin']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -321,6 +543,38 @@ def create_suspicious_waste(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
+@extend_schema(
+    summary="Get all suspicious waste reports (Admin only)",
+    description="Retrieve all suspicious waste reports with user information and photo evidence. Admin authentication required.",
+    responses={
+        200: OpenApiResponse(
+            description="Suspicious waste reports retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Suspicious waste reports retrieved successfully',
+                        'data': [
+                            {
+                                'id': 5,
+                                'username': 'suspicious_user',
+                                'amount': 50.0,
+                                'waste_type': 'PLASTIC',
+                                'profile_picture': 'http://localhost:8000/media/users/12/profile.jpg',
+                                'photo_url': 'http://localhost:8000/media/suspicious/photo_12345.jpg',
+                                'reported_at': '2025-11-22T14:30:00Z'
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized"),
+        403: OpenApiResponse(description="Forbidden - admin only"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Waste Management - Admin']
+)
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def get_suspicious_wastes(request):
