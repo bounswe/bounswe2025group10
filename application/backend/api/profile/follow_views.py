@@ -3,10 +3,45 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 from api.models import Users, Follow
 
 
+@extend_schema(
+    summary="Follow a user",
+    description="Follow another user by username. Cannot follow yourself or users already followed.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user to follow'
+        )
+    ],
+    responses={
+        201: OpenApiResponse(
+            description="Successfully followed user",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Successfully followed john_doe.',
+                        'data': {
+                            'username': 'john_doe',
+                            'is_following': True
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Cannot follow yourself or already following"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="User not found")
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def follow_user(request, username):
@@ -58,6 +93,40 @@ def follow_user(request, username):
     }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    summary="Unfollow a user",
+    description="Unfollow a user by username. Must be currently following the user.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user to unfollow'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Successfully unfollowed user",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Successfully unfollowed john_doe.',
+                        'data': {
+                            'username': 'john_doe',
+                            'is_following': False
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Not following this user"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="User not found")
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def unfollow_user(request, username):
@@ -101,6 +170,106 @@ def unfollow_user(request, username):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Get user's followers",
+    description="Retrieve the complete list of users following a specific user. Returns follower details including username, profile image, bio, and the date they started following.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user to get followers for'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'username': {'type': 'string'},
+                            'followers_count': {'type': 'integer'},
+                            'followers': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'username': {'type': 'string'},
+                                        'profile_image': {'type': 'string', 'nullable': True},
+                                        'bio': {'type': 'string', 'nullable': True},
+                                        'followed_at': {'type': 'string', 'format': 'date-time'}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            description="Followers list retrieved successfully. Returns array of follower objects with their details.",
+            examples=[
+                OpenApiExample(
+                    'Success Response with followers',
+                    value={
+                        'data': {
+                            'username': 'john_doe',
+                            'followers_count': 3,
+                            'followers': [
+                                {
+                                    'id': 5,
+                                    'username': 'jane_smith',
+                                    'profile_image': 'http://localhost:8000/media/users/5/profile.jpg',
+                                    'bio': 'Environmental activist',
+                                    'followed_at': '2025-11-20T10:30:00Z'
+                                },
+                                {
+                                    'id': 7,
+                                    'username': 'eco_warrior',
+                                    'profile_image': 'http://localhost:8000/media/users/7/profile.jpg',
+                                    'bio': 'Zero waste enthusiast',
+                                    'followed_at': '2025-11-21T14:15:00Z'
+                                },
+                                {
+                                    'id': 12,
+                                    'username': 'green_living',
+                                    'profile_image': None,
+                                    'bio': 'Sustainable lifestyle blogger',
+                                    'followed_at': '2025-11-22T09:00:00Z'
+                                }
+                            ]
+                        }
+                    },
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'User with no followers',
+                    value={
+                        'data': {
+                            'username': 'new_user',
+                            'followers_count': 0,
+                            'followers': []
+                        }
+                    },
+                    response_only=True
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(
+            description="User not found",
+            examples=[
+                OpenApiExample(
+                    'User not found',
+                    value={'error': 'User not found.'}
+                )
+            ]
+        )
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_followers(request, username):
@@ -143,6 +312,106 @@ def get_followers(request, username):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Get user's following list",
+    description="Retrieve the complete list of users that a specific user is following. Returns details of followed users including username, profile image, bio, and the date the follow relationship was established.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user to get following list for'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'username': {'type': 'string'},
+                            'following_count': {'type': 'integer'},
+                            'following': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'username': {'type': 'string'},
+                                        'profile_image': {'type': 'string', 'nullable': True},
+                                        'bio': {'type': 'string', 'nullable': True},
+                                        'followed_at': {'type': 'string', 'format': 'date-time'}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            description="Following list retrieved successfully. Returns array of followed user objects with their details.",
+            examples=[
+                OpenApiExample(
+                    'Success Response with following',
+                    value={
+                        'data': {
+                            'username': 'john_doe',
+                            'following_count': 3,
+                            'following': [
+                                {
+                                    'id': 7,
+                                    'username': 'eco_warrior',
+                                    'profile_image': 'http://localhost:8000/media/users/7/profile.jpg',
+                                    'bio': 'Zero waste lifestyle advocate',
+                                    'followed_at': '2025-11-21T14:15:00Z'
+                                },
+                                {
+                                    'id': 9,
+                                    'username': 'sustainable_sam',
+                                    'profile_image': 'http://localhost:8000/media/users/9/profile.jpg',
+                                    'bio': 'Composting expert',
+                                    'followed_at': '2025-11-20T08:45:00Z'
+                                },
+                                {
+                                    'id': 15,
+                                    'username': 'planet_protector',
+                                    'profile_image': None,
+                                    'bio': 'Climate activist',
+                                    'followed_at': '2025-11-19T16:20:00Z'
+                                }
+                            ]
+                        }
+                    },
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'User not following anyone',
+                    value={
+                        'data': {
+                            'username': 'new_user',
+                            'following_count': 0,
+                            'following': []
+                        }
+                    },
+                    response_only=True
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(
+            description="User not found",
+            examples=[
+                OpenApiExample(
+                    'User not found',
+                    value={'error': 'User not found.'}
+                )
+            ]
+        )
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_following(request, username):
@@ -185,6 +454,56 @@ def get_following(request, username):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Check follow status",
+    description="Check if authenticated user is following a specific user, and if that user follows back. Includes follower/following counts.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user to check'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'username': {'type': 'string'},
+                            'is_following': {'type': 'boolean'},
+                            'follows_back': {'type': 'boolean'},
+                            'followers_count': {'type': 'integer'},
+                            'following_count': {'type': 'integer'}
+                        }
+                    }
+                }
+            },
+            description="Follow status retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'data': {
+                            'username': 'john_doe',
+                            'is_following': True,
+                            'follows_back': False,
+                            'followers_count': 150,
+                            'following_count': 75
+                        }
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="User not found")
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_follow_status(request, username):
@@ -231,6 +550,29 @@ def check_follow_status(request, username):
     }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Get authenticated user's follow statistics",
+    description="Retrieve follow statistics (followers and following counts) for the authenticated user.",
+    responses={
+        200: OpenApiResponse(
+            description="Follow statistics retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'data': {
+                            'username': 'john_doe',
+                            'followers_count': 150,
+                            'following_count': 75
+                        }
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required")
+    },
+    tags=['Profile - Follow']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_follow_stats(request):
