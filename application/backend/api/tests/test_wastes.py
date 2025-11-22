@@ -1,16 +1,22 @@
+from decimal import Decimal
 from email.mime import image
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
 from api.models import Users, Waste, UserWastes
 from challenges.models import Challenge, UserChallenge
-from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users, point_coefficients
+from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users, point_coefficients,get_co2_emission
 from django.utils import timezone
 from unittest.mock import patch, MagicMock
 from django.db.models import F
 from io import BytesIO
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
+
+def format_co2(value: float) -> str:
+        # helper to match DRF serializer's 4-decimal formatting
+    return f"{Decimal(value).quantize(Decimal('0.0001'))}"
+        # or f"{value:.4f}" if that's what your serializer does
 
 class WasteViewsTests(TestCase):
     def setUp(self):
@@ -130,14 +136,12 @@ class WasteViewsTests(TestCase):
             self.assertEqual(item['total_amount'], 0)
 
             
-    @patch('api.waste.waste_views.get_co2_emission')
-    def test_get_top_users_success(self, mock_get_co2_emission):
+    
+
+
+    def test_get_top_users_success(self):
         """Test successful retrieval of top users with waste contributions"""
-        # Set up mock CO2 calculation
-        def mock_co2_calculation(amount, waste_type):
-            return amount * 2
-        mock_get_co2_emission.side_effect = mock_co2_calculation
-        
+
         # Create test users with initial values
         user2 = Users.objects.create_user(
             username="testuser2",
@@ -153,62 +157,77 @@ class WasteViewsTests(TestCase):
             total_points=0,
             total_co2=0
         )
-        
+
         # Reset original test user's totals
         self.user.total_points = 0
         self.user.total_co2 = 0
         self.user.save()
-        
-        # Create waste records and update user2's totals (10kg total)
-        waste1 = UserWastes.objects.create(
+
+        # --- user2 wastes (5kg plastic + 5kg paper) ---
+        amount_plastic = 5.0
+        amount_paper = 5.0
+
+        UserWastes.objects.create(
             user=user2,
             waste=self.plastic,
-            amount=5.0,
+            amount=amount_plastic,
             date=timezone.now()
         )
-        waste2 = UserWastes.objects.create(
+        UserWastes.objects.create(
             user=user2,
             waste=self.paper,
-            amount=5.0,
+            amount=amount_paper,
             date=timezone.now()
         )
-        
-        # Update user2's totals
-        user2.total_points = (5.0 * 0.03) + (5.0 * 0.02)  # Plastic + Paper points
-        user2.total_co2 = 20.0  # 10kg total * 2 (mock multiplier)
+
+        # Use REAL get_co2_emission here
+        co2_plastic = get_co2_emission(amount_plastic, 'PLASTIC')
+        co2_paper = get_co2_emission(amount_paper, 'PAPER')
+        total_co2_user2 = co2_plastic + co2_paper
+
+        user2.total_points = (amount_plastic * 0.03) + (amount_paper * 0.02)
+        user2.total_co2 = total_co2_user2
         user2.save()
-        
-        # Create waste record and update user3's totals (4kg)
-        waste3 = UserWastes.objects.create(
+
+        # --- user3 waste (4kg glass) ---
+        amount_glass = 4.0
+        UserWastes.objects.create(
             user=user3,
             waste=self.glass,
-            amount=4.0,
+            amount=amount_glass,
             date=timezone.now()
         )
-        user3.total_points = 4.0 * 0.015  # Glass points
-        user3.total_co2 = 8.0  # 4kg * 2
+
+        co2_glass = get_co2_emission(amount_glass, 'GLASS')
+        total_co2_user3 = co2_glass
+
+        user3.total_points = amount_glass * 0.015
+        user3.total_co2 = total_co2_user3
         user3.save()
-        
+
+        # --- call endpoint ---
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-          # Verify response structure
+
+        # Verify response structure
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Top users retrieved successfully')
-        
+
         # Check data format
         self.assertIn('top_users', response.data['data'])
         top_users = response.data['data']['top_users']
         self.assertTrue(len(top_users) <= 10)
-        
-        # Verify user2 (highest contributor)
+
+        # Highest contributor = user2
         self.assertEqual(top_users[0]['username'], 'testuser2')
-        self.assertEqual(top_users[0]['total_waste'], "20.0000")
-        self.assertEqual(top_users[0]['points'], 0.25)  # (5*0.03 + 5*0.02)
-        
-        # Verify user3 (second highest)
+        self.assertEqual(top_users[0]['total_waste'], format_co2(total_co2_user2))
+        self.assertAlmostEqual(top_users[0]['points'], user2.total_points)
+
+        # Second highest = user3
         self.assertEqual(top_users[1]['username'], 'testuser3')
-        self.assertEqual(top_users[1]['total_waste'], "8.0000")
-        self.assertEqual(top_users[1]['points'], 0.06)  # 4*0.015
+        self.assertEqual(top_users[1]['total_waste'], format_co2(total_co2_user3))
+        self.assertAlmostEqual(top_users[1]['points'], user3.total_points)
+
 
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_no_waste(self, mock_get_co2_emission):
@@ -450,28 +469,45 @@ class WasteViewsTests(TestCase):
         expected_points = initial_points + (10.0 * 0.3)
         self.assertAlmostEqual(self.user.total_points, expected_points, places=2)
 
-    @patch('api.waste.waste_views.get_co2_emission')
-    def test_create_user_waste_updates_co2_correctly(self, mock_get_co2_emission):
-        """Test that waste creation correctly updates user CO2"""
-        mock_get_co2_emission.return_value = 5.5
-        
+    def test_create_user_waste_updates_co2_correctly(self):
+        """Test that waste creation correctly updates user CO2 using real emission factors"""
+
+        # Use real inputs
+        waste_type = 'PAPER'
+        amount_kg = 2.0
+
+        # Initial CO2 before creation
         initial_co2 = self.user.total_co2
-        
-        request = self.factory.post('/api/waste/', {
-            'waste_type': 'PAPER',
-            'amount': 2.0
-        }, format='json')
+
+        # Compute expected CO2 using the real function
+        expected_increment = get_co2_emission(amount_kg, waste_type)
+        expected_co2 = initial_co2 + expected_increment
+
+        request = self.factory.post(
+            '/api/waste/',
+            {
+                'waste_type': waste_type,
+                'amount': amount_kg
+            },
+            format='json'
+        )
         force_authenticate(request, user=self.user)
+
         response = create_user_waste(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
-        # Refresh user from database
+
+        # Refresh user from DB
         self.user.refresh_from_db()
-        
-        # CO2 should be updated by the mocked value
-        expected_co2 = initial_co2 + 5.5
-        self.assertAlmostEqual(self.user.total_co2, expected_co2, places=2)
+
+        # Validate CO2 update
+        self.assertAlmostEqual(
+            self.user.total_co2,
+            expected_co2,
+            places=4,  # use more precision since decimals=6
+            msg=f"Expected {expected_co2} but got {self.user.total_co2}"
+        )
+
 
     def test_create_user_waste_empty_string_type(self):
         """Test waste creation with empty string waste type"""
