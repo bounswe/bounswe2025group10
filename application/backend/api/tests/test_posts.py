@@ -512,3 +512,124 @@ class PostViewsTests(TestCase):
         self.assertIn('comments', response.data['data'])
         self.assertEqual(len(response.data['data']['comments']), 1)
         self.assertEqual(response.data['data']['comments'][0]['content'], 'Test comment')
+
+    def test_get_top_liked_posts_success(self):
+        """Test successful retrieval of top 5 liked posts"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Create additional posts with different like counts
+        post4 = Posts.objects.create(
+            creator=self.user1,
+            text="Post with 15 likes",
+            date=timezone.now(),
+            like_count=15,
+            dislike_count=0
+        )
+        post5 = Posts.objects.create(
+            creator=self.user2,
+            text="Post with 20 likes",
+            date=timezone.now(),
+            like_count=20,
+            dislike_count=0
+        )
+        post6 = Posts.objects.create(
+            creator=self.user1,
+            text="Post with 8 likes",
+            date=timezone.now(),
+            like_count=8,
+            dislike_count=0
+        )
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        
+        # Should return posts ordered by like_count (highest first)
+        data = response.data['data']
+        self.assertLessEqual(len(data), 5)  # Should return at most 5 posts
+        
+        # Verify ordering (highest like count first)
+        self.assertEqual(data[0]['id'], post5.id)  # 20 likes
+        self.assertEqual(data[0]['like_count'], 20)
+        self.assertEqual(data[1]['id'], post4.id)  # 15 likes
+        self.assertEqual(data[1]['like_count'], 15)
+        self.assertEqual(data[2]['id'], self.posts[2].id)  # 10 likes
+        self.assertEqual(data[2]['like_count'], 10)
+        self.assertEqual(data[3]['id'], post6.id)  # 8 likes
+        self.assertEqual(data[3]['like_count'], 8)
+        self.assertEqual(data[4]['id'], self.posts[1].id)  # 5 likes
+        self.assertEqual(data[4]['like_count'], 5)
+
+    def test_get_top_liked_posts_less_than_five(self):
+        """Test top liked posts when there are less than 5 posts"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # We already have 3 posts in setUp
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        
+        # Should return all available posts (3 in this case)
+        data = response.data['data']
+        self.assertEqual(len(data), 3)
+        
+        # Verify ordering by like_count descending
+        self.assertEqual(data[0]['like_count'], 10)
+        self.assertEqual(data[1]['like_count'], 5)
+        self.assertEqual(data[2]['like_count'], 0)
+
+    def test_get_top_liked_posts_empty_database(self):
+        """Test top liked posts when no posts exist"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Delete all posts
+        Posts.objects.all().delete()
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        self.assertEqual(len(response.data['data']), 0)
+
+    def test_get_top_liked_posts_unauthenticated(self):
+        """Test that top liked posts requires authentication"""
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        # Endpoint requires authentication
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_top_liked_posts_more_than_five(self):
+        """Test top liked posts returns only top 5 when more posts exist"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Create 8 additional posts with various like counts
+        for i in range(8):
+            Posts.objects.create(
+                creator=self.user1,
+                text=f"Post with {i * 2} likes",
+                date=timezone.now(),
+                like_count=i * 2,
+                dislike_count=0
+            )
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Should return exactly 5 posts
+        data = response.data['data']
+        self.assertEqual(len(data), 5)
+        
+        # Verify that we got the top 5 by like count
+        like_counts = [post['like_count'] for post in data]
+        self.assertEqual(like_counts, sorted(like_counts, reverse=True))
+        
+        # First post should have the highest like count
+        self.assertGreaterEqual(data[0]['like_count'], data[4]['like_count'])
