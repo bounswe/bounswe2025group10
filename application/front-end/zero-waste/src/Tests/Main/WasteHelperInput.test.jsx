@@ -24,7 +24,7 @@ describe("WasteHelperInput", () => {
       target: { value: "grams" },
     });
 
-    fireEvent.change(screen.getByPlaceholderText("e.g., 500"), {
+    fireEvent.change(screen.getByPlaceholderText("e.g., 300"), {
       target: { value: "200" },
     });
 

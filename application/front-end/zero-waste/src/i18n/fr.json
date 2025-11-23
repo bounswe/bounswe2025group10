@@ -12,7 +12,8 @@
     "profile": "Profil",
     "login": "Se Connecter",
     "signup": "S'inscrire",
-    "admin": "Administrateur"
+    "admin": "Administrateur",
+    "recycling": "Centres de Recyclage"
   },
   "common": {
     "language": "Langue",
@@ -199,7 +200,7 @@
     "wasteType": "Type de déchet",
     "wasteQuantity": "Quantité de Déchets (grammes)",
     "selectType": "Sélectionner le type",
-    "quantityPlaceholder": "ex. 500",
+    "quantityPlaceholder": "ex. 300",
     "addWaste": "Ajouter un Déchet",
     "sustainabilityTips": "Conseils de Durabilité",
     "yourProgress": "Votre Progrès",
@@ -241,6 +242,8 @@
     "selectType": "Sélectionner le type",
     "selectMethod": "Sélectionner la méthode",
     "chooseItem": "Choisir l'Article",
+    "highAmountWarning": "Vous êtes sur le point d'enregistrer une grande quantité de déchets. Êtes-vous sûr ?",
+    "excessiveAmountError": "Impossible de saisir une quantité aussi élevée en une seule entrée.",
     "items": {
       "plasticBottle": "Bouteille en Plastique",
       "plasticBag": "Sac en Plastique",
@@ -258,6 +261,40 @@
       "bananaPeel": "Peau de Banane",
       "appleCore": "Trognon de Pomme",
       "foodScraps": "Restes de Nourriture"
+    }
+  },
+  "recyclingCenters": {
+    "title": "Centres de Recyclage",
+    "selectCity": "Sélectionner la Ville",
+    "selectDistrict": "Sélectionner le District",
+    "chooseCity": "Choisir une ville...",
+    "chooseDistrict": "Choisir un district...",
+    "centersIn": "Centres à",
+    "address": "Adresse",
+    "additionalInfo": "Informations Supplémentaires",
+    "acceptedTypes": "Types de Déchets Acceptés",
+    "noCenters": "Aucun centre de recyclage trouvé pour l'emplacement sélectionné.",
+    "selectLocation": "Veuillez sélectionner une ville et un district pour voir les centres de recyclage.",
+    "wasteTypes": {
+      "paper": "Papier",
+      "plastic": "Plastique",
+      "glass": "Verre",
+      "metal": "Métal",
+      "electronic": "Électronique",
+      "battery": "Batterie",
+      "oil_fats": "Huiles et Graisses",
+      "organic": "Organique",
+      "textile": "Textile",
+      "medicine": "Médicament",
+      "tire": "Pneu",
+      "bulky": "Déchets Encombrants",
+      "wood": "Bois",
+      "fluorescent": "Fluorescent",
+      "accumulator": "Accumulateur",
+      "construction": "Construction",
+      "hazardous": "Dangereux",
+      "cable": "Câble",
+      "it_equipment": "Équipement Informatique"
     }
   }
 }
