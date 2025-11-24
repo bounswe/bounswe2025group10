@@ -372,11 +372,10 @@ def get_top_users(request):
             profile_picture = None
             if user.profile_image:
                 if user.profile_image.startswith(('http://', 'https://')):
-                    # Force HTTPS
-                    profile_picture = user.profile_image.replace('http://', 'https://')
+                    profile_picture = user.profile_image
                 else:
                     from django.conf import settings
-                    profile_picture = f"https://zerowaste.ink{settings.MEDIA_URL}{user.profile_image}"
+                    profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{user.profile_image}"
             
             top_users_data.append({
                 'rank': index + 1,
@@ -405,11 +404,10 @@ def get_top_users(request):
                 profile_picture = None
                 if request.user.profile_image:
                     if request.user.profile_image.startswith(('http://', 'https://')):
-                        # Force HTTPS
-                        profile_picture = request.user.profile_image.replace('http://', 'https://')
+                        profile_picture = request.user.profile_image
                     else:
                         from django.conf import settings
-                        profile_picture = f"https://zerowaste.ink{settings.MEDIA_URL}{request.user.profile_image}"
+                        profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{request.user.profile_image}"
                 
                 # Get user stats
                 user_stats = {
@@ -591,11 +589,10 @@ def get_suspicious_wastes(request):
             profile_picture = None
             if report.user.profile_image:
                 if report.user.profile_image.startswith(('http://', 'https://')):
-                    # Force HTTPS
-                    profile_picture = report.user.profile_image.replace('http://', 'https://')
+                    profile_picture = report.user.profile_image
                 else:
                     from django.conf import settings
-                    profile_picture = f"https://zerowaste.ink{settings.MEDIA_URL}{report.user.profile_image}"
+                    profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{report.user.profile_image}"
 
             response_data.append({
                 'id': report.id,

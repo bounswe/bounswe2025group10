@@ -58,17 +58,15 @@ class Users(AbstractUser):
     @property
     def profile_image_url(self):
         """
-        Returns the full HTTPS URL for the profile image if it exists.
-        If the image is already a full URL, converts HTTP to HTTPS.
-        If it's a relative path, prepends the MEDIA_URL with HTTPS domain.
+        Returns the full URL for the profile image if it exists.
+        If the image is already a full URL, returns it as is.
+        If it's a relative path, prepends the MEDIA_URL.
         """
         if not self.profile_image:
             return None
         if self.profile_image.startswith(('http://', 'https://')):
-            # Force HTTPS
-            return self.profile_image.replace('http://', 'https://')
-        # For production, use the deployed domain
-        return f"https://zerowaste.ink{settings.MEDIA_URL}{self.profile_image}"
+            return self.profile_image
+        return f"{settings.MEDIA_URL}{self.profile_image}"
 
     def __str__(self):
         return self.username
@@ -103,17 +101,15 @@ class Posts(models.Model):
     @property
     def image_url(self):
         """
-        Returns the full HTTPS URL for the post image if it exists.
-        If the image is already a full URL, converts HTTP to HTTPS.
-        If it's a relative path, prepends the MEDIA_URL with HTTPS domain.
+        Returns the full URL for the post image if it exists.
+        If the image is already a full URL, returns it as is.
+        If it's a relative path, prepends the MEDIA_URL.
         """
         if not self.image:
             return None
         if self.image.startswith(('http://', 'https://')):
-            # Force HTTPS
-            return self.image.replace('http://', 'https://')
-        # For production, use the deployed domain
-        return f"https://zerowaste.ink{settings.MEDIA_URL}{self.image}"
+            return self.image
+        return f"{settings.MEDIA_URL}{self.image}"
 
     class Meta:
         db_table = 'Posts'
