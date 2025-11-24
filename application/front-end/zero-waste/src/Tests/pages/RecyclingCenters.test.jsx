@@ -10,6 +10,7 @@ import {
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import RecyclingCenters from "../../pages/RecyclingCenters";
 import { MemoryRouter } from "react-router-dom";
+import * as React from "react"; // Used in mock for useState
 
 // Mock ThemeContext
 const mockTheme = {
@@ -69,9 +70,118 @@ vi.mock("framer-motion", () => ({
   },
 }));
 
-// Note: Tests work with hardcoded data (USE_API=false mode)
-// When backend is ready and USE_API is set to true, these tests will need to be updated
-// to mock the useRecyclingCenters hook instead of relying on hardcoded data
+// Mock useRecyclingCenters hook with test data
+const mockRecyclingCentersData = {
+  Istanbul: {
+    districts: ["Sultangazi", "Beylikduzu", "Atasehir"],
+    centers: {
+      Sultangazi: [{
+        ilce: "Sultangazi",
+        adres: "Esentepe Mah. Kucuk San. Sit. 2951 Sokak 9.Blok No:28/1 Sultangazi / Istanbul",
+        not: "Elektronik Atik Toplama Merkezi",
+        turler: ["electronic"]
+      }],
+      Beylikduzu: [{
+        ilce: "Beylikduzu",
+        adres: "Beylikduzu 1. Sinif Atik Getirme Merkezi",
+        not: "Kagit, plastik, cam, metal, atik piller ve elektrikli-elektronik esyalar kabul ediliyor.",
+        turler: ["paper", "plastic", "glass", "metal", "battery", "electronic"]
+      }],
+      Atasehir: [{
+        ilce: "Atasehir",
+        adres: "Barbaros Mah. Sebboy Sok. No:4 PK:34746 Atasehir / Istanbul",
+        not: "Elektronik atik toplama kutusu talebi hizmeti mevcut.",
+        turler: ["electronic", "battery"]
+      }]
+    }
+  },
+  Ankara: {
+    districts: ["Cankaya (Birlik Mah.)", "Cankaya (Cayyolu)", "Mamak", "Kecioren", "Yenimahalle (Ivedik OSB)"],
+    centers: {
+      "Cankaya (Birlik Mah.)": [{
+        ilce: "Cankaya (Birlik Mah.)",
+        adres: "451. Cadde (Fen Isleri Kampusu) Cankaya / Ankara",
+        not: "Cankaya Belediyesi 1. Sinif Atik Getirme Merkezi",
+        turler: ["paper", "plastic", "metal", "glass", "textile", "battery", "electronic", "medicine", "oil_fats", "tire", "bulky"]
+      }],
+      "Mamak": [{
+        ilce: "Mamak",
+        adres: "Huseyingazi Mah. Mamak Cad. No:181 Mamak / Ankara",
+        not: "Mamak Belediyesi 1. Sinif Atik Getirme Merkezi",
+        turler: ["paper", "plastic", "metal", "glass", "wood", "textile", "electronic", "battery", "fluorescent", "accumulator", "medicine", "oil_fats", "tire"]
+      }]
+    }
+  },
+  Izmir: {
+    districts: ["Karsiyaka", "Buca"],
+    centers: {}
+  },
+  Bursa: {
+    districts: ["Nilufer", "Osmangazi", "Yildirim", "Inegol"],
+    centers: {
+      Nilufer: [{
+        ilce: "Nilufer",
+        adres: "Alaaddinbey Mah. 611. Sok. Nilufer / Bursa",
+        not: "Nilufer Belediyesi 1. Sinif Atik Getirme Merkezi",
+        turler: ["paper", "plastic", "metal", "glass", "textile", "wood", "electronic", "battery", "accumulator", "oil_fats", "tire", "medicine", "bulky"]
+      }]
+    }
+  },
+  Antalya: {
+    districts: ["Konyaalti", "Muratpasa", "Kepez (Kizilli)", "Manavgat", "Dosemealti"],
+    centers: {
+      Dosemealti: [{
+        ilce: "Dosemealti",
+        adres: "Komurcular OSB Mah. Azizoglu Sok. No:89 Dosemealti / Antalya",
+        not: "SBC Geri Donusum A.S.",
+        turler: ["electronic", "metal", "hazardous"]
+      }]
+    }
+  },
+  Adana: {
+    districts: ["Seyhan"],
+    centers: {}
+  },
+  Gaziantep: {
+    districts: ["Sehitkamil"],
+    centers: {}
+  },
+  Aydin: {
+    districts: ["Efeler (Merkez)"],
+    centers: {}
+  }
+};
+
+vi.mock("../../hooks/useRecyclingCenters", () => ({
+  useRecyclingCenters: () => {
+    const [selectedCity, setSelectedCity] = React.useState("");
+    const [selectedDistrict, setSelectedDistrict] = React.useState("");
+
+    const cities = Object.keys(mockRecyclingCentersData);
+    const districts = selectedCity ? mockRecyclingCentersData[selectedCity]?.districts || [] : [];
+    const centers = (selectedCity && selectedDistrict)
+      ? mockRecyclingCentersData[selectedCity]?.centers[selectedDistrict] || []
+      : [];
+
+    return {
+      cities,
+      districts,
+      centers,
+      citiesLoading: false,
+      districtsLoading: false,
+      centersLoading: false,
+      selectedCity,
+      selectedDistrict,
+      handleCityChange: (city) => {
+        setSelectedCity(city);
+        setSelectedDistrict("");
+      },
+      handleDistrictChange: (district) => {
+        setSelectedDistrict(district);
+      },
+    };
+  },
+}));
 
 const wrapper = ({ children }) => (
   <MemoryRouter>
