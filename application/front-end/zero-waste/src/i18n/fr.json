@@ -12,7 +12,9 @@
     "profile": "Profil",
     "login": "Se Connecter",
     "signup": "S'inscrire",
-    "admin": "Administrateur"
+    "admin": "Administrateur",
+    "invite": "Inviter un Ami"
+
   },
   "common": {
     "language": "Langue",
@@ -258,6 +260,17 @@
       "bananaPeel": "Peau de Banane",
       "appleCore": "Trognon de Pomme",
       "foodScraps": "Restes de Nourriture"
-    }
+    }  }, "invite": {
+  "title": "Inviter un Ami",
+  "subtitle": "Envoyez un lien d’invitation à votre ami par e-mail.",
+  "emailLabel": "Email de l’Ami",
+  "send": "Envoyer l’Invitation",
+  "sending": "Envoi...",
+  "errors": {
+    "noEmail": "Veuillez entrer une adresse e-mail.",
+    "failed": "Échec de l’envoi de l’invitation."
   }
+}
+
+
 }

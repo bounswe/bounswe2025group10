@@ -12,7 +12,8 @@
     "profile": "Profile",
     "login": "Login",
     "signup": "Sign Up",
-    "admin": "Admin"
+    "admin": "Admin",
+        "invite": "Invite Friend"
   },
   "common": {
     "language": "Language",
@@ -259,6 +260,17 @@
       "bananaPeel": "Banana Peel",
       "appleCore": "Apple Core",
       "foodScraps": "Food Scraps"
-    }
+    }  }, "invite": {
+  "title": "Invite a Friend",
+  "subtitle": "Send an invitation link to your friend via email.",
+  "emailLabel": "Friend's Email",
+  "send": "Send Invitation",
+  "sending": "Sending...",
+  "errors": {
+    "noEmail": "Please enter an email address.",
+    "failed": "Failed to send invitation."
   }
+}
+
+
 }

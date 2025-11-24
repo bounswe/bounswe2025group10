@@ -224,6 +224,15 @@ export default function Navbar({ active = "home", children }) {
                 >
                   {t("common.settings")}
                 </a>
+                <a
+  href="/invite"
+  className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
+  style={{ color: currentTheme.primaryText, textDecoration: "none" }}
+  onClick={() => setShowProfileMenu(false)}
+>
+  {t("nav.inviteFriend")}
+</a>
+
                 <hr className="my-2" style={{ borderColor: currentTheme.border }} />
                 <button
                   className="block w-full text-left px-3 py-2 rounded hover:opacity-80 transition-opacity"

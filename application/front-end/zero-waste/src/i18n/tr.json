@@ -12,7 +12,9 @@
     "profile": "Profil",
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
-    "admin": "Yönetici"
+    "admin": "Yönetici",
+"invite": "Arkadaş Davet Et"
+
   },
   "common": {
     "language": "Dil",
@@ -260,5 +262,17 @@
       "appleCore": "Elma Çöpü",
       "foodScraps": "Yemek Artığı"
     }
+  },
+    "invite": {
+  "title": "Arkadaş Davet Et",
+  "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
+  "emailLabel": "Arkadaşının E-postası",
+  "send": "Davetiye Gönder",
+  "sending": "Gönderiliyor...",
+  "errors": {
+    "noEmail": "Lütfen bir e-posta adresi girin.",
+    "failed": "Davet gönderilirken bir hata oluştu."
   }
+}
+
 }
