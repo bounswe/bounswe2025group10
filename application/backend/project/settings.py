@@ -234,6 +234,15 @@ LOCAL_EMISSION_FACTORS = {
 
 CARBON_DECIMALS = 6
 
+WASTE_TYPE_TO_ACTIVITY_ID = {
+    'PLASTIC': 'waste-type_plastics-disposal_method_landfill',
+    'PAPER': 'waste_type_paper_and_cardboard-disposal_method_landfill',
+    'GLASS': 'waste-type_glass-disposal_method_landfilled',
+    'METAL': 'waste_type_scrap_metal_steel_cans-disposal_method_landfill',
+    'ELECTRONIC': 'waste-type_weee_mixed-disposal_method_landfill',
+    'OIL&FATS': 'waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na',
+    'ORGANIC': 'waste-type_mixed_food_and_organic_garden-disposal_method_landfill',
+}
 
 # email settings for invitation emails
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
