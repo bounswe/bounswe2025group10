@@ -18,10 +18,17 @@ class PostSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         request = self.context.get('request')
-        if obj.image and request:
+        if obj.image:
             if obj.image.startswith(('http://', 'https://')):
                 return obj.image
-            return request.build_absolute_uri(f'{settings.MEDIA_URL}{obj.image}')
+            if request:
+                # Build absolute URI with proper scheme
+                media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                # Ensure we're using https if the request came through https
+                if request.is_secure() and media_url.startswith('http://'):
+                    media_url = media_url.replace('http://', 'https://', 1)
+                return f"{media_url.rstrip('/')}/{obj.image.lstrip('/')}"
+        return None
 
     
     def get_is_saved(self, obj):

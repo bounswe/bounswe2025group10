@@ -3,9 +3,24 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
+from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 from api.models import Users, Follow
+
+
+def build_absolute_profile_image_url(request, profile_image):
+    """Helper function to build absolute HTTPS URLs for profile images"""
+    if not profile_image:
+        return None
+    if profile_image.startswith(('http://', 'https://')):
+        return profile_image
+    if request:
+        media_url = request.build_absolute_uri(settings.MEDIA_URL)
+        if request.is_secure() and media_url.startswith('http://'):
+            media_url = media_url.replace('http://', 'https://', 1)
+        return f"{media_url.rstrip('/')}/{profile_image.lstrip('/')}"
+    return None
 
 
 @extend_schema(
@@ -296,7 +311,7 @@ def get_followers(request, username):
         {
             'id': f.follower.id,
             'username': f.follower.username,
-            'profile_image': f.follower.profile_image_url,
+            'profile_image': build_absolute_profile_image_url(request, f.follower.profile_image),
             'bio': f.follower.bio,
             'followed_at': f.created_at.isoformat()
         }
@@ -438,7 +453,7 @@ def get_following(request, username):
         {
             'id': f.following.id,
             'username': f.following.username,
-            'profile_image': f.following.profile_image_url,
+            'profile_image': build_absolute_profile_image_url(request, f.following.profile_image),
             'bio': f.following.bio,
             'followed_at': f.created_at.isoformat()
         }

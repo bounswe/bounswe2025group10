@@ -1,0 +1,12 @@
+{
+  "name": "Light",
+  "class": "theme-light",
+  "icon": "☀️",
+  "background": "#ffffff",
+  "text": "#212529",
+  "primary": "#1e5631",
+  "primaryText": "#ffffff",
+  "secondary": "#28a745",
+  "border": "#dee2e6",
+  "hover": "#f8f9fa"
+}

@@ -375,7 +375,11 @@ def get_top_users(request):
                     profile_picture = user.profile_image
                 else:
                     from django.conf import settings
-                    profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{user.profile_image}"
+                    media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                    # Ensure we're using https if the request came through https
+                    if request.is_secure() and media_url.startswith('http://'):
+                        media_url = media_url.replace('http://', 'https://', 1)
+                    profile_picture = f"{media_url.rstrip('/')}/{user.profile_image.lstrip('/')}"
             
             top_users_data.append({
                 'rank': index + 1,
@@ -407,7 +411,11 @@ def get_top_users(request):
                         profile_picture = request.user.profile_image
                     else:
                         from django.conf import settings
-                        profile_picture = f"{request.build_absolute_uri(settings.MEDIA_URL)}{request.user.profile_image}"
+                        media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                        # Ensure we're using https if the request came through https
+                        if request.is_secure() and media_url.startswith('http://'):
+                            media_url = media_url.replace('http://', 'https://', 1)
+                        profile_picture = f"{media_url.rstrip('/')}/{request.user.profile_image.lstrip('/')}"
                 
                 # Get user stats
                 user_stats = {

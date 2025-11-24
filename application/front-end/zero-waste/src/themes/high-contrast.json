@@ -1,0 +1,12 @@
+{
+  "name": "High Contrast",
+  "class": "theme-high-contrast",
+  "icon": "◐",
+  "background": "#000000",
+  "text": "#ffffff",
+  "primary": "#000000",
+  "primaryText": "#ffffff",
+  "secondary": "#ffff00",
+  "border": "#ffffff",
+  "hover": "#1a1a1a"
+}

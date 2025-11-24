@@ -17,6 +17,7 @@ from .profile import follow_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
 from .activities.views.activity_view import ActivityEventViewSet
+from .recycling_centers import recycling_views
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -186,5 +187,17 @@ urlpatterns = [
     path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
 
     path("api/invite/send/", invite_views.send_invitation_email, name="send_invitation_email"),
+    
+    # Recycling Centers Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve all cities with recycling centers
+    path("api/recycling-centers/cities/", recycling_views.get_cities, name="get_cities"),
+    
+    # GET: Retrieve districts for a specific city
+    path("api/recycling-centers/districts/", recycling_views.get_districts, name="get_districts"),
+    
+    # GET: Retrieve recycling centers by city and optionally by district
+    path("api/recycling-centers/", recycling_views.get_recycling_centers, name="get_recycling_centers"),
 ]
 

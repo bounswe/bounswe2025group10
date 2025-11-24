@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "209-38-114-201.sslip.io"]
+ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "209-38-114-201.sslip.io", "zerowaste.ink"]
 
 
 # Application definition
@@ -79,6 +79,11 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+
+# Trust proxy headers for HTTPS detection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 AUTH_USER_MODEL = 'api.Users'
 

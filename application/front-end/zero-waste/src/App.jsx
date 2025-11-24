@@ -1,20 +1,22 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./Login/LoginPage";
-import SignupPage from "./Login/SignupPage";
-import ProtectedUserRoute from "./Login/ProtectedUserRoute";
-import MainPage from "./MainPage/MainPage";
-import AdminPanel from "./Admin/AdminPanel";
-import ChallengePanel from "./Admin/ChallengePanel";
-import CommentPanel from "./Admin/CommentPanel";
-import UserPanel from "./Admin/UserPanel";
-import ProtectedAdminRoute from "./Login/ProtectedAdminRoute"
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
+import ProtectedUserRoute from "./routes/ProtectedUserRoute";
+import MainPage from "./pages/MainPage";
+import AdminPanel from "./pages/admin/AdminPanel";
+import ChallengePanel from "./pages/admin/ChallengePanel";
+import CommentPanel from "./pages/admin/CommentPanel";
+import UserPanel from "./pages/admin/UserPanel";
+import ProtectedAdminRoute from "./routes/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
-import Profile from "./pages/ProfilePage.jsx"
+import Profile from "./pages/profile/ProfilePage.jsx"
 import Community from "./pages/Community.jsx";
 import Tips from "./pages/Tips.jsx";
-import Leaderboard from "./Leaderboard/Leaderboard";
+import Leaderboard from "./pages/Leaderboard.jsx";
 import Achievements from "./pages/Achievements.jsx";
-import PublicProfile from "./pages/PublicProfile.jsx";
+import PublicProfile from "./pages/profile/PublicProfile.jsx";
+import Invite from "./pages/Invite.jsx";
+
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<Community />} />
+  <Route path="/invite" element={<Invite />} />
+
         <Route path="/profile" element={<Profile /> }></Route>
         <Route path="/profile/:username" element={<PublicProfile />} />
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
