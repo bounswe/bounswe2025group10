@@ -21,7 +21,12 @@ class PostSerializer(serializers.ModelSerializer):
         if obj.image and request:
             if obj.image.startswith(('http://', 'https://')):
                 return obj.image
-            return request.build_absolute_uri(f'{settings.MEDIA_URL}{obj.image}')
+            url = request.build_absolute_uri(f'{settings.MEDIA_URL}{obj.image}')
+            # Force HTTPS for production domain
+            if 'zerowaste.ink' in url:
+                url = url.replace('http://', 'https://')
+            return url
+        return None
 
     
     def get_is_saved(self, obj):
