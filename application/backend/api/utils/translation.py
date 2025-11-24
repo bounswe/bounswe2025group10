@@ -1,7 +1,4 @@
-from googletrans import Translator
-
-# Initialize translator
-translator = Translator()
+from deep_translator import GoogleTranslator
 
 def translate_text(text, source_lang, target_lang):
     """
@@ -19,8 +16,8 @@ def translate_text(text, source_lang, target_lang):
         return text
     
     try:
-        result = translator.translate(text, src=source_lang, dest=target_lang)
-        return result.text
+        translated = GoogleTranslator(source=source_lang, target=target_lang).translate(text)
+        return translated
     except Exception as e:
         # If translation fails, return original text
         print(f"Translation error: {str(e)}")

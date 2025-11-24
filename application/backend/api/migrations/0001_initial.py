@@ -34,7 +34,6 @@ class Migration(migrations.Migration):
                 ('text', models.TextField()),
                 ('like_count', models.IntegerField(blank=True, null=True)),
                 ('dislike_count', models.IntegerField(blank=True, null=True)),
-                ('language', models.CharField(blank=True, max_length=10, null=True, choices=[('en', 'English'), ('tr', 'Turkish'), ('ar', 'Arabic'), ('es', 'Spanish'), ('fr', 'French')])),
             ],
             options={
                 'db_table': 'Tips',
@@ -73,7 +72,6 @@ class Migration(migrations.Migration):
                 ('text', models.TextField(blank=True, null=True)),
                 ('image', models.CharField(blank=True, max_length=255, null=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL)),
-                ('language', models.CharField(blank=True, max_length=10, null=True, choices=[('en', 'English'), ('tr', 'Turkish'), ('ar', 'Arabic'), ('es', 'Spanish'), ('fr', 'French')])),
             ],
             options={
                 'db_table': 'Posts',
