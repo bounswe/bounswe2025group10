@@ -71,7 +71,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 from api.models import (
     Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste,
-    UserWastes, Report, TipLikes, PostLikes, Follow
+    UserWastes, Report, TipLikes, PostLikes, Follow, SavedPosts, SuspiciousWaste
 )
 from challenges.models import Challenge, UserChallenge
 from api.utils.translation import translate_text
@@ -956,6 +956,61 @@ def generate_mock_data(
                 following=test_user,
                 defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
             )
+
+    # ---------------------------- SAVED POSTS --------------------------------
+    # Users save posts they find interesting/useful
+    saved_posts = []
+    for user in users:
+        # Each user saves between 0-10 posts
+        num_to_save = random.randint(0, min(10, len(posts + test_user_posts)))
+        if num_to_save > 0:
+            posts_to_save = random.sample(posts + test_user_posts, num_to_save)
+            for post in posts_to_save:
+                # Don't save your own posts (optional rule)
+                if post.creator.id == user.id:
+                    continue
+                # Check if not already saved
+                if not SavedPosts.objects.filter(user=user, post=post).exists():
+                    saved_post = SavedPosts.objects.create(
+                        user=user,
+                        post=post,
+                        date_saved=fake.date_time_this_year(tzinfo=timezone.get_current_timezone())
+                    )
+                    saved_posts.append(saved_post)
+    
+    # Ensure test_user has some saved posts
+    if not SavedPosts.objects.filter(user=test_user).exists():
+        test_saved = random.sample([p for p in posts if p.creator.id != test_user.id], min(5, len(posts)))
+        for post in test_saved:
+            SavedPosts.objects.get_or_create(
+                user=test_user,
+                post=post,
+                defaults={'date_saved': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+
+    # -------------------------- SUSPICIOUS WASTE -----------------------------
+    # Generate some suspicious waste entries that need verification
+    # These are waste logs that might be fraudulent or need review
+    suspicious_wastes = []
+    
+    # Select ~5% of users to have suspicious waste entries
+    suspicious_users = random.sample(users, max(1, int(len(users) * 0.05)))
+    
+    for user in suspicious_users:
+        # Each suspicious user has 1-3 suspicious waste entries
+        num_suspicious = random.randint(1, 3)
+        for _ in range(num_suspicious):
+            waste_type = random.choice(wastes)
+            # Suspicious entries tend to have unusually high amounts
+            amount = random.uniform(100, 500)  # Much higher than normal
+            suspicious = SuspiciousWaste.objects.create(
+                user=user,
+                waste=waste_type,
+                amount=amount,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                photo=f"suspicious_waste_photos/suspicious_{user.id}_{random.randint(1000, 9999)}.jpg"
+            )
+            suspicious_wastes.append(suspicious)
 
 
 class Command(BaseCommand):
