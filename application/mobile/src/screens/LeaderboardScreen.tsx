@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,16 @@ import {
   Image,
   Modal,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import { leaderboardService } from '../services/api';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
-import { useAppNavigation } from '../hooks/useNavigation';
+import {colors, spacing, typography, commonStyles} from '../utils/theme';
+import {MIN_TOUCH_TARGET} from '../utils/accessibility';
+import {leaderboardService} from '../services/api';
+import {ScreenWrapper} from '../components/ScreenWrapper';
+import {MoreDropdown} from '../components/MoreDropdown';
+import {CustomTabBar} from '../components/CustomTabBar';
+import {useAppNavigation} from '../hooks/useNavigation';
 
-const DEFAULT_PROFILE_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541';
+const DEFAULT_PROFILE_IMAGE =
+  'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541';
 
 interface LeaderboardUser {
   rank: number;
@@ -65,16 +67,18 @@ export const LeaderboardScreen: React.FC = () => {
     try {
       const response = await leaderboardService.getLeaderboard();
       const data = response.data;
-      
+
       // Process top users
-      const topUsers: LeaderboardUser[] = (data.top_users || []).map((user: any) => ({
-        rank: user.rank,
-        username: user.username,
-        total_waste: user.total_waste,
-        profile_picture: user.profile_picture || DEFAULT_PROFILE_IMAGE,
-        points: user.points || 0,
-        isCurrentUser: false,
-      }));
+      const topUsers: LeaderboardUser[] = (data.top_users || []).map(
+        (user: any) => ({
+          rank: user.rank,
+          username: user.username,
+          total_waste: user.total_waste,
+          profile_picture: user.profile_picture || DEFAULT_PROFILE_IMAGE,
+          points: user.points || 0,
+          isCurrentUser: false,
+        }),
+      );
 
       setLeaderboard(topUsers);
 
@@ -84,7 +88,8 @@ export const LeaderboardScreen: React.FC = () => {
           rank: data.current_user.rank,
           username: data.current_user.username,
           total_waste: data.current_user.total_waste,
-          profile_picture: data.current_user.profile_picture || DEFAULT_PROFILE_IMAGE,
+          profile_picture:
+            data.current_user.profile_picture || DEFAULT_PROFILE_IMAGE,
           points: data.current_user.points || 0,
           isCurrentUser: true,
         });
@@ -118,7 +123,7 @@ export const LeaderboardScreen: React.FC = () => {
       setShowBioModal(true);
     } catch (error) {
       console.error(`Failed to fetch bio for ${username}:`, error);
-      setSelectedUserBio({ username, bio: 'Bio could not be loaded.' });
+      setSelectedUserBio({username, bio: 'Bio could not be loaded.'});
       setShowBioModal(true);
     } finally {
       setBioLoading(false);
@@ -138,7 +143,7 @@ export const LeaderboardScreen: React.FC = () => {
 
   const getUserRowStyle = (isCurrentUser: boolean, index: number) => {
     let backgroundColor = colors.white;
-    
+
     // Medal colors for top 3
     if (index === 0) {
       backgroundColor = '#FFD700'; // Gold
@@ -149,7 +154,7 @@ export const LeaderboardScreen: React.FC = () => {
     } else if (index % 2 !== 0) {
       backgroundColor = colors.lightGray;
     }
-    
+
     return {
       backgroundColor,
       borderWidth: isCurrentUser ? 2 : 0,
@@ -159,24 +164,30 @@ export const LeaderboardScreen: React.FC = () => {
   };
 
   // Render leaderboard item
-  const renderLeaderboardItem = ({ item, index }: { item: LeaderboardUser; index: number }) => (
-    <View style={[styles.leaderboardRow, getUserRowStyle(item.isCurrentUser || false, index)]}>
+  const renderLeaderboardItem = ({
+    item,
+    index,
+  }: {
+    item: LeaderboardUser;
+    index: number;
+  }) => (
+    <View
+      style={[
+        styles.leaderboardRow,
+        getUserRowStyle(item.isCurrentUser || false, index),
+      ]}>
       <View style={styles.rankColumn}>
-        <Text style={[
-          styles.rankText,
-          { fontSize: (item.rank <= 3) ? 24 : 16 }
-        ]}>
+        <Text style={[styles.rankText, {fontSize: item.rank <= 3 ? 24 : 16}]}>
           {getRankDisplay(item.rank)}
         </Text>
       </View>
-      
+
       <View style={styles.profileColumn}>
         <TouchableOpacity
           onPress={() => handleProfileClick(item.username)}
-          style={styles.profileImageContainer}
-        >
+          style={styles.profileImageContainer}>
           <Image
-            source={{ uri: item.profile_picture }}
+            source={{uri: item.profile_picture}}
             style={styles.profileImage}
             onError={() => {
               console.log('Failed to load profile image');
@@ -184,20 +195,24 @@ export const LeaderboardScreen: React.FC = () => {
           />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.usernameColumn}>
-        <Text style={[
-          styles.usernameText,
-          { fontWeight: (item.isCurrentUser || item.rank <= 3) ? 'bold' : 'normal' }
-        ]}>
+        <Text
+          style={[
+            styles.usernameText,
+            {
+              fontWeight:
+                item.isCurrentUser || item.rank <= 3 ? 'bold' : 'normal',
+            },
+          ]}>
           {item.username}
         </Text>
       </View>
-      
+
       <View style={styles.scoreColumn}>
         <Text style={styles.scoreText}>{item.total_waste}</Text>
       </View>
-      
+
       <View style={styles.pointsColumn}>
         <Text style={styles.pointsText}>{item.points}</Text>
       </View>
@@ -207,27 +222,31 @@ export const LeaderboardScreen: React.FC = () => {
   // Render current user row
   const renderCurrentUserRow = () => {
     if (!currentUser) return null;
-    
+
     return (
       <View style={styles.currentUserSection}>
         <Text style={styles.currentUserTitle}>Your Ranking</Text>
-        <View style={[styles.leaderboardRow, getUserRowStyle(true, currentUser.rank - 1)]}>
+        <View
+          style={[
+            styles.leaderboardRow,
+            getUserRowStyle(true, currentUser.rank - 1),
+          ]}>
           <View style={styles.rankColumn}>
-            <Text style={[
-              styles.rankText,
-              { fontSize: (currentUser.rank <= 3) ? 24 : 16 }
-            ]}>
+            <Text
+              style={[
+                styles.rankText,
+                {fontSize: currentUser.rank <= 3 ? 24 : 16},
+              ]}>
               {getRankDisplay(currentUser.rank)}
             </Text>
           </View>
-          
+
           <View style={styles.profileColumn}>
             <TouchableOpacity
               onPress={() => handleProfileClick(currentUser.username)}
-              style={styles.profileImageContainer}
-            >
+              style={styles.profileImageContainer}>
               <Image
-                source={{ uri: currentUser.profile_picture }}
+                source={{uri: currentUser.profile_picture}}
                 style={styles.profileImage}
                 onError={() => {
                   console.log('Failed to load profile image');
@@ -235,17 +254,17 @@ export const LeaderboardScreen: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.usernameColumn}>
-            <Text style={[styles.usernameText, { fontWeight: 'bold' }]}>
+            <Text style={[styles.usernameText, {fontWeight: 'bold'}]}>
               {currentUser.username}
             </Text>
           </View>
-          
+
           <View style={styles.scoreColumn}>
             <Text style={styles.scoreText}>{currentUser.total_waste}</Text>
           </View>
-          
+
           <View style={styles.pointsColumn}>
             <Text style={styles.pointsText}>{currentUser.points}</Text>
           </View>
@@ -268,9 +287,10 @@ export const LeaderboardScreen: React.FC = () => {
   return (
     <ScreenWrapper
       title="🌿 Top 10 Zero Waste Champions"
-      scrollable={false}
+      scrollable={true}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      keyboardAvoidingView={false}
       rightComponent={
         <MoreDropdown
           onTipsPress={handleTipsPress}
@@ -280,14 +300,19 @@ export const LeaderboardScreen: React.FC = () => {
         />
       }
       testID="leaderboard-screen"
-      accessibilityLabel="Leaderboard screen"
-    >
+      accessibilityLabel="Leaderboard screen">
       {loading && !refreshing ? (
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          style={styles.loader}
+        />
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>Failed to load leaderboard</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderboard}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchLeaderboard}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -298,20 +323,24 @@ export const LeaderboardScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.headerText, styles.rankHeader]}>#</Text>
-            <Text style={[styles.headerText, styles.profileHeader]}>Profile</Text>
-            <Text style={[styles.headerText, styles.usernameHeader]}>Username</Text>
-            <Text style={[styles.headerText, styles.scoreHeader]}>CO2 Avoided</Text>
+            <Text style={[styles.headerText, styles.profileHeader]}>
+              Profile
+            </Text>
+            <Text style={[styles.headerText, styles.usernameHeader]}>
+              Username
+            </Text>
+            <Text style={[styles.headerText, styles.scoreHeader]}>
+              CO2 Avoided
+            </Text>
             <Text style={[styles.headerText, styles.pointsHeader]}>Points</Text>
           </View>
 
           {/* Leaderboard List */}
-          <FlatList
-            data={leaderboard}
-            keyExtractor={(item) => item.username}
-            renderItem={renderLeaderboardItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
-          />
+          {leaderboard.map((item, index) => (
+            <View key={item.username}>
+              {renderLeaderboardItem({item, index})}
+            </View>
+          ))}
 
           {/* Current User Section */}
           {renderCurrentUserRow()}
@@ -323,31 +352,37 @@ export const LeaderboardScreen: React.FC = () => {
         visible={showBioModal}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowBioModal(false)}
-      >
+        onRequestClose={() => setShowBioModal(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={styles.modalUserInfo}>
               <Image
-                source={{ 
-                  uri: leaderboard.find(u => u.username === selectedUserBio?.username)?.profile_picture || 
-                       (currentUser && currentUser.username === selectedUserBio?.username ? currentUser.profile_picture : DEFAULT_PROFILE_IMAGE)
+                source={{
+                  uri:
+                    leaderboard.find(
+                      u => u.username === selectedUserBio?.username,
+                    )?.profile_picture ||
+                    (currentUser &&
+                    currentUser.username === selectedUserBio?.username
+                      ? currentUser.profile_picture
+                      : DEFAULT_PROFILE_IMAGE),
                 }}
                 style={styles.modalProfileImage}
               />
               <View style={styles.modalUserDetails}>
-                <Text style={styles.modalUsername}>{selectedUserBio?.username}</Text>
+                <Text style={styles.modalUsername}>
+                  {selectedUserBio?.username}
+                </Text>
                 <Text style={styles.modalSubtitle}>Profile Bio</Text>
               </View>
             </View>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setShowBioModal(false)}
-            >
+              onPress={() => setShowBioModal(false)}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.modalContent}>
             {bioLoading ? (
               <View style={styles.bioLoading}>
@@ -356,14 +391,18 @@ export const LeaderboardScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.bioContainer}>
-                <Text style={[
-                  styles.bioText,
-                  { 
-                    color: selectedUserBio?.bio ? colors.darkGray : colors.gray,
-                    fontStyle: selectedUserBio?.bio ? 'normal' : 'italic'
-                  }
-                ]}>
-                  {selectedUserBio?.bio || "This user hasn't written a bio yet."}
+                <Text
+                  style={[
+                    styles.bioText,
+                    {
+                      color: selectedUserBio?.bio
+                        ? colors.textPrimary
+                        : colors.textSecondary,
+                      fontStyle: selectedUserBio?.bio ? 'normal' : 'italic',
+                    },
+                  ]}>
+                  {selectedUserBio?.bio ||
+                    "This user hasn't written a bio yet."}
                 </Text>
               </View>
             )}
@@ -399,7 +438,7 @@ const styles = StyleSheet.create({
     ...typography.button,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: colors.darkGray,
+    color: colors.textPrimary,
   },
   rankHeader: {
     flex: 0.8,
@@ -451,8 +490,12 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: colors.gray,
+    borderColor: colors.lightGray,
     overflow: 'hidden',
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileImage: {
     width: 50,
@@ -460,15 +503,15 @@ const styles = StyleSheet.create({
   },
   usernameText: {
     ...typography.body,
-    color: colors.darkGray,
+    color: colors.textPrimary,
   },
   scoreText: {
     ...typography.body,
-    color: colors.darkGray,
+    color: colors.textPrimary,
   },
   pointsText: {
     ...typography.body,
-    color: colors.darkGray,
+    color: colors.textPrimary,
   },
   currentUserSection: {
     marginTop: spacing.lg,
@@ -476,7 +519,7 @@ const styles = StyleSheet.create({
   currentUserTitle: {
     ...typography.h3,
     textAlign: 'center',
-    color: colors.darkGray,
+    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   emptyState: {
@@ -490,13 +533,13 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     ...typography.h2,
-    color: colors.darkGray,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   emptyStateSubtext: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -514,17 +557,19 @@ const styles = StyleSheet.create({
   retryButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 8,
   },
   retryButtonText: {
     ...typography.button,
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontWeight: '600',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -551,20 +596,23 @@ const styles = StyleSheet.create({
   },
   modalUsername: {
     ...typography.h3,
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontWeight: 'bold',
   },
   modalSubtitle: {
     ...typography.body,
-    color: colors.white,
-    opacity: 0.8,
+    color: colors.textOnPrimary,
+    opacity: 0.9,
   },
   closeButton: {
-    padding: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeButtonText: {
     ...typography.h2,
-    color: colors.white,
+    color: colors.textOnPrimary,
   },
   modalContent: {
     flex: 1,
@@ -576,7 +624,7 @@ const styles = StyleSheet.create({
   },
   bioLoadingText: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginTop: spacing.sm,
   },
   bioContainer: {

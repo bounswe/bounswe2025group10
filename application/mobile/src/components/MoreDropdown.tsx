@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { colors, spacing, typography } from '../utils/theme';
+import {colors, spacing, typography} from '../utils/theme';
 
 interface MoreDropdownProps {
   onTipsPress?: () => void;
@@ -45,7 +45,7 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
     },
   ];
 
-  const handleItemPress = (item: typeof menuItems[0]) => {
+  const handleItemPress = (item: (typeof menuItems)[0]) => {
     setIsVisible(false);
     if (item.onPress) {
       item.onPress();
@@ -60,8 +60,7 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
         accessibilityLabel="More options"
         accessibilityRole="button"
         accessibilityHint="Opens a menu with additional options"
-        testID={testID}
-      >
+        testID={testID}>
         <Text style={styles.moreButtonText}>More</Text>
         <Text style={styles.dropdownArrow}>▼</Text>
       </TouchableOpacity>
@@ -70,13 +69,11 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
         visible={isVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setIsVisible(false)}
-      >
+        onRequestClose={() => setIsVisible(false)}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setIsVisible(false)}
-        >
+          onPress={() => setIsVisible(false)}>
           <View style={styles.dropdownContainer}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
@@ -88,8 +85,7 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
                 onPress={() => handleItemPress(item)}
                 accessibilityLabel={item.title}
                 accessibilityRole="button"
-                testID={`${testID}-item-${item.id}`}
-              >
+                testID={`${testID}-item-${item.id}`}>
                 <Text style={styles.menuItemIcon}>{item.icon}</Text>
                 <Text style={styles.menuItemText}>{item.title}</Text>
                 <Text style={styles.menuItemArrow}>→</Text>
@@ -102,18 +98,16 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
   );
 };
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   moreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: 8,
     backgroundColor: colors.lightGray,
-    minWidth: 80,
-    justifyContent: 'center',
   },
   moreButtonText: {
     ...typography.body,
@@ -136,7 +130,7 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     backgroundColor: colors.white,
     borderRadius: 12,
-    minWidth: 180,
+    alignSelf: 'flex-end',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -149,10 +143,11 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.lightGray,
+    minWidth: 200,
   },
   lastMenuItem: {
     borderBottomWidth: 0,
@@ -166,8 +161,8 @@ const styles = StyleSheet.create({
   menuItemText: {
     ...typography.body,
     color: colors.darkGray,
-    flex: 1,
     fontWeight: '500',
+    marginRight: spacing.sm,
   },
   menuItemArrow: {
     fontSize: 14,

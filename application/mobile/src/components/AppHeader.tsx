@@ -8,8 +8,8 @@ import {
   Platform,
   SafeAreaView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { colors, spacing, typography } from '../utils/theme';
+import {useNavigation} from '@react-navigation/native';
+import {colors, spacing, typography} from '../utils/theme';
 
 interface AppHeaderProps {
   title: string;
@@ -54,8 +54,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               accessibilityLabel="Go back"
               accessibilityRole="button"
               accessibilityHint="Navigates to the previous screen"
-              testID="back-button"
-            >
+              testID="back-button">
               <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
           )}
@@ -65,17 +64,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <Text
             style={styles.title}
             accessibilityRole="header"
-            accessibilityLevel={1}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
+            accessibilityLevel={1}>
             {title}
           </Text>
         </View>
 
-        <View style={styles.rightSection}>
-          {rightComponent}
-        </View>
+        <View style={styles.rightSection}>{rightComponent}</View>
       </View>
     </SafeAreaView>
   );
@@ -97,8 +91,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 56,
+    minHeight: 56,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     backgroundColor: colors.white,
   },
   leftSection: {
@@ -107,8 +102,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   centerSection: {
-    flex: 2,
+    flex: 3,
     alignItems: 'center',
+    paddingHorizontal: spacing.xs,
   },
   rightSection: {
     flex: 1,
@@ -136,4 +132,3 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
 });
-
