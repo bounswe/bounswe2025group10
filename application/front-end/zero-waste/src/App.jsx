@@ -32,7 +32,7 @@ export default function App() {
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<Community />} />
         <Route path="/recycling-centers" element={<RecyclingCenters />} />
-  <Route path="/invite" element={<Invite />} />
+        <Route path="/invite" element={<Invite />} />
 
         <Route path="/profile" element={<Profile /> }></Route>
         <Route path="/profile/:username" element={<PublicProfile />} />
