@@ -19,6 +19,11 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+
+  redis:
+    image: redis:7
+    restart: always
+
   web:
     build: .
     command: >
@@ -26,7 +31,7 @@ services:
         echo 'Waiting for database...' &&
         python manage.py migrate --noinput &&
         echo 'Database is ready!' &&
-        python manage.py runserver 0.0.0.0:8000"
+        daphne -b 0.0.0.0 -p 8000 project.asgi:application"
     develop:
       watch:
         - action: sync
@@ -35,7 +40,6 @@ services:
         - action: rebuild
           path: Dockerfile
 
-
     volumes:
       - .:/app
     ports:
@@ -43,7 +47,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: always
+
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p
