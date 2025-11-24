@@ -106,10 +106,22 @@ def upload_profile_picture(request):
         request.user.profile_image = filepath.replace('\\', '/')  # Use forward slashes for URLs
         request.user.save(update_fields=['profile_image'])
         
+        # Build absolute HTTPS URL for profile picture
+        from django.conf import settings
+        profile_picture_url = None
+        if request.user.profile_image:
+            if request.user.profile_image.startswith(('http://', 'https://')):
+                profile_picture_url = request.user.profile_image
+            else:
+                media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                if request.is_secure() and media_url.startswith('http://'):
+                    media_url = media_url.replace('http://', 'https://', 1)
+                profile_picture_url = f"{media_url.rstrip('/')}/{request.user.profile_image.lstrip('/')}"
+        
         return Response({
             'message': 'Profile picture uploaded successfully',
             'data': {
-                'profile_picture': request.user.profile_image_url
+                'profile_picture': profile_picture_url
             }
         }, status=status.HTTP_200_OK)
         

@@ -78,6 +78,11 @@ CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 
+# Trust proxy headers for HTTPS detection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
 AUTH_USER_MODEL = 'api.Users'
 
 ROOT_URLCONF = 'project.urls'

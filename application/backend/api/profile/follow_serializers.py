@@ -15,8 +15,18 @@ class UserBasicSerializer(serializers.ModelSerializer):
         read_only_fields = fields
     
     def get_profile_image(self, obj):
-        """Get profile image URL"""
-        return obj.profile_image_url
+        """Get profile image URL as absolute HTTPS URL"""
+        request = self.context.get('request')
+        if obj.profile_image:
+            if obj.profile_image.startswith(('http://', 'https://')):
+                return obj.profile_image
+            if request:
+                from django.conf import settings
+                media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                if request.is_secure() and media_url.startswith('http://'):
+                    media_url = media_url.replace('http://', 'https://', 1)
+                return f"{media_url.rstrip('/')}/{obj.profile_image.lstrip('/')}"
+        return None
 
 
 class FollowSerializer(serializers.ModelSerializer):
