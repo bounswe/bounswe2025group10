@@ -19,6 +19,7 @@ export default function Navbar({ active = "home", children }) {
     { key: "leaderboard", path: "/leaderboard", icon: "📊" },
     { key: "challenges", path: "/challenges", icon: "🎯" },
     { key: "community", path: "/community", icon: "👥" },
+    { key: "recycling", path: "/recycling-centers", icon: "♻️" },
   ];
 
   return (

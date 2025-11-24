@@ -13,7 +13,8 @@
     "login": "Login",
     "signup": "Sign Up",
     "admin": "Admin",
-        "invite": "Invite Friend"
+    "recycling": "Recycling Centers",
+    "invite": "Invite Friend"
   },
   "common": {
     "language": "Language",
@@ -200,7 +201,7 @@
     "wasteType": "Waste Type",
     "wasteQuantity": "Waste Quantity (grams)",
     "selectType": "Select type",
-    "quantityPlaceholder": "e.g., 500",
+    "quantityPlaceholder": "e.g., 300",
     "addWaste": "Add Waste",
     "sustainabilityTips": "Sustainability Tips",
     "yourProgress": "Your Progress",
@@ -243,6 +244,8 @@
     "selectType": "Select type",
     "selectMethod": "Select method",
     "chooseItem": "Choose Item",
+    "highAmountWarning": "You are about to record a large amount of waste. Are you sure?",
+    "excessiveAmountError": "Cannot input such a high amount in a single entry.",
     "items": {
       "plasticBottle": "Plastic Bottle",
       "plasticBag": "Plastic Bag",
@@ -260,7 +263,43 @@
       "bananaPeel": "Banana Peel",
       "appleCore": "Apple Core",
       "foodScraps": "Food Scraps"
-    }  }, "invite": {
+    }
+  },
+  "recyclingCenters": {
+    "title": "Recycling Centers",
+    "selectCity": "Select City",
+    "selectDistrict": "Select District",
+    "chooseCity": "Choose a city...",
+    "chooseDistrict": "Choose a district...",
+    "centersIn": "Centers in",
+    "address": "Address",
+    "additionalInfo": "Additional Information",
+    "acceptedTypes": "Accepted Waste Types",
+    "noCenters": "No recycling centers found for the selected location.",
+    "selectLocation": "Please select a city and district to view recycling centers.",
+    "wasteTypes": {
+      "paper": "Paper",
+      "plastic": "Plastic",
+      "glass": "Glass",
+      "metal": "Metal",
+      "electronic": "Electronic",
+      "battery": "Battery",
+      "oil_fats": "Oil & Fats",
+      "organic": "Organic",
+      "textile": "Textile",
+      "medicine": "Medicine",
+      "tire": "Tire",
+      "bulky": "Bulky Waste",
+      "wood": "Wood",
+      "fluorescent": "Fluorescent",
+      "accumulator": "Accumulator",
+      "construction": "Construction",
+      "hazardous": "Hazardous",
+      "cable": "Cable",
+      "it_equipment": "IT Equipment"
+    }
+  }, 
+  "invite": {
   "title": "Invite a Friend",
   "subtitle": "Send an invitation link to your friend via email.",
   "emailLabel": "Friend's Email",

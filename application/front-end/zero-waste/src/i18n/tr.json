@@ -13,7 +13,8 @@
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
     "admin": "Yönetici",
-"invite": "Arkadaş Davet Et"
+    "recycling": "Geri Dönüşüm Merkezleri",
+    "invite": "Arkadaş Davet Et"
 
   },
   "common": {
@@ -201,7 +202,7 @@
     "wasteType": "Atık Türü",
     "wasteQuantity": "Atık Miktarı (gram)",
     "selectType": "Tür seçin",
-    "quantityPlaceholder": "örn. 500",
+    "quantityPlaceholder": "örn. 300",
     "addWaste": "Atık Ekle",
     "sustainabilityTips": "Sürdürülebilirlik İpuçları",
     "yourProgress": "İlerlemeniz",
@@ -244,6 +245,8 @@
     "selectType": "Tür seçin",
     "selectMethod": "Yöntem seçin",
     "chooseItem": "Öğe Seçin",
+    "highAmountWarning": "Fazla bir miktarda atık girdisi kaydetmek istiyorsunuz, emin misiniz?",
+    "excessiveAmountError": "Tek seferde bu kadar yüksek miktarda bir girdi yapılamaz.",
     "items": {
       "plasticBottle": "Plastik Şişe",
       "plasticBag": "Plastik Poşet",
@@ -263,7 +266,41 @@
       "foodScraps": "Yemek Artığı"
     }
   },
-    "invite": {
+  "recyclingCenters": {
+    "title": "Geri Dönüşüm Merkezleri",
+    "selectCity": "İl Seçin",
+    "selectDistrict": "İlçe Seçin",
+    "chooseCity": "Bir il seçin...",
+    "chooseDistrict": "Bir ilçe seçin...",
+    "centersIn": "Merkezler",
+    "address": "Adres",
+    "additionalInfo": "Ek Bilgi",
+    "acceptedTypes": "Kabul Edilen Atık Türleri",
+    "noCenters": "Seçilen konum için geri dönüşüm merkezi bulunamadı.",
+    "selectLocation": "Geri dönüşüm merkezlerini görmek için lütfen bir il ve ilçe seçin.",
+    "wasteTypes": {
+      "paper": "Kağıt",
+      "plastic": "Plastik",
+      "glass": "Cam",
+      "metal": "Metal",
+      "electronic": "Elektronik",
+      "battery": "Pil",
+      "oil_fats": "Yağ",
+      "organic": "Organik",
+      "textile": "Tekstil",
+      "medicine": "İlaç",
+      "tire": "Lastik",
+      "bulky": "Büyük Atık",
+      "wood": "Ahşap",
+      "fluorescent": "Floresan",
+      "accumulator": "Akü",
+      "construction": "İnşaat",
+      "hazardous": "Tehlikeli",
+      "cable": "Kablo",
+      "it_equipment": "Bilgisayar Ekipmanı"
+    }
+  },  
+  "invite": {
   "title": "Arkadaş Davet Et",
   "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
   "emailLabel": "Arkadaşının E-postası",

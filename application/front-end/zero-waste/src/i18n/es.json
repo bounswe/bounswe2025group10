@@ -13,6 +13,7 @@
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
     "admin": "Administrador",
+    "recycling": "Centros de Reciclaje",
     "invite": "Invitar a un Amigo"
 
   },
@@ -201,7 +202,7 @@
     "wasteType": "Tipo de residuo",
     "wasteQuantity": "Cantidad de Residuos (gramos)",
     "selectType": "Seleccionar tipo",
-    "quantityPlaceholder": "ej. 500",
+    "quantityPlaceholder": "ej. 300",
     "addWaste": "Agregar Residuo",
     "sustainabilityTips": "Consejos de Sostenibilidad",
     "yourProgress": "Tu Progreso",
@@ -243,6 +244,8 @@
     "selectType": "Seleccionar tipo",
     "selectMethod": "Seleccionar método",
     "chooseItem": "Elegir Artículo",
+    "highAmountWarning": "Está a punto de registrar una gran cantidad de residuos. ¿Está seguro?",
+    "excessiveAmountError": "No se puede ingresar una cantidad tan alta en una sola entrada.",
     "items": {
       "plasticBottle": "Botella de Plástico",
       "plasticBag": "Bolsa de Plástico",
@@ -260,7 +263,43 @@
       "bananaPeel": "Cáscara de Plátano",
       "appleCore": "Corazón de Manzana",
       "foodScraps": "Restos de Comida"
-    }  }, "invite": {
+    }
+  },
+  "recyclingCenters": {
+    "title": "Centros de Reciclaje",
+    "selectCity": "Seleccionar Ciudad",
+    "selectDistrict": "Seleccionar Distrito",
+    "chooseCity": "Elegir una ciudad...",
+    "chooseDistrict": "Elegir un distrito...",
+    "centersIn": "Centros en",
+    "address": "Dirección",
+    "additionalInfo": "Información Adicional",
+    "acceptedTypes": "Tipos de Residuos Aceptados",
+    "noCenters": "No se encontraron centros de reciclaje para la ubicación seleccionada.",
+    "selectLocation": "Por favor seleccione una ciudad y distrito para ver los centros de reciclaje.",
+    "wasteTypes": {
+      "paper": "Papel",
+      "plastic": "Plástico",
+      "glass": "Vidrio",
+      "metal": "Metal",
+      "electronic": "Electrónico",
+      "battery": "Batería",
+      "oil_fats": "Aceites y Grasas",
+      "organic": "Orgánico",
+      "textile": "Textil",
+      "medicine": "Medicina",
+      "tire": "Neumático",
+      "bulky": "Residuos Voluminosos",
+      "wood": "Madera",
+      "fluorescent": "Fluorescente",
+      "accumulator": "Acumulador",
+      "construction": "Construcción",
+      "hazardous": "Peligroso",
+      "cable": "Cable",
+      "it_equipment": "Equipo Informático"
+    }
+  },   
+  "invite": {
   "title": "Invitar a un Amigo",
   "subtitle": "Envía un enlace de invitación a tu amigo por correo electrónico.",
   "emailLabel": "Correo del Amigo",
