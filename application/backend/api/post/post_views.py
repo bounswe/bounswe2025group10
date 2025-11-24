@@ -17,13 +17,14 @@ from django.db import transaction
 
 @extend_schema(
     summary="Create a new post",
-    description="Create a post with text and/or image. At least one must be provided. Image must be JPEG/PNG and max 5MB.",
+    description="Create a post with text and/or image. At least one must be provided. Image must be JPEG/PNG and max 5MB. You can specify the language of the post content.",
     request={
         'multipart/form-data': {
             'type': 'object',
             'properties': {
                 'text': {'type': 'string', 'description': 'Post text content'},
-                'image': {'type': 'string', 'format': 'binary', 'description': 'Post image (JPEG/PNG, max 5MB)'}
+                'image': {'type': 'string', 'format': 'binary', 'description': 'Post image (JPEG/PNG, max 5MB)'},
+                'language': {'type': 'string', 'enum': ['en', 'tr', 'ar', 'es', 'fr'], 'description': 'Language code of the post content (default: en)'}
             }
         }
     },
@@ -49,7 +50,8 @@ from django.db import transaction
                             'dislike_count': 0,
                             'is_saved': False,
                             'is_user_liked': False,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 )
@@ -121,7 +123,8 @@ def create_post(request):
         # Prepare data for serializer
         post_data = {
             'text': request.data.get('text', ''),
-            'image': image_path
+            'image': image_path,
+            'language': request.data.get('language', 'en')
         }
         
         serializer = PostSerializer(data=post_data, context={'request': request})
@@ -148,7 +151,7 @@ def create_post(request):
 
 @extend_schema(
     summary="Get all posts",
-    description="Retrieve all posts ordered by most recent first with pagination support.",
+    description="Retrieve all posts ordered by most recent first with pagination support. Use the 'lang' parameter to get posts translated to your preferred language.",
     parameters=[
         OpenApiParameter(
             name='page',
@@ -161,6 +164,13 @@ def create_post(request):
             type=int,
             location=OpenApiParameter.QUERY,
             description='Number of items per page (default: 60, max: 60)'
+        ),
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Posts will be translated if different from original language.',
+            required=False
         )
     ],
     responses={
@@ -188,7 +198,8 @@ def create_post(request):
                                 'dislike_count': 2,
                                 'is_saved': False,
                                 'is_user_liked': False,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             }
                         ]
                     }
@@ -243,7 +254,7 @@ def get_all_posts(request):
 
 @extend_schema(
     summary="Get post details",
-    description="Retrieve detailed information about a specific post, including comments and user reaction if authenticated.",
+    description="Retrieve detailed information about a specific post, including comments and user reaction if authenticated. Use the 'lang' parameter to get the post translated to your preferred language.",
     parameters=[
         OpenApiParameter(
             name='post_id',
@@ -251,6 +262,13 @@ def get_all_posts(request):
             location=OpenApiParameter.PATH,
             required=True,
             description='ID of the post to retrieve'
+        ),
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Post will be translated if different from original language.',
+            required=False
         )
     ],
     responses={
@@ -315,6 +333,7 @@ def get_all_posts(request):
                             'is_user_liked': True,
                             'is_user_disliked': False,
                             'user_reaction': 'LIKE',
+                            'language': 'en',
                             'comments': [
                                 {
                                     'id': 1,
@@ -375,7 +394,16 @@ def get_post_detail(request, post_id):
 
 @extend_schema(
     summary="Get current user's posts",
-    description="Retrieve all posts created by the authenticated user, ordered by most recent first.",
+    description="Retrieve all posts created by the authenticated user, ordered by most recent first. Use the 'lang' parameter to get posts translated to your preferred language.",
+    parameters=[
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Posts will be translated if different from original language.',
+            required=False
+        )
+    ],
     responses={
         200: OpenApiResponse(
             response=PostSerializer(many=True),
@@ -399,7 +427,8 @@ def get_post_detail(request, post_id):
                                 'dislike_count': 1,
                                 'is_saved': False,
                                 'is_user_liked': False,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             }
                         ]
                     }
@@ -459,7 +488,8 @@ def get_user_posts(request):
                             'like_count': 16,
                             'dislike_count': 2,
                             'is_user_liked': True,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 )
@@ -562,7 +592,8 @@ def like_post(request, post_id):
                             'like_count': 15,
                             'dislike_count': 3,
                             'is_user_liked': False,
-                            'is_user_disliked': True
+                            'is_user_disliked': True,
+                            'language': 'en'
                         }
                     }
                 )
@@ -756,7 +787,8 @@ def get_user_reaction(request, post_id):
                         'data': {
                             'id': 10,
                             'text': 'Saved post',
-                            'is_saved': True
+                            'is_saved': True,
+                            'language': 'en'
                         }
                     }
                 )
@@ -827,7 +859,8 @@ def save_post(request, post_id):
                         'data': {
                             'id': 10,
                             'text': 'Unsaved post',
-                            'is_saved': False
+                            'is_saved': False,
+                            'language': 'en'
                         }
                     }
                 )
@@ -879,7 +912,16 @@ def unsave_post(request, post_id):
 
 @extend_schema(
     summary="Get saved posts",
-    description="Retrieve all posts saved by the current user, ordered by most recently saved.",
+    description="Retrieve all posts saved by the current user, ordered by most recently saved. Use the 'lang' parameter to get posts translated to your preferred language.",
+    parameters=[
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Posts will be translated if different from original language.',
+            required=False
+        )
+    ],
     responses={
         200: OpenApiResponse(
             response=PostSerializer(many=True),
@@ -898,7 +940,8 @@ def unsave_post(request, post_id):
                                 'creator_username': 'john_doe',
                                 'like_count': 20,
                                 'dislike_count': 1,
-                                'is_saved': True
+                                'is_saved': True,
+                                'language': 'en'
                             }
                         ]
                     }
@@ -952,7 +995,16 @@ def get_saved_posts(request):
 
 @extend_schema(
     summary="Get top liked posts",
-    description="Retrieve the top 5 posts with the highest number of likes.",
+    description="Retrieve the top 5 posts with the highest number of likes. Use the 'lang' parameter to get posts translated to your preferred language.",
+    parameters=[
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Posts will be translated if different from original language.',
+            required=False
+        )
+    ],
     responses={
         200: OpenApiResponse(
             response=PostSerializer(many=True),
@@ -971,7 +1023,8 @@ def get_saved_posts(request):
                                 'creator_username': 'john_doe',
                                 'like_count': 150,
                                 'dislike_count': 5,
-                                'is_saved': False
+                                'is_saved': False,
+                                'language': 'en'
                             }
                         ]
                     }

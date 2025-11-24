@@ -11,7 +11,7 @@ from .tip_serializer import TipSerializer
 
 @extend_schema(
     summary="Get all tips",
-    description="Retrieve all tips with pagination support. Includes user's like/dislike status for each tip.",
+    description="Retrieve all tips with pagination support. Includes user's like/dislike status for each tip. Use the 'lang' parameter to get tips translated to your preferred language.",
     parameters=[
         OpenApiParameter(
             name='page',
@@ -24,6 +24,13 @@ from .tip_serializer import TipSerializer
             type=int,
             location=OpenApiParameter.QUERY,
             description='Number of items per page (default: 60, max: 60)'
+        ),
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Tips will be translated if different from original language.',
+            required=False
         )
     ],
     responses={
@@ -45,7 +52,8 @@ from .tip_serializer import TipSerializer
                                 'like_count': 45,
                                 'dislike_count': 2,
                                 'is_user_liked': True,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             }
                         ]
                     }
@@ -101,7 +109,16 @@ def get_all_tips(request):
 
 @extend_schema(
     summary="Get recent tips",
-    description="Retrieve the 3 most recent tips. No authentication required.",
+    description="Retrieve the 3 most recent tips. No authentication required. Use the 'lang' parameter to get tips translated to your preferred language.",
+    parameters=[
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code for translation (en, tr, ar, es, fr). Tips will be translated if different from original language.',
+            required=False
+        )
+    ],
     responses={
         200: OpenApiResponse(
             response=TipSerializer(many=True),
@@ -119,7 +136,8 @@ def get_all_tips(request):
                                 'like_count': 30,
                                 'dislike_count': 1,
                                 'is_user_liked': False,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             },
                             {
                                 'id': 2,
@@ -128,7 +146,8 @@ def get_all_tips(request):
                                 'like_count': 55,
                                 'dislike_count': 0,
                                 'is_user_liked': False,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             },
                             {
                                 'id': 1,
@@ -137,7 +156,8 @@ def get_all_tips(request):
                                 'like_count': 45,
                                 'dislike_count': 2,
                                 'is_user_liked': False,
-                                'is_user_disliked': False
+                                'is_user_disliked': False,
+                                'language': 'en'
                             }
                         ]
                     }
@@ -170,7 +190,7 @@ def get_recent_tips(request):
 
 @extend_schema(
     summary="Create a new tip",
-    description="Create a new zero waste tip with title and description.",
+    description="Create a new zero waste tip with title and description. You can specify the language of the tip content.",
     request=TipSerializer,
     responses={
         201: OpenApiResponse(
@@ -188,7 +208,8 @@ def get_recent_tips(request):
                             'like_count': 0,
                             'dislike_count': 0,
                             'is_user_liked': False,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 )
@@ -252,7 +273,8 @@ def create_tip(request):
                             'like_count': 46,
                             'dislike_count': 2,
                             'is_user_liked': True,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 ),
@@ -267,7 +289,8 @@ def create_tip(request):
                             'like_count': 45,
                             'dislike_count': 2,
                             'is_user_liked': False,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 )
@@ -368,7 +391,8 @@ def like_tip(request, tip_id):
                             'like_count': 45,
                             'dislike_count': 3,
                             'is_user_liked': False,
-                            'is_user_disliked': True
+                            'is_user_disliked': True,
+                            'language': 'en'
                         }
                     }
                 ),
@@ -383,7 +407,8 @@ def like_tip(request, tip_id):
                             'like_count': 45,
                             'dislike_count': 2,
                             'is_user_liked': False,
-                            'is_user_disliked': False
+                            'is_user_disliked': False,
+                            'language': 'en'
                         }
                     }
                 )
