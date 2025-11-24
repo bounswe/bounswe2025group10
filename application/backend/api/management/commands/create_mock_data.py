@@ -71,9 +71,10 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 from api.models import (
     Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste,
-    UserWastes, Report, TipLikes, PostLikes, Follow
+    UserWastes, Report, TipLikes, PostLikes, Follow, SavedPosts, SuspiciousWaste
 )
 from challenges.models import Challenge, UserChallenge
+from api.utils.translation import translate_text
 
 # English locale
 try:
@@ -229,6 +230,22 @@ RECYCLING_TIPS = [
     ("Upcycle creatively", "Turn waste into art, planters, or organizers."),
     ("Follow the 5Rs", "Refuse, Reduce, Reuse, Recycle, Rot."),
     ("Celebrate small wins", "Consistency beats perfection in sustainability."),
+    ("Recycling reduces landfill waste", "Recycling reduces the amount of waste sent to landfills."),
+    ("Conserve natural resources", "It helps conserve natural resources like water, minerals, and timber."),
+    ("Save energy and costs", "Recycling saves energy compared to producing new materials, lowering overall production costs."),
+    ("Lower greenhouse emissions", "It lowers greenhouse gas emissions and supports a healthier environment."),
+    ("Financial rewards available", "Many recycling programs offer direct financial rewards, points, or cashback."),
+    ("Sell recyclable materials", "Selling recyclable materials like metal or paper can generate extra income."),
+    ("Save on garbage fees", "Recycling reduces household waste volume, helping you save on garbage collection fees."),
+    ("Business tax incentives", "Businesses that recycle often qualify for tax incentives or cost reductions."),
+    ("Reduce material expenses", "Using recycled materials in manufacturing can significantly reduce material expenses."),
+    ("Deposit-return schemes", "Consumers can benefit from deposit-return schemes for bottles and cans."),
+    ("Create job opportunities", "Recycling creates job opportunities, strengthening the economy."),
+    ("Keep communities clean", "It helps keep communities cleaner and more livable."),
+    ("Reduce pollution", "Recycling reduces pollution caused by extracting and processing raw materials."),
+    ("Support circular economy", "Contributing to a circular economy helps lower market prices by reducing dependence on raw resources."),
+    ("Personal achievement", "Being environmentally responsible can give a sense of personal achievement."),
+    ("Track your progress", "Tracking your recycling progress can motivate consistent eco-friendly habits."),
 ]
 
 # ---------------------------------------------------------------------------
@@ -520,13 +537,18 @@ def generate_mock_data(
     # Seed at least MIN_POOL captions for variety (use all; then add random if desired)
     test_user_posts = []
     for text in SEED_CAPTIONS[:max(MIN_POOL, min(len(SEED_CAPTIONS), 3))]:
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate text if not English
+        post_text = translate_text(text, 'en', selected_lang) if selected_lang != 'en' else text
+        
         post = Posts(
-            text=text,
+            text=post_text,
             image=themed_post_image_url(),
             creator=test_user,
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         post.save()
         test_user_posts.append(post)
@@ -588,13 +610,18 @@ def generate_mock_data(
     for _ in range(num_posts):
         t = random.choice(waste_keys)
         text = random.choice(post_phrases).format(n=random.randint(2, 12), t=t)
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate text if not English
+        post_text = translate_text(text, 'en', selected_lang) if selected_lang != 'en' else text
+        
         post = Posts(
-            text=text,
+            text=post_text,
             image=themed_post_image_url(t),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         post.save()
         posts.append(post)
@@ -631,11 +658,21 @@ def generate_mock_data(
     create_count = max(num_tips, MIN_POOL)
     for i in range(create_count):
         title, body = tips_pool[i % len(tips_pool)]
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate both title and body if not English
+        if selected_lang != 'en':
+            tip_title = translate_text(title, 'en', selected_lang)
+            tip_body = translate_text(body, 'en', selected_lang)
+        else:
+            tip_title = title
+            tip_body = body
+        
         tip = Tips(
-            title=title,
-            text=body,
+            title=tip_title,
+            text=tip_body,
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         tip.save()
         tips.append(tip)
@@ -919,6 +956,61 @@ def generate_mock_data(
                 following=test_user,
                 defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
             )
+
+    # ---------------------------- SAVED POSTS --------------------------------
+    # Users save posts they find interesting/useful
+    saved_posts = []
+    for user in users:
+        # Each user saves between 0-10 posts
+        num_to_save = random.randint(0, min(10, len(posts + test_user_posts)))
+        if num_to_save > 0:
+            posts_to_save = random.sample(posts + test_user_posts, num_to_save)
+            for post in posts_to_save:
+                # Don't save your own posts (optional rule)
+                if post.creator.id == user.id:
+                    continue
+                # Check if not already saved
+                if not SavedPosts.objects.filter(user=user, post=post).exists():
+                    saved_post = SavedPosts.objects.create(
+                        user=user,
+                        post=post,
+                        date_saved=fake.date_time_this_year(tzinfo=timezone.get_current_timezone())
+                    )
+                    saved_posts.append(saved_post)
+    
+    # Ensure test_user has some saved posts
+    if not SavedPosts.objects.filter(user=test_user).exists():
+        test_saved = random.sample([p for p in posts if p.creator.id != test_user.id], min(5, len(posts)))
+        for post in test_saved:
+            SavedPosts.objects.get_or_create(
+                user=test_user,
+                post=post,
+                defaults={'date_saved': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+
+    # -------------------------- SUSPICIOUS WASTE -----------------------------
+    # Generate some suspicious waste entries that need verification
+    # These are waste logs that might be fraudulent or need review
+    suspicious_wastes = []
+    
+    # Select ~5% of users to have suspicious waste entries
+    suspicious_users = random.sample(users, max(1, int(len(users) * 0.05)))
+    
+    for user in suspicious_users:
+        # Each suspicious user has 1-3 suspicious waste entries
+        num_suspicious = random.randint(1, 3)
+        for _ in range(num_suspicious):
+            waste_type = random.choice(wastes)
+            # Suspicious entries tend to have unusually high amounts
+            amount = random.uniform(100, 500)  # Much higher than normal
+            suspicious = SuspiciousWaste.objects.create(
+                user=user,
+                waste=waste_type,
+                amount=amount,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                photo=f"suspicious_waste_photos/suspicious_{user.id}_{random.randint(1000, 9999)}.jpg"
+            )
+            suspicious_wastes.append(suspicious)
 
 
 class Command(BaseCommand):

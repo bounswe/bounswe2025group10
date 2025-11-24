@@ -90,6 +90,14 @@ class Comments(models.Model):
         db_table = 'Comments'
 
 
+LANGUAGE_CHOICES = [
+    ('en', 'English'),
+    ('tr', 'Turkish'),
+    ('ar', 'Arabic'),
+    ('es', 'Spanish'),
+    ('fr', 'French'),
+]
+
 class Posts(models.Model):
     creator = models.ForeignKey('Users', models.DO_NOTHING)
     date = models.DateTimeField(blank=True, null=True)
@@ -97,6 +105,7 @@ class Posts(models.Model):
     image = models.CharField(max_length=255, blank=True, null=True)  # Store relative path to image
     like_count = models.IntegerField(blank=True, null=True, default=0)
     dislike_count = models.IntegerField(blank=True, null=True, default=0)
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, blank=True, null=True, default='en')
 
     @property
     def image_url(self):
@@ -120,6 +129,7 @@ class Tips(models.Model):
     text = models.TextField()
     like_count = models.IntegerField(blank=True, null=True, default=0)
     dislike_count = models.IntegerField(blank=True, null=True, default=0)
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, blank=True, null=True, default='en')
 
     class Meta:
         db_table = 'Tips'
