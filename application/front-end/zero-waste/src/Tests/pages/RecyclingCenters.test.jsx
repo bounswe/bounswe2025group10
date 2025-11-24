@@ -69,6 +69,10 @@ vi.mock("framer-motion", () => ({
   },
 }));
 
+// Note: Tests work with hardcoded data (USE_API=false mode)
+// When backend is ready and USE_API is set to true, these tests will need to be updated
+// to mock the useRecyclingCenters hook instead of relying on hardcoded data
+
 const wrapper = ({ children }) => (
   <MemoryRouter>
     {children}

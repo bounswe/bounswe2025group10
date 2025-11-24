@@ -3,6 +3,11 @@ import { motion } from "framer-motion";
 import Navbar from "../components/layout/Navbar";
 import { useTheme } from "../providers/ThemeContext";
 import { useLanguage } from "../providers/LanguageContext";
+import { useRecyclingCenters } from "../hooks/useRecyclingCenters";
+
+// TODO: Remove this after backend is ready - keeping for testing
+// Set to true when backend endpoints are ready
+const USE_API = false;
 
 // Recycling center data
 const recyclingCentersData = [
@@ -238,38 +243,61 @@ export default function RecyclingCenters() {
   const { currentTheme } = useTheme();
   const { t } = useLanguage();
 
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
+  // API-based data fetching
+  const apiData = useRecyclingCenters();
 
-  // Get unique cities
-  const cities = useMemo(() => {
+  // Hardcoded fallback
+  const [selectedCityLocal, setSelectedCityLocal] = useState("");
+  const [selectedDistrictLocal, setSelectedDistrictLocal] = useState("");
+
+  const citiesLocal = useMemo(() => {
     return recyclingCentersData.map(item => item.il);
   }, []);
 
-  // Get districts for selected city
-  const districts = useMemo(() => {
-    if (!selectedCity) return [];
-    const cityData = recyclingCentersData.find(item => item.il === selectedCity);
+  const districtsLocal = useMemo(() => {
+    if (!selectedCityLocal) return [];
+    const cityData = recyclingCentersData.find(item => item.il === selectedCityLocal);
     return cityData ? cityData.merkezler.map(merkez => merkez.ilce) : [];
-  }, [selectedCity]);
+  }, [selectedCityLocal]);
 
-  // Get centers for selected district
-  const centers = useMemo(() => {
-    if (!selectedCity || !selectedDistrict) return [];
-    const cityData = recyclingCentersData.find(item => item.il === selectedCity);
+  const centersLocal = useMemo(() => {
+    if (!selectedCityLocal || !selectedDistrictLocal) return [];
+    const cityData = recyclingCentersData.find(item => item.il === selectedCityLocal);
     if (!cityData) return [];
-    return cityData.merkezler.filter(merkez => merkez.ilce === selectedDistrict);
-  }, [selectedCity, selectedDistrict]);
+    return cityData.merkezler.filter(merkez => merkez.ilce === selectedDistrictLocal);
+  }, [selectedCityLocal, selectedDistrictLocal]);
 
-  // Handle city change
-  const handleCityChange = (e) => {
-    setSelectedCity(e.target.value);
-    setSelectedDistrict("");
+  const handleCityChangeLocal = (e) => {
+    setSelectedCityLocal(e.target.value);
+    setSelectedDistrictLocal("");
   };
 
-  // Handle district change
+  const handleDistrictChangeLocal = (e) => {
+    setSelectedDistrictLocal(e.target.value);
+  };
+
+  // Choose between API and hardcoded data based on USE_API flag
+  const cities = USE_API ? apiData.cities : citiesLocal;
+  const districts = USE_API ? apiData.districts : districtsLocal;
+  const centers = USE_API ? apiData.centers : centersLocal;
+  const selectedCity = USE_API ? apiData.selectedCity : selectedCityLocal;
+  const selectedDistrict = USE_API ? apiData.selectedDistrict : selectedDistrictLocal;
+  const loading = USE_API ? (apiData.citiesLoading || apiData.districtsLoading || apiData.centersLoading) : false;
+
+  const handleCityChange = (e) => {
+    if (USE_API) {
+      apiData.handleCityChange(e.target.value);
+    } else {
+      handleCityChangeLocal(e);
+    }
+  };
+
   const handleDistrictChange = (e) => {
-    setSelectedDistrict(e.target.value);
+    if (USE_API) {
+      apiData.handleDistrictChange(e.target.value);
+    } else {
+      handleDistrictChangeLocal(e);
+    }
   };
 
   // Get waste type icon
@@ -378,7 +406,13 @@ export default function RecyclingCenters() {
         </div>
 
         {/* Results */}
-        {selectedCity && selectedDistrict && centers.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+              {t('recyclingCenters.loading', 'Loading...')}
+            </div>
+          </div>
+        ) : selectedCity && selectedDistrict && centers.length > 0 ? (
           <div className="space-y-6">
             <h2
               className="text-xl font-semibold mb-4"
