@@ -27,18 +27,18 @@ export const useApi = (apiFunction, options = {}) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await apiFunction(...args);
       setData(result);
-      
+
       if (showSuccessToast) {
         showToast(successMessage, 'success');
       }
-      
+
       if (onSuccess) {
         onSuccess(result);
       }
-      
+
       return result;
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message || errorMessage;

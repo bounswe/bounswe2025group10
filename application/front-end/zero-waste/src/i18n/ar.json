@@ -13,6 +13,7 @@
     "login": "تسجيل الدخول",
     "signup": "إنشاء حساب",
     "admin": "لوحة الادارة",
+    "recycling": "مراكز إعادة التدوير",
     "invite": "دعوة صديق"
   },
   "common": {
@@ -200,7 +201,7 @@
     "wasteType": "نوع النفايات",
     "wasteQuantity": "كمية النفايات (جرام)",
     "selectType": "اختر النوع",
-    "quantityPlaceholder": "مثال 500",
+    "quantityPlaceholder": "مثال 300",
     "addWaste": "إضافة نفايات",
     "sustainabilityTips": "نصائح الاستدامة",
     "yourProgress": "تقدمك",
@@ -243,6 +244,8 @@
     "selectType": "اختر النوع",
     "selectMethod": "اختر الطريقة",
     "chooseItem": "اختر العنصر",
+    "highAmountWarning": "أنت على وشك تسجيل كمية كبيرة من النفايات. هل أنت متأكد؟",
+    "excessiveAmountError": "لا يمكن إدخال مثل هذه الكمية الكبيرة في إدخال واحد.",
     "items": {
       "plasticBottle": "زجاجة بلاستيكية",
       "plasticBag": "كيس بلاستيكي",
@@ -260,8 +263,43 @@
       "bananaPeel": "قشر موز",
       "appleCore": "لب تفاحة",
       "foodScraps": "بقايا طعام"
-    }  },
-    "invite": {
+    }
+  },
+  "recyclingCenters": {
+    "title": "مراكز إعادة التدوير",
+    "selectCity": "اختر المدينة",
+    "selectDistrict": "اختر المنطقة",
+    "chooseCity": "اختر مدينة...",
+    "chooseDistrict": "اختر منطقة...",
+    "centersIn": "المراكز في",
+    "address": "العنوان",
+    "additionalInfo": "معلومات إضافية",
+    "acceptedTypes": "أنواع النفايات المقبولة",
+    "noCenters": "لم يتم العثور على مراكز إعادة تدوير للموقع المحدد.",
+    "selectLocation": "يرجى تحديد مدينة ومنطقة لعرض مراكز إعادة التدوير.",
+    "wasteTypes": {
+      "paper": "ورق",
+      "plastic": "بلاستيك",
+      "glass": "زجاج",
+      "metal": "معدن",
+      "electronic": "إلكترونيات",
+      "battery": "بطاريات",
+      "oil_fats": "زيوت ودهون",
+      "organic": "عضوي",
+      "textile": "منسوجات",
+      "medicine": "أدوية",
+      "tire": "إطارات",
+      "bulky": "نفايات كبيرة",
+      "wood": "خشب",
+      "fluorescent": "فلورسنت",
+      "accumulator": "مراكم",
+      "construction": "بناء",
+      "hazardous": "خطرة",
+      "cable": "كابلات",
+      "it_equipment": "معدات تقنية"
+    }
+  },
+  "invite": {
   "title": "ادعُ صديقًا",
   "subtitle": "أرسل رابط دعوة إلى صديقك عبر البريد الإلكتروني.",
   "emailLabel": "بريد الصديق",

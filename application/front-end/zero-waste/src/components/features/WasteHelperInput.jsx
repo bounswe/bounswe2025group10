@@ -120,6 +120,11 @@ export default function WasteHelperInput({ onSubmit, isLoading }) {
         })()
         : "";
 
+    // Check if quantity exceeds 500g or 5000g
+    const totalGrams = method === "grams" ? parseInt(quantity) || 0 : (calculatedGrams || 0);
+    const showWarning = totalGrams > 500;
+    const exceedsMaxLimit = totalGrams > 5000;
+
     const handleAdd = () => {
         if (!wasteType || !method) return;
 
@@ -184,12 +189,32 @@ export default function WasteHelperInput({ onSubmit, isLoading }) {
     const isGramsInputDisabled = !wasteType || method !== "grams";
     const isUnitTypeDisabled = !wasteType || method !== "unit";
     const isUnitCountDisabled = !wasteType || method !== "unit" || !unitOption;
-    const isAddDisabled = isLoading || !wasteType || !method || !quantity || (method === "unit" && !unitOption);
+    const isAddDisabled = isLoading || !wasteType || !method || !quantity || (method === "unit" && !unitOption) || exceedsMaxLimit;
 
     return (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-6 items-end">
-            {/* Waste Type */}
-            <div className="w-full">
+        <div className="space-y-3">
+            {/* Warning Message */}
+            {showWarning && (
+                <div
+                    className="px-4 py-3 rounded-lg border-l-4 flex items-start gap-3"
+                    style={{
+                        backgroundColor: '#000000',
+                        borderLeftColor: exceedsMaxLimit ? '#dc2626' : '#059669',
+                        borderColor: exceedsMaxLimit ? '#dc2626' : '#059669'
+                    }}
+                >
+                    <span className="text-lg">⚠️</span>
+                    <p className="text-base font-medium text-white">
+                        {exceedsMaxLimit
+                            ? t("wasteHelper.excessiveAmountError")
+                            : t("wasteHelper.highAmountWarning")}
+                    </p>
+                </div>
+            )}
+
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-6 items-end">
+                {/* Waste Type */}
+                <div className="w-full">
                 <label
                     className="block text-sm font-medium mb-1"
                     style={{ color: currentTheme.text }}
@@ -291,7 +316,7 @@ export default function WasteHelperInput({ onSubmit, isLoading }) {
                     }}
                     value={method === "grams" ? quantity : (calculatedGrams || "")}
                     onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="e.g., 500"
+                    placeholder="e.g., 300"
                     min="1"
                     disabled={isGramsInputDisabled}
                     readOnly={method === "unit"}
@@ -311,6 +336,7 @@ export default function WasteHelperInput({ onSubmit, isLoading }) {
                 >
                     {isLoading ? t("common.adding") : t("wasteHelper.add")}
                 </button>
+            </div>
             </div>
         </div>
     );
