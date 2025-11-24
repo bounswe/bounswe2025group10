@@ -16,6 +16,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_PROFILE_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541';
 
@@ -34,6 +35,7 @@ interface UserBio {
 }
 
 export const LeaderboardScreen: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useAppNavigation();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
@@ -210,7 +212,7 @@ export const LeaderboardScreen: React.FC = () => {
     
     return (
       <View style={styles.currentUserSection}>
-        <Text style={styles.currentUserTitle}>Your Ranking</Text>
+        <Text style={styles.currentUserTitle}>{t('leaderboard.yourRanking')}</Text>
         <View style={[styles.leaderboardRow, getUserRowStyle(true, currentUser.rank - 1)]}>
           <View style={styles.rankColumn}>
             <Text style={[
@@ -258,16 +260,16 @@ export const LeaderboardScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateIcon}>🏆</Text>
-      <Text style={styles.emptyStateText}>No leaderboard data available</Text>
+      <Text style={styles.emptyStateText}>{t('leaderboard.noDataAvailable')}</Text>
       <Text style={styles.emptyStateSubtext}>
-        Start contributing to waste reduction to appear on the leaderboard!
+        {t('leaderboard.startContributing')}
       </Text>
     </View>
   );
 
   return (
     <ScreenWrapper
-      title="🌿 Top 10 Zero Waste Champions"
+      title={t('leaderboard.topZeroWasteChampions')}
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
@@ -280,15 +282,15 @@ export const LeaderboardScreen: React.FC = () => {
         />
       }
       testID="leaderboard-screen"
-      accessibilityLabel="Leaderboard screen"
+      accessibilityLabel={t('leaderboard.title')}
     >
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : error ? (
         <View style={styles.errorState}>
-          <Text style={styles.errorText}>Failed to load leaderboard</Text>
+          <Text style={styles.errorText}>{t('leaderboard.failedToLoad')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderboard}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('leaderboard.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : leaderboard.length === 0 ? (
@@ -298,10 +300,10 @@ export const LeaderboardScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.headerText, styles.rankHeader]}>#</Text>
-            <Text style={[styles.headerText, styles.profileHeader]}>Profile</Text>
-            <Text style={[styles.headerText, styles.usernameHeader]}>Username</Text>
-            <Text style={[styles.headerText, styles.scoreHeader]}>CO2 Avoided</Text>
-            <Text style={[styles.headerText, styles.pointsHeader]}>Points</Text>
+            <Text style={[styles.headerText, styles.profileHeader]}>{t('leaderboard.profile')}</Text>
+            <Text style={[styles.headerText, styles.usernameHeader]}>{t('leaderboard.username')}</Text>
+            <Text style={[styles.headerText, styles.scoreHeader]}>{t('leaderboard.co2Avoided')}</Text>
+            <Text style={[styles.headerText, styles.pointsHeader]}>{t('leaderboard.points')}</Text>
           </View>
 
           {/* Leaderboard List */}
@@ -337,7 +339,7 @@ export const LeaderboardScreen: React.FC = () => {
               />
               <View style={styles.modalUserDetails}>
                 <Text style={styles.modalUsername}>{selectedUserBio?.username}</Text>
-                <Text style={styles.modalSubtitle}>Profile Bio</Text>
+                <Text style={styles.modalSubtitle}>{t('leaderboard.profileBio')}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -352,7 +354,7 @@ export const LeaderboardScreen: React.FC = () => {
             {bioLoading ? (
               <View style={styles.bioLoading}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={styles.bioLoadingText}>Loading bio...</Text>
+                <Text style={styles.bioLoadingText}>{t('leaderboard.loadingBio')}</Text>
               </View>
             ) : (
               <View style={styles.bioContainer}>
@@ -363,7 +365,7 @@ export const LeaderboardScreen: React.FC = () => {
                     fontStyle: selectedUserBio?.bio ? 'normal' : 'italic'
                   }
                 ]}>
-                  {selectedUserBio?.bio || "This user hasn't written a bio yet."}
+                  {selectedUserBio?.bio || t('leaderboard.noBioYet')}
                 </Text>
               </View>
             )}

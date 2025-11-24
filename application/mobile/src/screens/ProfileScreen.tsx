@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput, Modal } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { colors } from '../utils/theme';
 import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
@@ -8,6 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../utils/storage';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAppNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage, LANGUAGES } from '../i18n';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -24,6 +26,7 @@ const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 const ProfileMain: React.FC = () => {
   const { userData, fetchUserData, logout } = useAuth();
   const { navigateToScreen } = useAppNavigation();
+  const { t, i18n } = useTranslation();
   const [wasteData, setWasteData] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +37,7 @@ const ProfileMain: React.FC = () => {
   const [bio, setBio] = useState<string>('');
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState<string>('');
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
   // Load auth token once on mount
   useEffect(() => {
@@ -95,9 +99,13 @@ const ProfileMain: React.FC = () => {
     fetchBio();
   }, [fetchBio]); // fetchBio already depends on userData?.username
 
-  // Prepare data for BarChart - handle the specific waste data structure
+  // Prepare data for BarChart - handle the specific waste data structure with translated labels
   const screenWidth = Dimensions.get('window').width - 40;
-  const barLabels = wasteData.map((item) => item.waste_type || '');
+  const barLabels = wasteData.map((item) => {
+    const wasteType = item.waste_type?.toUpperCase();
+    // Translate waste type if translation exists, otherwise use original
+    return wasteType ? t(`home.wasteTypes.${wasteType}`, { defaultValue: item.waste_type }) : '';
+  });
   const barData = wasteData.map((item) => item.total_amount || 0);
   const chartWidth = Math.max(screenWidth - 32, barLabels.length * 80);
 
@@ -220,9 +228,9 @@ const ProfileMain: React.FC = () => {
           </View>
         )}
       </TouchableOpacity>
-      <Text style={styles.title}>User Profile</Text>
+      <Text style={styles.title}>{t('profile.myProfile')}</Text>
       <View style={styles.infoContainer}>
-        <Text style={styles.infoText}><Text style={styles.infoLabel}>Name:</Text> {userData?.username || 'Loading...'}</Text>
+        <Text style={styles.infoText}><Text style={styles.infoLabel}>{t('profile.username')}:</Text> {userData?.username || t('common.loading')}</Text>
         {editingBio ? (
           <View style={{ width:'100%', alignItems:'center', marginBottom:12 }}>
             <TextInput
@@ -230,7 +238,7 @@ const ProfileMain: React.FC = () => {
               multiline
               value={bioInput}
               onChangeText={setBioInput}
-              placeholder="Enter your bio"
+              placeholder={t('profile.bio')}
             />
             <View style={{flexDirection:'row', marginTop:4}}>
               <TouchableOpacity style={[styles.saveButton,{marginRight:8}]} onPress={async ()=>{
@@ -240,26 +248,88 @@ const ProfileMain: React.FC = () => {
                   setEditingBio(false);
                 }catch(err){Alert.alert('Error','Could not update bio');}
               }}>
-                <Text style={styles.logoutButtonText}>Save</Text>
+                <Text style={styles.logoutButtonText}>{t('common.save')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.logoutButton} onPress={()=>{setEditingBio(false);}}>
-                <Text style={styles.logoutButtonText}>Cancel</Text>
+                <Text style={styles.logoutButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={{alignItems:'center', marginBottom:12}}>
-            <Text style={styles.bioText}>{bio || 'No bio yet.'}</Text>
+            <Text style={styles.bioText}>{bio || t('profile.bio')}</Text>
             <TouchableOpacity onPress={()=>{setBioInput(bio); setEditingBio(true);}}>
-              <Text style={{color:'#228B22'}}>Edit Bio</Text>
+              <Text style={{color:'#228B22'}}>{t('profile.editProfile')}</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Language Selector */}
+        <View style={styles.languageSection}>
+          <Text style={styles.infoLabel}>{t('profile.language')}:</Text>
+          <TouchableOpacity 
+            style={styles.languageButton}
+            onPress={() => setLanguageModalVisible(true)}
+          >
+            <Text style={styles.languageButtonText}>
+              {LANGUAGES.find(lang => lang.code === i18n.language)?.nativeName || 'English'}
+            </Text>
+            <Text style={styles.languageArrow}>▼</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('profile.selectLanguage')}</Text>
+            {LANGUAGES.map((language) => (
+              <TouchableOpacity
+                key={language.code}
+                style={[
+                  styles.languageOption,
+                  i18n.language === language.code && styles.languageOptionSelected
+                ]}
+                onPress={async () => {
+                  await changeLanguage(language.code);
+                  setLanguageModalVisible(false);
+                  Alert.alert(t('common.success'), `${t('profile.language')}: ${language.nativeName}`);
+                }}
+              >
+                <Text style={[
+                  styles.languageOptionText,
+                  i18n.language === language.code && styles.languageOptionTextSelected
+                ]}>
+                  {language.nativeName}
+                </Text>
+                {i18n.language === language.code && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setLanguageModalVisible(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Progress Chart Section */}
       <View style={styles.cardSection}>
-        <Text style={styles.sectionTitle}>Your Recycling Progress</Text>
+        <Text style={styles.sectionTitle}>{t('home.wasteHistory')}</Text>
         <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center' }}>
           <View style={{ width: chartWidth, alignItems: 'center' }}>
             <BarChart
@@ -287,7 +357,7 @@ const ProfileMain: React.FC = () => {
 
       {/* Achievements Section */}
       <View style={styles.cardSection}>
-        <Text style={styles.sectionTitle}>Your Achievements</Text>
+        <Text style={styles.sectionTitle}>{t('profile.achievements')}</Text>
         {achievements.length > 0 ? (
           achievements.map((achievement) => (
             <View key={achievement.id} style={styles.achievementItem}>
@@ -302,13 +372,13 @@ const ProfileMain: React.FC = () => {
             </View>
           ))
         ) : (
-          <Text style={styles.noAchievements}>No achievements yet. Keep recycling to earn badges!</Text>
+          <Text style={styles.noAchievements}>{t('achievements.myAchievements')}</Text>
         )}
       </View>
 
       {/* Logout Button */}
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
+        <Text style={styles.logoutButtonText}>{t('common.logout')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -526,5 +596,94 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 4,
     backgroundColor: '#228B22',
+  },
+  languageSection: {
+    width: '100%',
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#f8fff6',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#228B22',
+    marginTop: 8,
+    minWidth: 200,
+  },
+  languageButtonText: {
+    fontSize: 16,
+    color: '#228B22',
+    fontWeight: '600',
+  },
+  languageArrow: {
+    fontSize: 12,
+    color: '#228B22',
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#228B22',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  languageOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#f8fff6',
+  },
+  languageOptionSelected: {
+    backgroundColor: '#228B22',
+  },
+  languageOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  languageOptionTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: 20,
+    color: '#fff',
+  },
+  modalCloseButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
   },
 });

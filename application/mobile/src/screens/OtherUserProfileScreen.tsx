@@ -4,6 +4,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { API_URL, profilePublicService } from '../services/api';
 import { colors } from '../utils/theme';
 import api from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 
@@ -14,6 +15,7 @@ type RouteParams = {
 };
 
 export const OtherUserProfileScreen: React.FC = () => {
+  const { t } = useTranslation();
   const route = useRoute<RouteProp<RouteParams, 'OtherProfile'>>();
   const { username } = route.params;
 

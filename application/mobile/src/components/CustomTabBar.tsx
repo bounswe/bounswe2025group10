@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 interface CustomTabBarProps {
   activeTab?: string;
@@ -15,12 +16,13 @@ const iconMap: Record<string, any> = {
 
 export const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab = 'Tips' }) => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   const tabs = [
-    { key: 'Home', label: 'Home', screen: 'MainTabs' },
-    { key: 'Community', label: 'Community', screen: 'MainTabs' },
-    { key: 'Challenges', label: 'Challenges', screen: 'MainTabs' },
-    { key: 'Profile', label: 'Profile', screen: 'MainTabs' },
+    { key: 'Home', label: t('home.title'), screen: 'MainTabs' },
+    { key: 'Community', label: t('community.title'), screen: 'MainTabs' },
+    { key: 'Challenges', label: t('challenges.title'), screen: 'MainTabs' },
+    { key: 'Profile', label: t('profile.title'), screen: 'MainTabs' },
   ];
 
   const handleTabPress = (tab: any) => {

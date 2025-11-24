@@ -16,6 +16,7 @@ import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ReportItem {
   id: number;
@@ -36,6 +37,7 @@ interface ReportItem {
 }
 
 export const AdminPanel: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
