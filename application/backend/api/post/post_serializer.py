@@ -17,11 +17,13 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'date', 'creator', 'creator_username', 'creator_profile_image', 'like_count', 'dislike_count', 'is_saved', 'image_url', 'is_user_liked', 'is_user_disliked']
     
     def get_image_url(self, obj):
-        request = self.context.get('request')
-        if obj.image and request:
+        if obj.image:
             if obj.image.startswith(('http://', 'https://')):
-                return obj.image
-            return request.build_absolute_uri(f'{settings.MEDIA_URL}{obj.image}')
+                # Force HTTPS
+                return obj.image.replace('http://', 'https://')
+            # For production, use the deployed domain with HTTPS
+            return f"https://zerowaste.ink{settings.MEDIA_URL}{obj.image}"
+        return None
 
     
     def get_is_saved(self, obj):
