@@ -16,6 +16,8 @@ import Leaderboard from "./pages/Leaderboard.jsx";
 import Achievements from "./pages/Achievements.jsx";
 import PublicProfile from "./pages/profile/PublicProfile.jsx";
 import RecyclingCenters from "./pages/RecyclingCenters.jsx";
+import Invite from "./pages/Invite.jsx";
+
 
 export default function App() {
   return (
@@ -30,6 +32,8 @@ export default function App() {
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/community" element={<Community />} />
         <Route path="/recycling-centers" element={<RecyclingCenters />} />
+  <Route path="/invite" element={<Invite />} />
+
         <Route path="/profile" element={<Profile /> }></Route>
         <Route path="/profile/:username" element={<PublicProfile />} />
         <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}

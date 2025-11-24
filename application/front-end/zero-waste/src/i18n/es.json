@@ -13,7 +13,9 @@
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
     "admin": "Administrador",
-    "recycling": "Centros de Reciclaje"
+    "recycling": "Centros de Reciclaje",
+    "invite": "Invitar a un Amigo"
+
   },
   "common": {
     "language": "Idioma",
@@ -296,5 +298,18 @@
       "cable": "Cable",
       "it_equipment": "Equipo Informático"
     }
+  },   
+  "invite": {
+  "title": "Invitar a un Amigo",
+  "subtitle": "Envía un enlace de invitación a tu amigo por correo electrónico.",
+  "emailLabel": "Correo del Amigo",
+  "send": "Enviar Invitación",
+  "sending": "Enviando...",
+  "errors": {
+    "noEmail": "Por favor ingrese un correo.",
+    "failed": "Error al enviar la invitación."
   }
+}
+
+
 }

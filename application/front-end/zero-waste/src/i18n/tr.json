@@ -13,7 +13,9 @@
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
     "admin": "Yönetici",
-    "recycling": "Geri Dönüşüm Merkezleri"
+    "recycling": "Geri Dönüşüm Merkezleri",
+    "invite": "Arkadaş Davet Et"
+
   },
   "common": {
     "language": "Dil",
@@ -297,5 +299,17 @@
       "cable": "Kablo",
       "it_equipment": "Bilgisayar Ekipmanı"
     }
+  },  
+  "invite": {
+  "title": "Arkadaş Davet Et",
+  "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
+  "emailLabel": "Arkadaşının E-postası",
+  "send": "Davetiye Gönder",
+  "sending": "Gönderiliyor...",
+  "errors": {
+    "noEmail": "Lütfen bir e-posta adresi girin.",
+    "failed": "Davet gönderilirken bir hata oluştu."
   }
+}
+
 }

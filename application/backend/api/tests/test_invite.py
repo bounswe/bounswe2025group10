@@ -4,15 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 
-@override_settings(
-    EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
-    EMAIL_HOST="smtp-relay.brevo.com",
-    EMAIL_PORT=587,
-    EMAIL_USE_TLS=True,
-    EMAIL_HOST_USER="9c45cb001@smtp-brevo.com",
-    EMAIL_HOST_PASSWORD="bskyBVOhTWMa17c",
-    DEFAULT_FROM_EMAIL="no_reply@zerowaste.ink"
-)
+
 
 class RealEmailSendTests(TestCase):
 

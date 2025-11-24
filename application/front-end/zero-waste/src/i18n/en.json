@@ -13,7 +13,8 @@
     "login": "Login",
     "signup": "Sign Up",
     "admin": "Admin",
-    "recycling": "Recycling Centers"
+    "recycling": "Recycling Centers",
+    "invite": "Invite Friend"
   },
   "common": {
     "language": "Language",
@@ -297,5 +298,18 @@
       "cable": "Cable",
       "it_equipment": "IT Equipment"
     }
+  }, 
+  "invite": {
+  "title": "Invite a Friend",
+  "subtitle": "Send an invitation link to your friend via email.",
+  "emailLabel": "Friend's Email",
+  "send": "Send Invitation",
+  "sending": "Sending...",
+  "errors": {
+    "noEmail": "Please enter an email address.",
+    "failed": "Failed to send invitation."
   }
+}
+
+
 }
