@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "api.apps.ApiConfig", 
     'challenges',
+    'notifications',
+    'channels',
     'carbon',
     'django.contrib.auth',
     'django.contrib.admin',
@@ -252,3 +254,16 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "9c45cb001@smtp-brevo.com"
 EMAIL_HOST_PASSWORD = "bskyBVOhTWMa17c"
 DEFAULT_FROM_EMAIL = "no_reply@zerowaste.ink"
+
+
+#asgi settings
+ASGI_APPLICATION = "project.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # 'redis' = docker-compose service name
+        },
+    },
+}
