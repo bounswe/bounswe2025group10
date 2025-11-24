@@ -31,6 +31,4 @@ typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.4.0
-Faker==37.1.0
-django-filter>=24.2
-googletrans==4.0.0rc1
+deep-translator==1.11.4
