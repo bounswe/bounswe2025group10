@@ -60,14 +60,13 @@ class Users(AbstractUser):
         """
         Returns the full URL for the profile image if it exists.
         If the image is already a full URL, returns it as is.
-        If it's a relative path, returns full HTTPS URL for production.
+        If it's a relative path, prepends the MEDIA_URL.
         """
         if not self.profile_image:
             return None
         if self.profile_image.startswith(('http://', 'https://')):
             return self.profile_image
-        # Return full HTTPS URL for production
-        return f"https://zerowaste.ink{settings.MEDIA_URL}{self.profile_image}"
+        return f"{settings.MEDIA_URL}{self.profile_image}"
 
     def __str__(self):
         return self.username
@@ -104,14 +103,13 @@ class Posts(models.Model):
         """
         Returns the full URL for the post image if it exists.
         If the image is already a full URL, returns it as is.
-        If it's a relative path, returns full HTTPS URL for production.
+        If it's a relative path, prepends the MEDIA_URL.
         """
         if not self.image:
             return None
         if self.image.startswith(('http://', 'https://')):
             return self.image
-        # Return full HTTPS URL for production
-        return f"https://zerowaste.ink{settings.MEDIA_URL}{self.image}"
+        return f"{settings.MEDIA_URL}{self.image}"
 
     class Meta:
         db_table = 'Posts'
