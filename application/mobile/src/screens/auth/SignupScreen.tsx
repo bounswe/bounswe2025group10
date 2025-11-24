@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,15 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../../utils/theme';
-import { authService } from '../../services/api';
+import {colors, spacing, typography, commonStyles} from '../../utils/theme';
+import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
+import {authService} from '../../services/api';
 
 interface SignupScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
-export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
+export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +36,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await authService.signup({ email, username, password });
+      const response = await authService.signup({email, username, password});
 
       if (response.message === 'User created successfully.') {
         Alert.alert('Success', 'Account created successfully! Please login.', [
@@ -49,7 +50,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       console.log('Signup error:', error.response?.data, error.message, error);
       Alert.alert(
         'Error',
-        error.response?.data?.error || 'An error occurred during signup'
+        error.response?.data?.error || 'An error occurred during signup',
       );
     } finally {
       setLoading(false);
@@ -89,10 +90,9 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.textOnPrimary} />
         ) : (
           <Text style={styles.buttonText}>Sign Up</Text>
         )}
@@ -100,10 +100,10 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
       <TouchableOpacity
         style={styles.loginLink}
-        onPress={() => navigation.navigate('Login')}
-      >
+        onPress={() => navigation.navigate('Login')}>
         <Text style={styles.loginText}>
-          Already have an account? <Text style={styles.loginTextBold}>Login</Text>
+          Already have an account?{' '}
+          <Text style={styles.loginTextBold}>Login</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -117,12 +117,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h1,
-    color: colors.primary,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginBottom: spacing.xl,
   },
   input: {
@@ -140,10 +140,12 @@ const styles = StyleSheet.create({
   loginLink: {
     marginTop: spacing.md,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   loginText: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   loginTextBold: {
     color: colors.primary,

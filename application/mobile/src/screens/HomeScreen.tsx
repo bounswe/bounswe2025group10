@@ -1,24 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  FlatList,
   Alert,
   Dimensions,
-  RefreshControl,
   Modal,
   ScrollView,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import { useAuth } from '../context/AuthContext';
-import { wasteService, tipService, weatherService } from '../services/api';
-import { BarChart } from 'react-native-chart-kit';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { useAppNavigation, SCREEN_NAMES } from '../hooks/useNavigation';
-import { MoreDropdown } from '../components/MoreDropdown';
+import {colors, spacing, typography, commonStyles} from '../utils/theme';
+import {MIN_TOUCH_TARGET} from '../utils/accessibility';
+import {useAuth} from '../context/AuthContext';
+import {wasteService, tipService, weatherService} from '../services/api';
+import {BarChart} from 'react-native-chart-kit';
+import {ScreenWrapper} from '../components/ScreenWrapper';
+import {useAppNavigation, SCREEN_NAMES} from '../hooks/useNavigation';
+import {MoreDropdown} from '../components/MoreDropdown';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -30,21 +29,24 @@ const chartConfig = {
 };
 
 const WASTE_TYPES = [
-  { key: 'PLASTIC', label: 'Plastic' },
-  { key: 'PAPER', label: 'Paper' },
-  { key: 'GLASS', label: 'Glass' },
-  { key: 'METAL', label: 'Metal' },
+  {key: 'PLASTIC', label: 'Plastic'},
+  {key: 'PAPER', label: 'Paper'},
+  {key: 'GLASS', label: 'Glass'},
+  {key: 'METAL', label: 'Metal'},
 ];
 
 export const HomeScreen: React.FC = () => {
-  const { logout, userData } = useAuth();
-  const { navigateToScreen } = useAppNavigation();
+  const {logout, userData} = useAuth();
+  const {navigateToScreen} = useAppNavigation();
 
   // waste form state
   const [wasteType, setWasteType] = useState('');
   const [wasteQuantity, setWasteQuantity] = useState('');
   const [showWasteTypeModal, setShowWasteTypeModal] = useState(false);
-  const [selectedWasteType, setSelectedWasteType] = useState<{ key: string; label: string } | null>(null);
+  const [selectedWasteType, setSelectedWasteType] = useState<{
+    key: string;
+    label: string;
+  } | null>(null);
 
   // data state
   const [wasteData, setWasteData] = useState<any[]>([]);
@@ -53,7 +55,10 @@ export const HomeScreen: React.FC = () => {
   const [loadingTips, setLoadingTips] = useState(true);
 
   // weather state
-  const [weather, setWeather] = useState<{ temperature: number; weathercode: number } | null>(null);
+  const [weather, setWeather] = useState<{
+    temperature: number;
+    weathercode: number;
+  } | null>(null);
 
   // pull‑to‑refresh
   const [refreshing, setRefreshing] = useState(false);
@@ -132,7 +137,7 @@ export const HomeScreen: React.FC = () => {
       Alert.alert('Error', 'Please select a waste type and enter quantity');
       return;
     }
-    
+
     const quantity = parseFloat(wasteQuantity);
     if (isNaN(quantity) || quantity <= 0) {
       Alert.alert('Error', 'Please enter a valid quantity (positive number)');
@@ -140,10 +145,7 @@ export const HomeScreen: React.FC = () => {
     }
 
     try {
-      await wasteService.addUserWaste(
-        selectedWasteType.key,
-        quantity
-      );
+      await wasteService.addUserWaste(selectedWasteType.key, quantity);
       setWasteType('');
       setWasteQuantity('');
       setSelectedWasteType(null);
@@ -151,44 +153,31 @@ export const HomeScreen: React.FC = () => {
       Alert.alert('Success', 'Waste entry added successfully!');
     } catch (error: any) {
       let message = 'Unknown error';
-      if (error.response?.data) {message = JSON.stringify(error.response.data);}
-      else if (error.message) {message = error.message;}
+      if (error.response?.data) {
+        message = JSON.stringify(error.response.data);
+      } else if (error.message) {
+        message = error.message;
+      }
       Alert.alert('Error', `Failed to add waste entry.\n${message}`);
     }
   };
 
   // handle waste type selection
-  const handleWasteTypeSelect = (wasteType: { key: string; label: string }) => {
+  const handleWasteTypeSelect = (wasteType: {key: string; label: string}) => {
     setSelectedWasteType(wasteType);
     setWasteType(wasteType.label);
     setShowWasteTypeModal(false);
   };
 
   // prepare chart data
-  const barLabels = wasteData.map((i) => i.waste_type);
-  const barData = wasteData.map((i) => i.total_amount);
+  const barLabels = wasteData.map(i => i.waste_type);
+  const barData = wasteData.map(i => i.total_amount);
   const screenWidth = Dimensions.get('window').width - 32;
-
-  // tip item renderer
-  const renderTipItem = ({ item }: { item: any }) => (
-    <View style={styles.tipItem}>
-      <Text style={styles.tipTitle}>{item.title}</Text>
-      <Text style={styles.tipDescription}>{item.description}</Text>
-      <View style={styles.tipStatsRow}>
-        <Text style={styles.tipStat}>👍 {item.like_count}</Text>
-        <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
-      </View>
-    </View>
-  );
-
-  const renderEmptyTips = () => (
-    <Text style={styles.tipText}>No tips available. Be the first to add one!</Text>
-  );
 
   return (
     <ScreenWrapper
       title="Home"
-      scrollable={false}
+      scrollable={true}
       refreshing={refreshing}
       onRefresh={onRefresh}
       rightComponent={
@@ -201,7 +190,7 @@ export const HomeScreen: React.FC = () => {
       }
       testID="home-screen"
       accessibilityLabel="Home screen with waste tracking and tips"
-    >
+      keyboardAvoidingView={false}>
       {/* User greeting */}
       <View style={styles.userInfoRow}>
         <Text style={styles.username}>
@@ -211,7 +200,12 @@ export const HomeScreen: React.FC = () => {
 
       {/* Weather line */}
       {weather && (
-        <Text style={{ alignSelf: 'center', marginBottom: spacing.sm, color: colors.gray }}>
+        <Text
+          style={{
+            alignSelf: 'center',
+            marginBottom: spacing.sm,
+            color: colors.textSecondary,
+          }}>
           {`Istanbul Weather: ${weather.temperature}°C`}
         </Text>
       )}
@@ -221,38 +215,47 @@ export const HomeScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Your Progress</Text>
         <View style={styles.chartPlaceholder}>
           {loadingWaste ? (
-            <Text style={{ color: colors.gray }}>[Loading waste data...]</Text>
-          ) : (
+            <Text style={{color: colors.textSecondary}}>
+              [Loading waste data...]
+            </Text>
+          ) : barData.length > 0 ? (
             <BarChart
-              data={{ labels: barLabels, datasets: [{ data: barData }] }}
+              data={{labels: barLabels, datasets: [{data: barData}]}}
               width={screenWidth}
-              height={180}
+              height={220}
               yAxisLabel=""
               yAxisSuffix=""
               chartConfig={chartConfig}
               verticalLabelRotation={0}
               fromZero
-              style={{ borderRadius: 12 }}
+              style={{borderRadius: 12}}
             />
+          ) : (
+            <Text style={{color: colors.textSecondary}}>
+              No waste data yet. Add your first entry below!
+            </Text>
           )}
         </View>
       </View>
 
       {/* 40px gap */}
-      <View style={{ height: 40 }} />
+      <View style={{height: 40}} />
 
       {/* Waste logging inputs */}
       <View style={styles.logRow}>
-        <TouchableOpacity 
-          style={[styles.input, styles.wasteTypeButton]} 
-          onPress={() => setShowWasteTypeModal(true)}
-        >
-          <Text style={[styles.wasteTypeButtonText, !selectedWasteType && styles.placeholderText]}>
+        <TouchableOpacity
+          style={[styles.input, styles.wasteTypeButton]}
+          onPress={() => setShowWasteTypeModal(true)}>
+          <Text
+            style={[
+              styles.wasteTypeButtonText,
+              !selectedWasteType && styles.placeholderText,
+            ]}>
             {selectedWasteType ? selectedWasteType.label : 'Select waste type'}
           </Text>
           <Text style={styles.dropdownArrow}>▼</Text>
         </TouchableOpacity>
-        
+
         <TextInput
           style={styles.input}
           placeholder="Quantity (kg)"
@@ -260,12 +263,14 @@ export const HomeScreen: React.FC = () => {
           onChangeText={setWasteQuantity}
           keyboardType="numeric"
         />
-        
-        <TouchableOpacity 
-          style={[styles.addButton, (!selectedWasteType || !wasteQuantity) && styles.addButtonDisabled]} 
+
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            (!selectedWasteType || !wasteQuantity) && styles.addButtonDisabled,
+          ]}
           onPress={handleAddWaste}
-          disabled={!selectedWasteType || !wasteQuantity}
-        >
+          disabled={!selectedWasteType || !wasteQuantity}>
           <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -275,26 +280,23 @@ export const HomeScreen: React.FC = () => {
         visible={showWasteTypeModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowWasteTypeModal(false)}
-      >
+        onRequestClose={() => setShowWasteTypeModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Waste Type</Text>
             <ScrollView style={styles.wasteTypeList}>
-              {WASTE_TYPES.map((type) => (
+              {WASTE_TYPES.map(type => (
                 <TouchableOpacity
                   key={type.key}
                   style={styles.wasteTypeItem}
-                  onPress={() => handleWasteTypeSelect(type)}
-                >
+                  onPress={() => handleWasteTypeSelect(type)}>
                   <Text style={styles.wasteTypeItemText}>{type.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setShowWasteTypeModal(false)}
-            >
+              onPress={() => setShowWasteTypeModal(false)}>
               <Text style={styles.modalCloseButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -302,25 +304,34 @@ export const HomeScreen: React.FC = () => {
       </Modal>
 
       {/* Latest Tips header */}
-      <Text style={[styles.sectionTitle, { marginBottom: spacing.sm }]}>
+      <Text style={[styles.sectionTitle, {marginBottom: spacing.sm}]}>
         Latest Tips
       </Text>
 
-      {/* Tips list + logout footer */}
-      <FlatList
-        style={{ flex: 1 }}
-        data={loadingTips ? [] : tips}
-        keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
-        renderItem={renderTipItem}
-        ListEmptyComponent={loadingTips ? undefined : renderEmptyTips}
-        ListFooterComponent={
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        }
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: spacing.lg }}
-      />
+      {/* Tips list */}
+      {loadingTips ? null : tips.length > 0 ? (
+        tips.map((item, idx) => (
+          <View
+            key={item.id?.toString() || idx.toString()}
+            style={styles.tipItem}>
+            <Text style={styles.tipTitle}>{item.title}</Text>
+            <Text style={styles.tipDescription}>{item.description}</Text>
+            <View style={styles.tipStatsRow}>
+              <Text style={styles.tipStat}>👍 {item.like_count}</Text>
+              <Text style={styles.tipStat}>👎 {item.dislike_count}</Text>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.tipText}>
+          No tips available. Be the first to add one!
+        </Text>
+      )}
+
+      {/* Logout button */}
+      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
     </ScreenWrapper>
   );
 };
@@ -337,22 +348,23 @@ const styles = StyleSheet.create({
   },
   username: {
     ...typography.h2,
-    color: colors.primary,
+    color: colors.textPrimary,
   },
   chartContainer: {
     marginBottom: spacing.md,
   },
   sectionTitle: {
     ...typography.h2,
-    color: colors.primary,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   chartPlaceholder: {
-    height: 120,
+    minHeight: 120,
     backgroundColor: colors.lightGray,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing.md,
   },
   logRow: {
     flexDirection: 'row',
@@ -366,35 +378,39 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
     paddingHorizontal: spacing.md,
     borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButtonDisabled: {
     backgroundColor: colors.lightGray,
     opacity: 0.6,
   },
   addButtonText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontWeight: 'bold',
   },
   wasteTypeButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.lightGray,
+    minHeight: MIN_TOUCH_TARGET,
   },
   wasteTypeButtonText: {
     flex: 1,
-    color: colors.black,
+    color: colors.textPrimary,
   },
   placeholderText: {
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   dropdownArrow: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 12,
     marginLeft: spacing.xs,
   },
@@ -405,7 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderRadius: 12,
     padding: spacing.lg,
     width: '80%',
@@ -413,7 +429,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...typography.h3,
-    color: colors.primary,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
@@ -422,38 +438,44 @@ const styles = StyleSheet.create({
   },
   wasteTypeItem: {
     padding: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
     borderBottomWidth: 1,
     borderBottomColor: colors.lightGray,
+    justifyContent: 'center',
   },
   wasteTypeItemText: {
     ...typography.body,
-    color: colors.black,
+    color: colors.textPrimary,
   },
   modalCloseButton: {
     backgroundColor: colors.lightGray,
-    padding: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: spacing.md,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.md,
   },
   modalCloseButtonText: {
     ...typography.button,
-    color: colors.black,
+    color: colors.textPrimary,
   },
   tipItem: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: spacing.sm,
     marginBottom: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
   },
   tipTitle: {
-    ...typography.h2,
-    color: colors.primary,
+    ...typography.h3,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   tipDescription: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   tipStatsRow: {
@@ -463,23 +485,25 @@ const styles = StyleSheet.create({
   },
   tipStat: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginLeft: spacing.sm,
   },
   tipText: {
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginVertical: spacing.sm,
   },
   logoutButton: {
     backgroundColor: colors.error,
-    padding: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: spacing.md,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.md,
   },
   logoutButtonText: {
-    color: colors.white,
+    color: colors.textOnPrimary,
     fontWeight: 'bold',
   },
 });
