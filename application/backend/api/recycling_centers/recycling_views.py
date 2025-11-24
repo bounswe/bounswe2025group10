@@ -2,28 +2,23 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample, inline_serializer
+from rest_framework import serializers
 from .recycling_data import RECYCLING_CENTERS_DATA
+from .recycling_serializers import RecyclingCenterSerializer, ErrorResponseSerializer
 
 
 @extend_schema(
     summary="Get all cities with recycling centers",
-    description="""
-    Retrieve a list of all cities in Turkey that have registered recycling centers.
-    
-    This endpoint returns city names that can be used to query for districts and 
-    recycling centers in subsequent API calls. No authentication is required.
-    
-    **Use Cases:**
-    - Populate a dropdown or selection list of available cities
-    - Discover which cities have recycling center data
-    - First step in the recycling center discovery flow
-    
-    **Response Format:**
-    Returns an array of city name strings (e.g., ["Istanbul", "Ankara", ...])
-    """,
+    description="Retrieve a list of all cities in Turkey that have registered recycling centers. This endpoint returns city names that can be used to query for districts and recycling centers in subsequent API calls. No authentication is required. Returns an array of city name strings.",
     responses={
         200: OpenApiResponse(
+            response=inline_serializer(
+                name='CitiesListResponse',
+                fields={
+                    'cities': serializers.ListField(child=serializers.CharField())
+                }
+            ),
             description="List of cities retrieved successfully",
             examples=[
                 OpenApiExample(
@@ -49,32 +44,7 @@ def get_cities(request):
 
 @extend_schema(
     summary="Get districts for a specific city",
-    description="""
-    Retrieve a list of all districts (ilçe) within a specific city that have recycling centers.
-    
-    This endpoint provides district-level data for a given city, allowing users to narrow down 
-    their search for recycling centers. The results are sorted alphabetically and deduplicated.
-    
-    **Use Cases:**
-    - Populate district dropdown after city selection
-    - Display available districts for a selected city
-    - Second step in the recycling center discovery flow
-    
-    **Parameters:**
-    - `city` (required): Exact city name (case-sensitive, e.g., "Istanbul", "Ankara")
-    
-    **Response Format:**
-    Returns an array of district name strings sorted alphabetically
-    
-    **Error Scenarios:**
-    - 400: Missing city parameter
-    - 404: City not found in the database (check spelling and case)
-    
-    **Example Request:**
-    ```
-    GET /api/recycling-centers/districts/?city=Istanbul
-    ```
-    """,
+    description="Retrieve a list of all districts (ilçe) within a specific city that have recycling centers. This endpoint provides district-level data for a given city, allowing users to narrow down their search for recycling centers. The results are sorted alphabetically and deduplicated. City parameter is required and case-sensitive. Returns an array of district name strings sorted alphabetically. Error codes: 400 (missing city parameter), 404 (city not found).",
     parameters=[
         OpenApiParameter(
             name='city',
@@ -91,6 +61,12 @@ def get_cities(request):
     ],
     responses={
         200: OpenApiResponse(
+            response=inline_serializer(
+                name='DistrictsListResponse',
+                fields={
+                    'districts': serializers.ListField(child=serializers.CharField())
+                }
+            ),
             description="List of districts retrieved successfully",
             examples=[
                 OpenApiExample(
@@ -106,6 +82,7 @@ def get_cities(request):
             ]
         ),
         400: OpenApiResponse(
+            response=ErrorResponseSerializer,
             description="City parameter is required",
             examples=[
                 OpenApiExample(
@@ -116,6 +93,7 @@ def get_cities(request):
             ]
         ),
         404: OpenApiResponse(
+            response=ErrorResponseSerializer,
             description="City not found in the database",
             examples=[
                 OpenApiExample(
@@ -162,46 +140,7 @@ def get_districts(request):
 
 @extend_schema(
     summary="Get recycling centers by city and district",
-    description="""
-    Retrieve detailed information about recycling centers filtered by city and optionally by district.
-    
-    This is the main endpoint for finding recycling centers. It returns complete center information 
-    including addresses, notes about services, and the types of waste accepted at each location.
-    
-    **Use Cases:**
-    - Find all recycling centers in a city
-    - Find recycling centers in a specific district
-    - Display center details with addresses and accepted waste types
-    - Help users locate the nearest recycling facility
-    
-    **Parameters:**
-    - `city` (required): Exact city name (case-sensitive, e.g., "Istanbul", "Ankara")
-    - `district` (optional): District name to filter results (case-sensitive)
-    
-    **Response Fields:**
-    - `ilce`: District name where the center is located
-    - `adres`: Full street address of the recycling center
-    - `not`: Additional notes about services, operating hours, or special instructions
-    - `turler`: Array of waste types accepted (e.g., "paper", "plastic", "glass", "electronic")
-    
-    **Waste Type Categories:**
-    Common waste types include: paper, plastic, glass, metal, electronic, battery, textile, 
-    wood, medicine, oil_fats, tire, organic, hazardous, bulky, accumulator, fluorescent, 
-    construction, cable, it_equipment
-    
-    **Error Scenarios:**
-    - 400: Missing required city parameter
-    - 404: City not found, district not found, or no centers match the filters
-    
-    **Example Requests:**
-    ```
-    # Get all centers in Istanbul
-    GET /api/recycling-centers/?city=Istanbul
-    
-    # Get centers in Beylikduzu district of Istanbul
-    GET /api/recycling-centers/?city=Istanbul&district=Beylikduzu
-    ```
-    """,
+    description="Retrieve detailed information about recycling centers filtered by city and optionally by district. This is the main endpoint for finding recycling centers. It returns complete center information including addresses, notes about services, and the types of waste accepted at each location. City parameter is required (case-sensitive). District parameter is optional for filtering. Response fields: ilce (district name), adres (full address), not (service notes), turler (array of waste types). Common waste types include: paper, plastic, glass, metal, electronic, battery, textile, wood, medicine, oil_fats, tire, organic, hazardous, bulky, accumulator, fluorescent, construction, cable, it_equipment. Error codes: 400 (missing city parameter), 404 (city/district not found or no centers match filters).",
     parameters=[
         OpenApiParameter(
             name='city',
@@ -230,6 +169,7 @@ def get_districts(request):
     ],
     responses={
         200: OpenApiResponse(
+            response=RecyclingCenterSerializer(many=True),
             description="List of recycling centers retrieved successfully",
             examples=[
                 OpenApiExample(
@@ -283,6 +223,7 @@ def get_districts(request):
             ]
         ),
         400: OpenApiResponse(
+            response=ErrorResponseSerializer,
             description="City parameter is required",
             examples=[
                 OpenApiExample(
@@ -293,6 +234,7 @@ def get_districts(request):
             ]
         ),
         404: OpenApiResponse(
+            response=ErrorResponseSerializer,
             description="City not found or no centers found for the given filters",
             examples=[
                 OpenApiExample(
