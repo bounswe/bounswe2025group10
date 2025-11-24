@@ -12,7 +12,9 @@
     "profile": "Perfil",
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
-    "admin": "Administrador"
+    "admin": "Administrador",
+    "invite": "Invitar a un Amigo"
+
   },
   "common": {
     "language": "Idioma",
@@ -258,6 +260,17 @@
       "bananaPeel": "Cáscara de Plátano",
       "appleCore": "Corazón de Manzana",
       "foodScraps": "Restos de Comida"
-    }
+    }  }, "invite": {
+  "title": "Invitar a un Amigo",
+  "subtitle": "Envía un enlace de invitación a tu amigo por correo electrónico.",
+  "emailLabel": "Correo del Amigo",
+  "send": "Enviar Invitación",
+  "sending": "Enviando...",
+  "errors": {
+    "noEmail": "Por favor ingrese un correo.",
+    "failed": "Error al enviar la invitación."
   }
+}
+
+
 }
