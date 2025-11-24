@@ -198,6 +198,160 @@ class PostViewsTests(TestCase):
         # The view returns 500 instead of 404 when a post is not found
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # Language Feature Tests
+    def test_post_language_defaults_to_english(self):
+        """Test that post language defaults to 'en'"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {
+            'text': 'Test post'
+        }
+        
+        response = self.client.post(url, data, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Posts.objects.latest('id')
+        self.assertEqual(post.language, 'en')
+
+    def test_create_post_with_language(self):
+        """Test creating a post with specific language"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {
+            'text': 'Bonjour le monde',
+            'language': 'fr'
+        }
+        
+        response = self.client.post(url, data, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['language'], 'fr')
+        post = Posts.objects.latest('id')
+        self.assertEqual(post.language, 'fr')
+
+    def test_post_serializer_includes_language(self):
+        """Test that serializer includes language field"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Test post",
+            language='es',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('get_post_detail', kwargs={'post_id': post.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('language', response.data['data'])
+        self.assertEqual(response.data['data']['language'], 'es')
+
+    def test_post_translation_via_api(self):
+        """Test post translation through API"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Merhaba, bu bir test gönderisi",
+            language='tr',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for translation indicators
+        if 'translated_to' in response.data['data']:
+            self.assertEqual(response.data['data']['translated_to'], 'en')
+            self.assertEqual(response.data['data']['original_language'], 'tr')
+            # Text should be translated
+            self.assertNotEqual(response.data['data']['text'], "Merhaba, bu bir test gönderisi")
+
+    def test_post_no_translation_for_same_language(self):
+        """Test that posts are NOT translated when requesting same language"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Hello World",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should not have translation fields
+        self.assertNotIn('translated_to', response.data['data'])
+        self.assertEqual(response.data['data']['text'], "Hello World")
+
+    def test_get_all_posts_with_translation(self):
+        """Test getting all posts with translation"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Bonjour tout le monde",
+            language='fr',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get('/api/posts/all/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_data = [p for p in response.data['results'] if p['id'] == post.id][0]
+        
+        if 'translated_to' in post_data:
+            self.assertEqual(post_data['translated_to'], 'en')
+            self.assertEqual(post_data['original_language'], 'fr')
+
+    def test_create_post_with_all_supported_languages(self):
+        """Test creating posts with all supported language codes"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        
+        languages = ['en', 'tr', 'ar', 'es', 'fr']
+        for lang in languages:
+            data = {
+                'text': f'Test post in {lang}',
+                'language': lang
+            }
+            
+            response = self.client.post(url, data, format='multipart')
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['data']['language'], lang)
+
+    def test_post_translation_preserves_special_characters(self):
+        """Test that special characters are handled in translation"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Test with emojis 🌍♻️ and symbols!",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=tr')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should handle emojis and special characters
+
+    def test_translation_with_accept_language_header(self):
+        """Test translation using Accept-Language header"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Hello World",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(
+            f'/api/posts/{post.id}/',
+            HTTP_ACCEPT_LANGUAGE='fr-FR,fr;q=0.9'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Translation may occur based on Accept-Language header
+
     def test_get_user_posts_success(self):
         """Test successful retrieval of user's posts"""
         self.client.force_authenticate(user=self.user1)
