@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from datetime import timedelta
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +32,7 @@ SECRET_KEY = 'django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "209-38-114-201.sslip.io"]
+ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "209-38-114-201.sslip.io", "zerowaste.ink"]
 
 
 # Application definition
@@ -43,12 +45,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "api.apps.ApiConfig", 
     'challenges',
+    'carbon',
     'django.contrib.auth',
     'django.contrib.admin',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     "django_filters",
+        'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -91,6 +95,21 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 60,
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Zero Waste API',
+    'DESCRIPTION': 'API documentation for Zero Waste application',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SECURITY': [
+        {'BearerAuth': []},
+        {'TokenAuth': []},
+    ],
 }
 
 SIMPLE_JWT = {
@@ -184,3 +203,43 @@ if 'test' in sys.argv:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',
     }
+
+
+# Carbon emission factors (real values)
+# Local “Climatiq-style” emission factors (kg CO2e per kg or per item)
+# Highly reliable global-average landfill emission factors (kg CO2e per kg)
+LOCAL_EMISSION_FACTORS = {
+    # Plastic – inert in landfill; modern estimates: 0.009–0.033 kg/kg (DEFRA 2024, ADEME)
+    "waste-type_plastics-disposal_method_landfill": 0.02,
+
+    # Paper & cardboard – high methane generation; ~1.1–1.6 kg/kg (DEFRA 2025, EPA WARM)
+    "waste_type_paper_and_cardboard-disposal_method_landfill": 1.16,
+
+    # Glass – inert; ~0.009 kg/kg (DEFRA 2024 landfill factor)
+    "waste-type_glass-disposal_method_landfilled": 0.009,
+
+    # Metal (steel cans) – inert; ~0.009 kg/kg (DEFRA 2024)
+    "waste_type_scrap_metal_steel_cans-disposal_method_landfill": 0.009,
+
+    # Electronics (mixed WEEE) – inert unless containing refrigerants; ~0.021 kg/kg (DEFRA 2024)
+    "waste-type_weee_mixed-disposal_method_landfill": 0.021,
+
+    # Used vegetable cooking oil purification – LCA-based (Ecoinvent v3): ~1.1 kg/kg
+    "waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na": 1.10,
+
+    # Organic food & garden waste – high methane; ~0.656 kg/kg (DEFRA 2024)
+    "waste-type_mixed_food_and_organic_garden-disposal_method_landfill": 0.656,
+}
+
+
+CARBON_DECIMALS = 6
+
+
+# email settings for invitation emails
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp-relay.brevo.com"       
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "9c45cb001@smtp-brevo.com"
+EMAIL_HOST_PASSWORD = "bskyBVOhTWMa17c"
+DEFAULT_FROM_EMAIL = "no_reply@zerowaste.ink"

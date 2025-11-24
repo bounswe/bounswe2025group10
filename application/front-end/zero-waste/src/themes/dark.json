@@ -1,0 +1,12 @@
+{
+  "name": "Dark",
+  "class": "theme-dark",
+  "icon": "🌙",
+  "background": "#121212",
+  "text": "#e0e0e0",
+  "primary": "#1a1a1a",
+  "primaryText": "#e0e0e0",
+  "secondary": "#4caf50",
+  "border": "#2a2a2a",
+  "hover": "#1e1e1e"
+}

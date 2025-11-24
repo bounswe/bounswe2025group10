@@ -55,13 +55,13 @@ class ChallengeTests(TestCase):
         # Unauthenticated user should see only public challenges
         response = self.client.get('/api/challenges/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)  # Only public challenge is visible
+        self.assertEqual(len(response.data['results']), 1)  # Only public challenge is visible
 
         # Authenticate as a regular user
         self.client.force_authenticate(user=self.user)
         response = self.client.get('/api/challenges/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # Both public and private challenges are visible
+        self.assertEqual(len(response.data['results']), 2)  # Both public and private challenges are visible
 
     def test_create_challenge(self):
         # Unauthenticated user cannot create a challenge
@@ -214,7 +214,7 @@ class ChallengeParticipationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify that only enrolled challenges are returned
-        enrolled_challenge_ids = [challenge['challenge'] for challenge in response.data]
+        enrolled_challenge_ids = [challenge['challenge'] for challenge in response.data['results']]
         self.assertIn(self.participated_challenge.id, enrolled_challenge_ids)
         self.assertNotIn(self.public_challenge.id, enrolled_challenge_ids)
         self.assertNotIn(self.private_challenge.id, enrolled_challenge_ids)

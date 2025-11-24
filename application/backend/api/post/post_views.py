@@ -5,7 +5,9 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from .post_serializer import PostSerializer
 from ..models import Posts, Comments, PostLikes, SavedPosts
 from django.utils import timezone
@@ -13,6 +15,51 @@ from django.shortcuts import get_object_or_404
 from ..comment.comment_serializer import CommentSerializer
 from django.db import transaction
 
+@extend_schema(
+    summary="Create a new post",
+    description="Create a post with text and/or image. At least one must be provided. Image must be JPEG/PNG and max 5MB.",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'text': {'type': 'string', 'description': 'Post text content'},
+                'image': {'type': 'string', 'format': 'binary', 'description': 'Post image (JPEG/PNG, max 5MB)'}
+            }
+        }
+    },
+    responses={
+        201: OpenApiResponse(
+            response=PostSerializer,
+            description="Post created successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post created successfully',
+                        'data': {
+                            'id': 10,
+                            'text': 'My first zero waste post!',
+                            'image': 'posts/3/post_20251122_143000.jpg',
+                            'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                            'date': '2025-11-22T14:30:00Z',
+                            'creator': 3,
+                            'creator_username': 'john_doe',
+                            'creator_profile_image': '/media/users/john_doe.jpg',
+                            'like_count': 0,
+                            'dislike_count': 0,
+                            'is_saved': False,
+                            'is_user_liked': False,
+                            'is_user_disliked': False
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - missing text/image or invalid file"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -99,20 +146,94 @@ def create_post(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get all posts",
+    description="Retrieve all posts ordered by most recent first with pagination support.",
+    parameters=[
+        OpenApiParameter(
+            name='page',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='Page number (default: 1)'
+        ),
+        OpenApiParameter(
+            name='page_size',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='Number of items per page (default: 60, max: 60)'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer(many=True),
+            description="Posts retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'count': 150,
+                        'next': 'http://localhost:8000/api/posts/?page=2',
+                        'previous': None,
+                        'results': [
+                            {
+                                'id': 10,
+                                'text': 'Latest post about recycling',
+                                'image': 'posts/3/post_20251122_143000.jpg',
+                                'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                                'date': '2025-11-22T14:30:00Z',
+                                'creator': 3,
+                                'creator_username': 'john_doe',
+                                'creator_profile_image': '/media/users/john_doe.jpg',
+                                'like_count': 15,
+                                'dislike_count': 2,
+                                'is_saved': False,
+                                'is_user_liked': False,
+                                'is_user_disliked': False
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_all_posts(request):
     """
-    Get all posts ordered by most recent first.
+    Get all posts ordered by most recent first with pagination.
+    Query parameters:
+    - page: page number (default: 1)
+    - page_size: number of items per page (default: 10, max: 100)
     """
     try:
         posts = Posts.objects.all().order_by('-date')
-        serializer = PostSerializer(posts, many=True, context={'request': request})
         
-        return Response({
-            'message': 'Posts retrieved successfully',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
+        # Initialize paginator
+        paginator = PageNumberPagination()
+        
+        # Allow custom page size via query parameter
+        page_size = request.query_params.get('page_size', 60)
+        try:
+            page_size = int(page_size)
+            # Limit max page size to prevent abuse
+            if page_size > 60:
+                page_size = 60
+            elif page_size < 1:
+                page_size = 60
+        except (ValueError, TypeError):
+            page_size = 10
+            
+        paginator.page_size = page_size
+        
+        # Paginate the queryset
+        paginated_posts = paginator.paginate_queryset(posts, request)
+        serializer = PostSerializer(paginated_posts, many=True, context={'request': request})
+        
+        # Return paginated response
+        return paginator.get_paginated_response(serializer.data)
     
     except Exception as e:
         return Response(
@@ -120,6 +241,100 @@ def get_all_posts(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get post details",
+    description="Retrieve detailed information about a specific post, including comments and user reaction if authenticated.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to retrieve'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'text': {'type': 'string'},
+                            'image': {'type': 'string'},
+                            'image_url': {'type': 'string'},
+                            'date': {'type': 'string', 'format': 'date-time'},
+                            'creator': {'type': 'integer'},
+                            'creator_username': {'type': 'string'},
+                            'creator_profile_image': {'type': 'string'},
+                            'like_count': {'type': 'integer'},
+                            'dislike_count': {'type': 'integer'},
+                            'is_saved': {'type': 'boolean'},
+                            'is_user_liked': {'type': 'boolean'},
+                            'is_user_disliked': {'type': 'boolean'},
+                            'user_reaction': {'type': 'string', 'nullable': True},
+                            'comments': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'content': {'type': 'string'},
+                                        'date': {'type': 'string', 'format': 'date-time'},
+                                        'author': {'type': 'integer'},
+                                        'author_username': {'type': 'string'},
+                                        'author_profile_image': {'type': 'string'}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            description="Post details retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post retrieved successfully',
+                        'data': {
+                            'id': 10,
+                            'text': 'Great recycling tips!',
+                            'image': 'posts/3/post_20251122_143000.jpg',
+                            'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                            'date': '2025-11-22T14:30:00Z',
+                            'creator': 3,
+                            'creator_username': 'john_doe',
+                            'creator_profile_image': '/media/users/john_doe.jpg',
+                            'like_count': 15,
+                            'dislike_count': 2,
+                            'is_saved': True,
+                            'is_user_liked': True,
+                            'is_user_disliked': False,
+                            'user_reaction': 'LIKE',
+                            'comments': [
+                                {
+                                    'id': 1,
+                                    'content': 'Thanks for sharing!',
+                                    'date': '2025-11-22T15:00:00Z',
+                                    'author': 5,
+                                    'author_username': 'jane_smith',
+                                    'author_profile_image': '/media/users/jane_smith.jpg'
+                                }
+                            ]
+                        }
+                    }
+                )
+            ]
+        ),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_post_detail(request, post_id):
@@ -158,6 +373,44 @@ def get_post_detail(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get current user's posts",
+    description="Retrieve all posts created by the authenticated user, ordered by most recent first.",
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer(many=True),
+            description="User posts retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'User posts retrieved successfully',
+                        'data': [
+                            {
+                                'id': 10,
+                                'text': 'My latest post',
+                                'image': 'posts/3/post_20251122_143000.jpg',
+                                'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                                'date': '2025-11-22T14:30:00Z',
+                                'creator': 3,
+                                'creator_username': 'john_doe',
+                                'creator_profile_image': '/media/users/john_doe.jpg',
+                                'like_count': 10,
+                                'dislike_count': 1,
+                                'is_saved': False,
+                                'is_user_liked': False,
+                                'is_user_disliked': False
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_posts(request):
@@ -179,6 +432,45 @@ def get_user_posts(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Like a post",
+    description="Like a post. Toggles like if already liked. If previously disliked, changes to like.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to like'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer,
+            description="Post liked successfully (or like removed if already liked)",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post liked successfully',
+                        'data': {
+                            'id': 10,
+                            'text': 'Great post!',
+                            'like_count': 16,
+                            'dislike_count': 2,
+                            'is_user_liked': True,
+                            'is_user_disliked': False
+                        }
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def like_post(request, post_id):
@@ -243,6 +535,45 @@ def like_post(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Dislike a post",
+    description="Dislike a post. Toggles dislike if already disliked. If previously liked, changes to dislike.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to dislike'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer,
+            description="Post disliked successfully (or dislike removed if already disliked)",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post disliked successfully',
+                        'data': {
+                            'id': 10,
+                            'text': 'Some post',
+                            'like_count': 15,
+                            'dislike_count': 3,
+                            'is_user_liked': False,
+                            'is_user_disliked': True
+                        }
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def dislike_post(request, post_id):
@@ -307,6 +638,67 @@ def dislike_post(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get user's reaction to a post",
+    description="Retrieve the current user's reaction (like/dislike) to a specific post. Returns reaction type (LIKE/DISLIKE) and date if user has reacted, or null if no reaction exists.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to check reaction for'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'post_id': {'type': 'integer'},
+                            'reaction_type': {'type': 'string', 'enum': ['LIKE', 'DISLIKE', None], 'nullable': True},
+                            'date': {'type': 'string', 'format': 'date-time', 'nullable': True}
+                        }
+                    }
+                }
+            },
+            description="User reaction retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Liked post',
+                    value={
+                        'message': 'User reaction retrieved successfully',
+                        'data': {
+                            'post_id': 10,
+                            'reaction_type': 'LIKE',
+                            'date': '2025-11-22T14:30:00Z'
+                        }
+                    },
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'No reaction',
+                    value={
+                        'message': 'User reaction retrieved successfully',
+                        'data': {
+                            'post_id': 10,
+                            'reaction_type': None
+                        }
+                    },
+                    response_only=True
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_reaction(request, post_id):
@@ -340,6 +732,43 @@ def get_user_reaction(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Save a post",
+    description="Add a post to the current user's saved posts collection.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to save'
+        )
+    ],
+    responses={
+        201: OpenApiResponse(
+            response=PostSerializer,
+            description="Post saved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post saved successfully',
+                        'data': {
+                            'id': 10,
+                            'text': 'Saved post',
+                            'is_saved': True
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Post is already saved"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def save_post(request, post_id):
@@ -374,6 +803,43 @@ def save_post(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Unsave a post",
+    description="Remove a post from the current user's saved posts collection.",
+    parameters=[
+        OpenApiParameter(
+            name='post_id',
+            type=int,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID of the post to unsave'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer,
+            description="Post removed from saved posts",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Post removed from saved posts',
+                        'data': {
+                            'id': 10,
+                            'text': 'Unsaved post',
+                            'is_saved': False
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Post is not saved"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        404: OpenApiResponse(description="Post not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def unsave_post(request, post_id):
@@ -411,6 +877,39 @@ def unsave_post(request, post_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+@extend_schema(
+    summary="Get saved posts",
+    description="Retrieve all posts saved by the current user, ordered by most recently saved.",
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer(many=True),
+            description="Saved posts retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Saved posts retrieved successfully',
+                        'data': [
+                            {
+                                'id': 10,
+                                'text': 'My saved post',
+                                'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                                'date': '2025-11-22T14:30:00Z',
+                                'creator_username': 'john_doe',
+                                'like_count': 20,
+                                'dislike_count': 1,
+                                'is_saved': True
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_saved_posts(request):
@@ -441,6 +940,61 @@ def get_saved_posts(request):
         
         return Response({
             'message': 'Saved posts retrieved successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(
+    summary="Get top liked posts",
+    description="Retrieve the top 5 posts with the highest number of likes.",
+    responses={
+        200: OpenApiResponse(
+            response=PostSerializer(many=True),
+            description="Top liked posts retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Top liked posts retrieved successfully',
+                        'data': [
+                            {
+                                'id': 10,
+                                'text': 'Most popular post',
+                                'image_url': 'http://localhost:8000/media/posts/3/post_20251122_143000.jpg',
+                                'date': '2025-11-22T14:30:00Z',
+                                'creator_username': 'john_doe',
+                                'like_count': 150,
+                                'dislike_count': 5,
+                                'is_saved': False
+                            }
+                        ]
+                    }
+                )
+            ]
+        ),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Posts']
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_top_liked_posts(request):
+    """
+    Get top 5 posts with the highest number of likes.
+    """
+    try:
+        top_posts = Posts.objects.all().order_by('-like_count')[:5]
+        serializer = PostSerializer(top_posts, many=True, context={'request': request})
+        
+        return Response({
+            'message': 'Top liked posts retrieved successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
     

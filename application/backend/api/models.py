@@ -30,6 +30,7 @@ class CustomUserManager(BaseUserManager):
 class Users(AbstractUser):
     class Meta:
         db_table = 'Users'
+        app_label = 'api'
         
     # Primary key
     id = models.AutoField(primary_key=True)
@@ -166,6 +167,18 @@ class Waste(models.Model):
     def __str__(self):
         return self.type
 
+class SuspiciousWaste(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    waste = models.ForeignKey(Waste, on_delete=models.PROTECT)
+    amount = models.FloatField(blank=False, null=False)
+    date = models.DateTimeField(default=timezone.now)
+    photo = models.ImageField(upload_to='suspicious_waste_photos/')  # Store relative path to photo
+    class Meta:
+        db_table = 'SuspiciousWaste'
+        ordering = ['-amount']
+
+
+
 class UserWastes(models.Model):
     user = models.ForeignKey('Users', on_delete=models.CASCADE)
     waste = models.ForeignKey(Waste, on_delete=models.PROTECT)
@@ -236,6 +249,28 @@ class TipLikes(models.Model):
     class Meta:
         db_table = 'TipLikes'
         unique_together = (('user', 'tip'),)  
+
+
+class Follow(models.Model):
+    """
+    Represents a follow relationship between users.
+    follower: The user who is following
+    following: The user being followed
+    """
+    follower = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='following_set')
+    following = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='followers_set')
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'Follows'
+        unique_together = (('follower', 'following'),)  # Prevent duplicate follows
+        indexes = [
+            models.Index(fields=['follower'], name='idx_follower'),
+            models.Index(fields=['following'], name='idx_following'),
+        ]
+    
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
 
 
 # activity model from .activities.models.activity_model import ActivityEvent, Visibility
