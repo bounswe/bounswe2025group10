@@ -53,8 +53,6 @@
   },
   "community": {
     "title": "Topluluk",
-    "mostRecent": "En Yeni",
-    "mostLiked": "En Beğenilen",
     "showAll": "Tüm Gönderiler",
     "showSaved": "Kaydedilenler",
     "createPost": "Gönderi Oluştur",

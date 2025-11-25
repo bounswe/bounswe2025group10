@@ -52,8 +52,6 @@
   },
   "community": {
     "title": "Community",
-    "mostRecent": "Most Recent",
-    "mostLiked": "Most Liked",
     "showAll": "Show All Posts",
     "showSaved": "Show Saved",
     "createPost": "Create Post",

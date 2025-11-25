@@ -53,8 +53,6 @@
   },
   "community": {
     "title": "Comunidad",
-    "mostRecent": "Más recientes",
-    "mostLiked": "Más gustados",
     "showAll": "Todas las publicaciones",
     "showSaved": "Mostrar guardados",
     "createPost": "Crear publicación",
