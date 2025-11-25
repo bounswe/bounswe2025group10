@@ -7,12 +7,16 @@ import { Card, Button, Row, Col } from "react-bootstrap";
  *  • challengeId   (number|string)
  *  • name          (string)
  *  • duration      (string | number)   // e.g. "30 days"
+ *  • reason        (string)            // report reason
+ *  • description   (string)            // report description
  *  • onDelete      (function)          // called on delete click
  */
 export default function ChallengeCard({
   challengeId,
   name,
   duration,
+  reason,
+  description,
   onDelete,
 }) {
   return (
@@ -27,6 +31,16 @@ export default function ChallengeCard({
             <div className="text-muted small">
               <strong>Challenge progress :</strong> {duration}
             </div>
+            {reason && (
+              <div className="mt-2">
+                <strong className="text-danger">Report Reason:</strong> {reason}
+              </div>
+            )}
+            {description && (
+              <div className="text-muted small mt-1">
+                <strong>Description:</strong> {description}
+              </div>
+            )}
           </Col>
 
           {onDelete && (

@@ -35,9 +35,18 @@
     "adding": "Adding...",
     "reset": "Reset",
     "report": "Report",
+    "reporting": "Reporting...",
+    "reportUser": "Report User",
+    "reportSuccess": "User reported successfully",
     "next": "Next",
     "previous": "Previous",
-    "total": "Total"
+    "total": "Total",
+    "reason": "Reason",
+    "reasonRequired": "Please provide a reason",
+    "enterReason": "Enter reason...",
+    "description": "Description",
+    "enterDescription": "Enter description...",
+    "loginRequired": "Please login to report"
   },
   "leaderboard": {
     "title": "🌿 Top 10 Zero Waste Champions",

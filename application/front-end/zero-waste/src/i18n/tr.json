@@ -36,9 +36,18 @@
     "adding": "Ekleniyor...",
     "reset": "Sıfırla",
     "report": "Bildir",
+    "reporting": "Bildiriliyor...",
+    "reportUser": "Kullanıcıyı Bildir",
+    "reportSuccess": "Kullanıcı başarıyla bildirildi",
     "next": "Sonraki",
     "previous": "Önceki",
-    "total": "Toplam"
+    "total": "Toplam",
+    "reason": "Sebep",
+    "reasonRequired": "Lütfen bir sebep belirtin",
+    "enterReason": "Sebep girin...",
+    "description": "Açıklama",
+    "enterDescription": "Açıklama girin...",
+    "loginRequired": "Bildirmek için lütfen giriş yapın"
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",
