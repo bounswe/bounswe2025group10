@@ -1,4 +1,28 @@
 {
-  "name": "mobile",
-  "displayName": "mobile"
+  "expo": {
+    "name": "Zero Waste Challenge",
+    "slug": "zero-waste-challenge",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#228B22"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
+    },
+    "android": {
+      "package": "com.zerowastechallenge.mobile",
+      "usesCleartextTraffic": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.zerowastechallenge.mobile"
+    }
+  }
 }
