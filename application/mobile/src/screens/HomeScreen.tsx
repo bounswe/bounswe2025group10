@@ -30,6 +30,13 @@ const chartConfig = {
   decimalPlaces: 0,
 };
 
+const WASTE_TYPES = [
+  { key: 'PLASTIC', label: 'Plastic' },
+  { key: 'PAPER', label: 'Paper' },
+  { key: 'GLASS', label: 'Glass' },
+  { key: 'METAL', label: 'Metal' },
+];
+
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   

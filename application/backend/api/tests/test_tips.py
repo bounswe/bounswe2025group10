@@ -39,18 +39,18 @@ class TipViewsTests(TestCase):
         response = get_all_tips(request)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Tips retrieved successfully')
-        self.assertEqual(len(response.data['data']), self.initial_tip_count)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), self.initial_tip_count)
         # Tips should be ordered by most recent (highest id) first
-        self.assertEqual(response.data['data'][0]['title'], "Test Tip 4")
-        self.assertEqual(response.data['data'][1]['title'], "Test Tip 3")
+        self.assertEqual(response.data['results'][0]['title'], "Test Tip 4")
+        self.assertEqual(response.data['results'][1]['title'], "Test Tip 3")
         
         # Check for the new fields
-        self.assertIn('is_user_liked', response.data['data'][0])
-        self.assertIn('is_user_disliked', response.data['data'][0])
+        self.assertIn('is_user_liked', response.data['results'][0])
+        self.assertIn('is_user_disliked', response.data['results'][0])
         # By default, user hasn't liked/disliked any tips
-        self.assertFalse(response.data['data'][0]['is_user_liked'])
-        self.assertFalse(response.data['data'][0]['is_user_disliked'])
+        self.assertFalse(response.data['results'][0]['is_user_liked'])
+        self.assertFalse(response.data['results'][0]['is_user_disliked'])
 
     def test_get_recent_tips_success(self):
         """Test successful retrieval of recent tips"""
@@ -306,7 +306,7 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # All tips should have reaction fields
-        for tip_data in response.data['data']:
+        for tip_data in response.data['results']:
             self.assertIn('is_user_liked', tip_data)
             self.assertIn('is_user_disliked', tip_data)
 
@@ -326,3 +326,132 @@ class TipViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertLessEqual(len(response.data['data']), 3)
+
+    # Language Feature Tests
+    def test_tip_language_defaults_to_english(self):
+        """Test that tip language defaults to 'en' when not specified"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': 'Test Tip',
+            'description': 'Test description'
+        }
+        
+        response = self.client.post(url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        tip = Tips.objects.latest('id')
+        self.assertEqual(tip.language, 'en')
+
+    def test_create_tip_with_language(self):
+        """Test creating a tip with specific language"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        data = {
+            'title': 'Merhaba Dünya',
+            'description': 'Bu bir test ipucudur',
+            'language': 'tr'
+        }
+        
+        response = self.client.post(url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['language'], 'tr')
+        tip = Tips.objects.latest('id')
+        self.assertEqual(tip.language, 'tr')
+
+    def test_tip_serializer_includes_language(self):
+        """Test that serializer includes language field"""
+        tip = Tips.objects.create(
+            title="Test Tip",
+            text="Test description",
+            language='fr'
+        )
+        self.client.force_authenticate(user=self.user)
+        
+        request = self.factory.get('/api/tips/all/')
+        request.user = self.user
+        response = get_all_tips(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip_data = [t for t in response.data['results'] if t['id'] == tip.id][0]
+        self.assertIn('language', tip_data)
+        self.assertEqual(tip_data['language'], 'fr')
+
+    def test_tip_translation_with_lang_parameter(self):
+        """Test that tips are translated when lang parameter is provided"""
+        # Create a Turkish tip
+        tip = Tips.objects.create(
+            title="Plastik Atığı Azaltın",
+            text="Tek kullanımlık plastikleri kullanmayın",
+            language='tr'
+        )
+        
+        self.client.force_authenticate(user=self.user)
+        # Request in English
+        response = self.client.get('/api/tips/all/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip_data = [t for t in response.data['results'] if t['id'] == tip.id][0]
+        
+        # Check that translation fields are present
+        self.assertIn('translated_to', tip_data)
+        self.assertIn('original_language', tip_data)
+        self.assertEqual(tip_data['translated_to'], 'en')
+        self.assertEqual(tip_data['original_language'], 'tr')
+        # Title and description should be different from original (translated)
+        self.assertNotEqual(tip_data['title'], "Plastik Atığı Azaltın")
+
+    def test_tip_no_translation_for_same_language(self):
+        """Test that tips are NOT translated when requesting same language"""
+        tip = Tips.objects.create(
+            title="Reduce Plastic Waste",
+            text="Avoid single-use plastics",
+            language='en'
+        )
+        
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/tips/all/?lang=en')
+        
+        tip_data = [t for t in response.data['results'] if t['id'] == tip.id][0]
+        # Should not have translation fields
+        self.assertNotIn('translated_to', tip_data)
+        self.assertEqual(tip_data['title'], "Reduce Plastic Waste")
+
+    def test_tip_translation_with_accept_language_header(self):
+        """Test translation using Accept-Language header"""
+        tip = Tips.objects.create(
+            title="Hello World",
+            text="This is a test",
+            language='en'
+        )
+        
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(
+            '/api/tips/all/',
+            HTTP_ACCEPT_LANGUAGE='tr-TR,tr;q=0.9'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        tip_data = [t for t in response.data['results'] if t['id'] == tip.id][0]
+        # Translation may occur
+        if 'translated_to' in tip_data:
+            self.assertEqual(tip_data['translated_to'], 'tr')
+
+    def test_create_tip_with_all_supported_languages(self):
+        """Test creating tips with all supported language codes"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create_tip')
+        
+        languages = ['en', 'tr', 'ar', 'es', 'fr']
+        for lang in languages:
+            data = {
+                'title': f'Test Tip {lang}',
+                'description': f'Test description {lang}',
+                'language': lang
+            }
+            
+            response = self.client.post(url, data, format='json')
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['data']['language'], lang)

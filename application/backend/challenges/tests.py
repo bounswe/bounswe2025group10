@@ -55,13 +55,13 @@ class ChallengeTests(TestCase):
         # Unauthenticated user should see only public challenges
         response = self.client.get('/api/challenges/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)  # Only public challenge is visible
+        self.assertEqual(len(response.data['results']), 1)  # Only public challenge is visible
 
         # Authenticate as a regular user
         self.client.force_authenticate(user=self.user)
         response = self.client.get('/api/challenges/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # Both public and private challenges are visible
+        self.assertEqual(len(response.data['results']), 2)  # Both public and private challenges are visible
 
     def test_create_challenge(self):
         # Unauthenticated user cannot create a challenge
@@ -214,7 +214,7 @@ class ChallengeParticipationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify that only enrolled challenges are returned
-        enrolled_challenge_ids = [challenge['challenge'] for challenge in response.data]
+        enrolled_challenge_ids = [challenge['challenge'] for challenge in response.data['results']]
         self.assertIn(self.participated_challenge.id, enrolled_challenge_ids)
         self.assertNotIn(self.public_challenge.id, enrolled_challenge_ids)
         self.assertNotIn(self.private_challenge.id, enrolled_challenge_ids)
@@ -233,3 +233,97 @@ class ChallengeParticipationTests(TestCase):
         """
         response = self.client.get('/api/challenges/enrolled/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_max_three_challenges_constraint(self):
+        """
+        Test that a user cannot participate in more than 3 challenges.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Create 3 more public challenges
+        challenge1 = Challenge.objects.create(
+            title="Challenge 1",
+            is_public=True,
+            target_amount=100,
+            creator=self.other_user
+        )
+        challenge2 = Challenge.objects.create(
+            title="Challenge 2",
+            is_public=True,
+            target_amount=100,
+            creator=self.other_user
+        )
+        challenge3 = Challenge.objects.create(
+            title="Challenge 3",
+            is_public=True,
+            target_amount=100,
+            creator=self.other_user
+        )
+        
+        # User is already in 1 challenge (participated_challenge)
+        # Join 2 more challenges (total = 3)
+        response = self.client.post('/api/challenges/participate/', 
+                                   {"challenge": challenge1.id}, 
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        response = self.client.post('/api/challenges/participate/', 
+                                   {"challenge": challenge2.id}, 
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify user has 3 challenges
+        self.assertEqual(UserChallenge.objects.filter(user=self.user).count(), 3)
+        
+        # Try to join a 4th challenge - should fail
+        response = self.client.post('/api/challenges/participate/', 
+                                   {"challenge": challenge3.id}, 
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("maximum of 3 challenges", str(response.data))
+
+    def test_completed_challenges_not_listed(self):
+        """
+        Test that completed challenges are not returned in GET request.
+        """
+        # Create a completed challenge
+        completed_challenge = Challenge.objects.create(
+            title="Completed Challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=100,  # Completed
+            creator=self.other_user
+        )
+        
+        # Get all challenges without authentication
+        response = self.client.get('/api/challenges/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that completed challenge is NOT in the results
+        challenge_ids = [c['id'] for c in response.data['results']]
+        self.assertNotIn(completed_challenge.id, challenge_ids)
+        
+        # Check that incomplete challenges ARE in the results
+        self.assertIn(self.public_challenge.id, challenge_ids)
+
+    def test_completed_challenges_not_listed_authenticated(self):
+        """
+        Test that completed challenges are not returned even for authenticated users.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Create a completed challenge owned by user
+        completed_challenge = Challenge.objects.create(
+            title="My Completed Challenge",
+            is_public=False,
+            target_amount=50,
+            current_progress=50,  # Completed
+            creator=self.user
+        )
+        
+        response = self.client.get('/api/challenges/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check that completed challenge is NOT in the results
+        challenge_ids = [c['id'] for c in response.data['results']]
+        self.assertNotIn(completed_challenge.id, challenge_ids)

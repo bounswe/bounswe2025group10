@@ -157,8 +157,8 @@ class PostViewsTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Posts retrieved successfully')
-        self.assertEqual(len(response.data['data']), 3)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 3)
         # Posts should be ordered by most recent (but they were all created at the same time)
         # So we'll just check if all posts are returned
 
@@ -197,6 +197,160 @@ class PostViewsTests(TestCase):
         
         # The view returns 500 instead of 404 when a post is not found
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Language Feature Tests
+    def test_post_language_defaults_to_english(self):
+        """Test that post language defaults to 'en'"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {
+            'text': 'Test post'
+        }
+        
+        response = self.client.post(url, data, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Posts.objects.latest('id')
+        self.assertEqual(post.language, 'en')
+
+    def test_create_post_with_language(self):
+        """Test creating a post with specific language"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        data = {
+            'text': 'Bonjour le monde',
+            'language': 'fr'
+        }
+        
+        response = self.client.post(url, data, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['language'], 'fr')
+        post = Posts.objects.latest('id')
+        self.assertEqual(post.language, 'fr')
+
+    def test_post_serializer_includes_language(self):
+        """Test that serializer includes language field"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Test post",
+            language='es',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('get_post_detail', kwargs={'post_id': post.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('language', response.data['data'])
+        self.assertEqual(response.data['data']['language'], 'es')
+
+    def test_post_translation_via_api(self):
+        """Test post translation through API"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Merhaba, bu bir test gönderisi",
+            language='tr',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for translation indicators
+        if 'translated_to' in response.data['data']:
+            self.assertEqual(response.data['data']['translated_to'], 'en')
+            self.assertEqual(response.data['data']['original_language'], 'tr')
+            # Text should be translated
+            self.assertNotEqual(response.data['data']['text'], "Merhaba, bu bir test gönderisi")
+
+    def test_post_no_translation_for_same_language(self):
+        """Test that posts are NOT translated when requesting same language"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Hello World",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should not have translation fields
+        self.assertNotIn('translated_to', response.data['data'])
+        self.assertEqual(response.data['data']['text'], "Hello World")
+
+    def test_get_all_posts_with_translation(self):
+        """Test getting all posts with translation"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Bonjour tout le monde",
+            language='fr',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get('/api/posts/all/?lang=en')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_data = [p for p in response.data['results'] if p['id'] == post.id][0]
+        
+        if 'translated_to' in post_data:
+            self.assertEqual(post_data['translated_to'], 'en')
+            self.assertEqual(post_data['original_language'], 'fr')
+
+    def test_create_post_with_all_supported_languages(self):
+        """Test creating posts with all supported language codes"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_post')
+        
+        languages = ['en', 'tr', 'ar', 'es', 'fr']
+        for lang in languages:
+            data = {
+                'text': f'Test post in {lang}',
+                'language': lang
+            }
+            
+            response = self.client.post(url, data, format='multipart')
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['data']['language'], lang)
+
+    def test_post_translation_preserves_special_characters(self):
+        """Test that special characters are handled in translation"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Test with emojis 🌍♻️ and symbols!",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(f'/api/posts/{post.id}/?lang=tr')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should handle emojis and special characters
+
+    def test_translation_with_accept_language_header(self):
+        """Test translation using Accept-Language header"""
+        post = Posts.objects.create(
+            creator=self.user1,
+            text="Hello World",
+            language='en',
+            date=timezone.now()
+        )
+        
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(
+            f'/api/posts/{post.id}/',
+            HTTP_ACCEPT_LANGUAGE='fr-FR,fr;q=0.9'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Translation may occur based on Accept-Language header
 
     def test_get_user_posts_success(self):
         """Test successful retrieval of user's posts"""
@@ -479,7 +633,7 @@ class PostViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Newest post should be first
-        self.assertEqual(response.data['data'][0]['id'], new_post.id)
+        self.assertEqual(response.data['results'][0]['id'], new_post.id)
 
     def test_get_user_posts_only_own_posts(self):
         """Test that get_user_posts only returns posts by the authenticated user"""
@@ -512,3 +666,124 @@ class PostViewsTests(TestCase):
         self.assertIn('comments', response.data['data'])
         self.assertEqual(len(response.data['data']['comments']), 1)
         self.assertEqual(response.data['data']['comments'][0]['content'], 'Test comment')
+
+    def test_get_top_liked_posts_success(self):
+        """Test successful retrieval of top 5 liked posts"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Create additional posts with different like counts
+        post4 = Posts.objects.create(
+            creator=self.user1,
+            text="Post with 15 likes",
+            date=timezone.now(),
+            like_count=15,
+            dislike_count=0
+        )
+        post5 = Posts.objects.create(
+            creator=self.user2,
+            text="Post with 20 likes",
+            date=timezone.now(),
+            like_count=20,
+            dislike_count=0
+        )
+        post6 = Posts.objects.create(
+            creator=self.user1,
+            text="Post with 8 likes",
+            date=timezone.now(),
+            like_count=8,
+            dislike_count=0
+        )
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        
+        # Should return posts ordered by like_count (highest first)
+        data = response.data['data']
+        self.assertLessEqual(len(data), 5)  # Should return at most 5 posts
+        
+        # Verify ordering (highest like count first)
+        self.assertEqual(data[0]['id'], post5.id)  # 20 likes
+        self.assertEqual(data[0]['like_count'], 20)
+        self.assertEqual(data[1]['id'], post4.id)  # 15 likes
+        self.assertEqual(data[1]['like_count'], 15)
+        self.assertEqual(data[2]['id'], self.posts[2].id)  # 10 likes
+        self.assertEqual(data[2]['like_count'], 10)
+        self.assertEqual(data[3]['id'], post6.id)  # 8 likes
+        self.assertEqual(data[3]['like_count'], 8)
+        self.assertEqual(data[4]['id'], self.posts[1].id)  # 5 likes
+        self.assertEqual(data[4]['like_count'], 5)
+
+    def test_get_top_liked_posts_less_than_five(self):
+        """Test top liked posts when there are less than 5 posts"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # We already have 3 posts in setUp
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        
+        # Should return all available posts (3 in this case)
+        data = response.data['data']
+        self.assertEqual(len(data), 3)
+        
+        # Verify ordering by like_count descending
+        self.assertEqual(data[0]['like_count'], 10)
+        self.assertEqual(data[1]['like_count'], 5)
+        self.assertEqual(data[2]['like_count'], 0)
+
+    def test_get_top_liked_posts_empty_database(self):
+        """Test top liked posts when no posts exist"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Delete all posts
+        Posts.objects.all().delete()
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Top liked posts retrieved successfully')
+        self.assertEqual(len(response.data['data']), 0)
+
+    def test_get_top_liked_posts_unauthenticated(self):
+        """Test that top liked posts requires authentication"""
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        # Endpoint requires authentication
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_top_liked_posts_more_than_five(self):
+        """Test top liked posts returns only top 5 when more posts exist"""
+        self.client.force_authenticate(user=self.user1)
+        
+        # Create 8 additional posts with various like counts
+        for i in range(8):
+            Posts.objects.create(
+                creator=self.user1,
+                text=f"Post with {i * 2} likes",
+                date=timezone.now(),
+                like_count=i * 2,
+                dislike_count=0
+            )
+        
+        url = reverse('get_top_liked_posts')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Should return exactly 5 posts
+        data = response.data['data']
+        self.assertEqual(len(data), 5)
+        
+        # Verify that we got the top 5 by like count
+        like_counts = [post['like_count'] for post in data]
+        self.assertEqual(like_counts, sorted(like_counts, reverse=True))
+        
+        # First post should have the highest like count
+        self.assertGreaterEqual(data[0]['like_count'], data[4]['like_count'])

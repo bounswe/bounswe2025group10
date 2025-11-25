@@ -3,10 +3,56 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 from ..models import Users, UserAchievements
 from .achievement_serializer import UserAchievementSerializer
 
+@extend_schema(
+    summary="Get user achievements",
+    description="Retrieve all achievements earned by a user. If username is provided, returns that user's achievements. Otherwise, returns authenticated user's achievements.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=False,
+            description='Username of the user whose achievements to retrieve. If omitted, returns authenticated user achievements.'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=UserAchievementSerializer(many=True),
+            description="Achievements retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'User achievements retrieved successfully',
+                        'data': {
+                            'username': 'john_doe',
+                            'achievements': [
+                                {
+                                    'id': 1,
+                                    'achievement': {
+                                        'id': 1,
+                                        'title': 'Eco Warrior',
+                                        'description': 'Complete first recycling challenge',
+                                        'icon': 'eco_warrior.png'
+                                    },
+                                    'earned_at': '2025-11-20T10:30:00Z'
+                                }
+                            ]
+                        }
+                    }
+                )
+            ]
+        ),
+        404: OpenApiResponse(description="User not found"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Achievements']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_achievements(request, username=None):

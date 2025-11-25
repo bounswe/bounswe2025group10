@@ -36,6 +36,7 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
     def validate(self, data):
         '''
         Ensure that the challenge is public and the user is not already participating.
+        Also enforce the 3 challenge limit per user.
         '''
         user = self.context['request'].user
         challenge = data['challenge']
@@ -47,6 +48,11 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
         # Check if the user is already participating in the challenge
         if UserChallenge.objects.filter(user=user, challenge=challenge).exists():
             raise serializers.ValidationError("You are already participating in this challenge.")
+        
+        # Check if the user has reached the maximum number of challenges (3)
+        current_challenge_count = UserChallenge.objects.filter(user=user).count()
+        if current_challenge_count >= 3:
+            raise serializers.ValidationError("You can only participate in a maximum of 3 challenges at a time.")
         
         return data
     
