@@ -48,7 +48,15 @@
       "PLASTIC": "Plástico",
       "PAPER": "Papel",
       "GLASS": "Vidrio",
-      "METAL": "Metal"
+      "METAL": "Metal",
+      "ELECTRONIC": "Electrónico",
+      "ORGANIC": "Orgánico",
+      "OIL_FATS": "Aceite",
+      "OILFATS": "Aceite",
+      "OIL&FATS": "Aceite",
+      "TEXTILE": "Textil",
+      "BATTERY": "Batería",
+      "OTHER": "Otro"
     }
   },
   "profile": {
@@ -62,6 +70,11 @@
     "achievements": "Logros",
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
+    "theme": "Tema",
+    "selectTheme": "Seleccionar tema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "themeSystem": "Por defecto del sistema",
     "logout": "Cerrar sesión",
     "saveChanges": "Guardar cambios",
     "uploadPhoto": "Subir foto",

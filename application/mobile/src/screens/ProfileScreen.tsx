@@ -1,33 +1,50 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput, Modal, Switch } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { colors as defaultColors, spacing, typography, commonStyles, lightColors, darkColors } from '../utils/theme';
+import { useRTL } from '../hooks/useRTL';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
+import { wasteService, achievementService, profileService, profilePublicService, getProfilePictureUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme, ThemeMode } from '../context/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../utils/storage';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
-import { changeLanguage, LANGUAGES } from '../i18n';
+import { changeLanguage, LANGUAGES, isRTL } from '../i18n';
+import { I18nManager } from 'react-native';
 
-const chartConfig = {
+// Chart config will be computed dynamically based on theme
+const getChartConfig = (colors: typeof defaultColors, isDarkMode: boolean) => ({
   backgroundGradientFrom: colors.backgroundSecondary,
   backgroundGradientTo: colors.backgroundSecondary,
-  color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // colors.primary
-  labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`, // colors.textPrimary
+  color: (opacity = 1) => isDarkMode
+    ? `rgba(102, 187, 106, ${opacity})` // dark mode primary
+    : `rgba(46, 125, 50, ${opacity})`, // light mode primary
+  labelColor: (opacity = 1) => isDarkMode
+    ? `rgba(255, 255, 255, ${opacity})` // dark mode text
+    : `rgba(33, 33, 33, ${opacity})`, // light mode text
   barPercentage: 0.7,
   decimalPlaces: 0,
-};
+});
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
+
+// Theme mode options for display
+const THEME_OPTIONS: { mode: ThemeMode; labelKey: string }[] = [
+  { mode: 'light', labelKey: 'profile.themeLight' },
+  { mode: 'dark', labelKey: 'profile.themeDark' },
+  { mode: 'system', labelKey: 'profile.themeSystem' },
+];
 
 // Main profile component that handles the user data display
 const ProfileMain: React.FC = () => {
   const { userData, fetchUserData, logout } = useAuth();
   const { navigateToScreen } = useAppNavigation();
   const { t, i18n } = useTranslation();
+  const { textStyle, rowStyle } = useRTL();
+  const { colors, isDarkMode, themeMode, setThemeMode } = useTheme();
   const [wasteData, setWasteData] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +56,7 @@ const ProfileMain: React.FC = () => {
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState<string>('');
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
 
   // Load auth token once on mount
   useEffect(() => {
@@ -48,13 +66,6 @@ const ProfileMain: React.FC = () => {
       console.log('Auth token loaded');
     })();
   }, []);
-
-  const getProfilePictureUrl = (username: string) => {
-    // Use the dedicated endpoint for profile pictures
-    const url = `${API_URL}/api/profile/${username}/picture/`;
-    console.log('Generated profile picture URL:', url);
-    return url;
-  };
 
   const fetchBio = useCallback(async () => {
     if (!userData?.username) {return;}
@@ -89,6 +100,7 @@ const ProfileMain: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      Alert.alert('Error', 'Failed to load profile data. Please pull to refresh.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,32 +122,9 @@ const ProfileMain: React.FC = () => {
   const barData = wasteData.map((item) => item.total_amount || 0);
   const chartWidth = Math.max(screenWidth - 32, barLabels.length * 80);
 
-  const profileImageSource = (() => {
-    console.log('Current userData state:', JSON.stringify(userData, null, 2));
-
-    // Always try to load the profile picture if we have a username
-    if (userData?.username) {
-      if (!authToken) {
-        console.warn('Auth token not yet loaded, using placeholder');
-        return PROFILE_PLACEHOLDER;
-      }
-
-      const source = {
-        uri: getProfilePictureUrl(userData.username),
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-        cache: 'reload',
-      } as const;
-      console.log('Using profile image source:', JSON.stringify(source, null, 2));
-      return source;
-    }
-
-    console.log('No username available, using placeholder');
-    return PROFILE_PLACEHOLDER;
-  })();
-
-  console.log('Profile image source:', profileImageSource);
+  // TODO: Re-enable profile picture loading when backend is fixed
+  // For now, always use placeholder to avoid 404/500 errors
+  const profileImageSource = PROFILE_PLACEHOLDER;
 
   // Handle selecting and uploading a new profile picture
   const handleChoosePhoto = async () => {
@@ -173,10 +162,9 @@ const ProfileMain: React.FC = () => {
 
       // Force reload user data
       await fetchUserData();
-      console.log('User data refreshed after upload');
 
-      // Force a re-render by updating state
-      setUploading(false); // This will trigger a re-render
+      // Reset error state so we try loading the new image
+      setProfileImageLoadError(false);
 
       await fetchData();
       Alert.alert('Success', 'Profile picture updated');
@@ -201,27 +189,14 @@ const ProfileMain: React.FC = () => {
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
       {/* Profile Picture */}
-      <TouchableOpacity style={styles.profilePicWrapper} onPress={handleChoosePhoto} disabled={uploading}>
+      <TouchableOpacity style={[styles.profilePicWrapper, { borderColor: colors.backgroundSecondary, backgroundColor: colors.backgroundSecondary }]} onPress={handleChoosePhoto} disabled={uploading}>
         <Image
           source={profileImageSource}
           style={styles.profilePic}
-          onError={(error) => {
-            console.error('Profile image loading error:', error.nativeEvent);
-            // On error, fall back to placeholder image
-            if (error.nativeEvent.error) {
-              console.log('Falling back to placeholder image');
-              // Force a re-render with placeholder
-              setProfileImageLoadError(true);
-            }
-          }}
-          onLoad={() => {
-            console.log('Profile image loaded successfully');
-            setProfileImageLoadError(false);
-          }}
-          // Force image refresh on each render
-          key={Date.now()}
+          onError={() => setProfileImageLoadError(true)}
+          onLoad={() => setProfileImageLoadError(false)}
         />
         {uploading && (
           <View style={[StyleSheet.absoluteFill, styles.uploadingOverlay]}>
@@ -229,13 +204,13 @@ const ProfileMain: React.FC = () => {
           </View>
         )}
       </TouchableOpacity>
-      <Text style={styles.title}>{t('profile.myProfile')}</Text>
+      <Text style={[styles.title, textStyle, { color: colors.primary }]}>{t('profile.myProfile')}</Text>
       <View style={styles.infoContainer}>
-        <Text style={styles.infoText}><Text style={styles.infoLabel}>{t('profile.username')}:</Text> {userData?.username || t('common.loading')}</Text>
+        <Text style={[styles.infoText, textStyle, { color: colors.textPrimary }]}><Text style={[styles.infoLabel, { color: colors.primary }]}>{t('profile.username')}:</Text> {userData?.username || t('common.loading')}</Text>
         {editingBio ? (
           <View style={{ width:'100%', alignItems:'center', marginBottom: spacing.sm }}>
             <TextInput
-              style={[styles.input, {height:80}]}
+              style={[styles.input, {height:80, color: colors.textPrimary, borderColor: colors.lightGray, backgroundColor: colors.background}]}
               multiline
               value={bioInput}
               onChangeText={setBioInput}
@@ -243,23 +218,23 @@ const ProfileMain: React.FC = () => {
               placeholderTextColor={colors.textSecondary}
             />
             <View style={{flexDirection:'row', marginTop: spacing.xs}}>
-              <TouchableOpacity style={[styles.saveButton,{marginRight: spacing.sm}]} onPress={async ()=>{
+              <TouchableOpacity style={[styles.saveButton, {marginRight: spacing.sm, backgroundColor: colors.primary}]} onPress={async ()=>{
                 try{
                   await profileService.updateBio(userData!.username,bioInput);
                   setBio(bioInput);
                   setEditingBio(false);
                 }catch(err){Alert.alert('Error','Could not update bio');}
               }}>
-                <Text style={styles.logoutButtonText}>{t('common.save')}</Text>
+                <Text style={[styles.logoutButtonText, { color: colors.textOnPrimary }]}>{t('common.save')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.logoutButton} onPress={()=>{setEditingBio(false);}}>
-                <Text style={styles.logoutButtonText}>{t('common.cancel')}</Text>
+              <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={()=>{setEditingBio(false);}}>
+                <Text style={[styles.logoutButtonText, { color: colors.textOnPrimary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={{alignItems:'center', marginBottom: spacing.sm}}>
-            <Text style={styles.bioText}>{bio || t('profile.bio')}</Text>
+            <Text style={[styles.bioText, { color: colors.textPrimary }]}>{bio || t('profile.bio')}</Text>
             <TouchableOpacity
               style={{minHeight: MIN_TOUCH_TARGET, justifyContent: 'center'}}
               onPress={()=>{setBioInput(bio); setEditingBio(true);}}
@@ -270,16 +245,32 @@ const ProfileMain: React.FC = () => {
         )}
 
         {/* Language Selector */}
-        <View style={styles.languageSection}>
-          <Text style={styles.infoLabel}>{t('profile.language')}:</Text>
+        <View style={[styles.languageSection, { backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.infoLabel, { color: colors.primary }]}>{t('profile.language')}:</Text>
           <TouchableOpacity
-            style={styles.languageButton}
+            style={[styles.languageButton, { backgroundColor: colors.background, borderColor: colors.primary }]}
             onPress={() => setLanguageModalVisible(true)}
           >
-            <Text style={styles.languageButtonText}>
+            <Text style={[styles.languageButtonText, { color: colors.primary }]}>
               {LANGUAGES.find(lang => lang.code === i18n.language)?.nativeName || 'English'}
             </Text>
-            <Text style={styles.languageArrow}>▼</Text>
+            <Text style={[styles.languageArrow, { color: colors.primary }]}>▼</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Theme Selector */}
+        <View style={[styles.languageSection, { backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.infoLabel, { color: colors.primary }]}>{t('profile.theme')}:</Text>
+          <TouchableOpacity
+            style={[styles.languageButton, { backgroundColor: colors.background, borderColor: colors.primary }]}
+            onPress={() => setThemeModalVisible(true)}
+          >
+            <Text style={[styles.languageButtonText, { color: colors.primary }]}>
+              {themeMode === 'light' ? t('profile.themeLight') :
+               themeMode === 'dark' ? t('profile.themeDark') :
+               t('profile.themeSystem')}
+            </Text>
+            <Text style={[styles.languageArrow, { color: colors.primary }]}>▼</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -306,9 +297,19 @@ const ProfileMain: React.FC = () => {
                   i18n.language === language.code && styles.languageOptionSelected
                 ]}
                 onPress={async () => {
-                  await changeLanguage(language.code);
+                  const currentIsRTL = I18nManager.isRTL;
+                  const newIsRTL = isRTL(language.code);
+
                   setLanguageModalVisible(false);
-                  Alert.alert(t('common.success'), `${t('profile.language')}: ${language.nativeName}`);
+
+                  // If switching between RTL and LTR, auto-restart will happen
+                  if (currentIsRTL !== newIsRTL) {
+                    // changeLanguage will auto-restart the app
+                    await changeLanguage(language.code, true);
+                  } else {
+                    await changeLanguage(language.code, false);
+                    Alert.alert(t('common.success'), `${t('profile.language')}: ${language.nativeName}`);
+                  }
                 }}
               >
                 <Text style={[
@@ -332,10 +333,59 @@ const ProfileMain: React.FC = () => {
         </TouchableOpacity>
       </Modal>
 
+      {/* Theme Selection Modal */}
+      <Modal
+        visible={themeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setThemeModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setThemeModalVisible(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>{t('profile.selectTheme')}</Text>
+            {THEME_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.mode}
+                style={[
+                  styles.languageOption,
+                  { backgroundColor: colors.backgroundSecondary },
+                  themeMode === option.mode && [styles.languageOptionSelected, { backgroundColor: colors.primary }]
+                ]}
+                onPress={async () => {
+                  setThemeModalVisible(false);
+                  await setThemeMode(option.mode);
+                }}
+              >
+                <Text style={[
+                  styles.languageOptionText,
+                  { color: colors.textPrimary },
+                  themeMode === option.mode && [styles.languageOptionTextSelected, { color: colors.textOnPrimary }]
+                ]}>
+                  {t(option.labelKey)}
+                </Text>
+                {themeMode === option.mode && (
+                  <Text style={[styles.checkmark, { color: colors.textOnPrimary }]}>✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.lightGray }]}
+              onPress={() => setThemeModalVisible(false)}
+            >
+              <Text style={[styles.modalCloseButtonText, { color: colors.textSecondary }]}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Progress Chart Section */}
-      <View style={styles.cardSection}>
-        <Text style={styles.sectionTitle}>{t('home.wasteHistory')}</Text>
-        <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center' }}>
+      <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('home.wasteHistory')}</Text>
+        <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, alignItems: 'center' }}>
           <View style={{ width: chartWidth, alignItems: 'center' }}>
             <BarChart
               data={{
@@ -345,13 +395,13 @@ const ProfileMain: React.FC = () => {
               width={chartWidth}
               height={220}
               chartConfig={{
-                ...chartConfig,
+                ...getChartConfig(colors, isDarkMode),
                 propsForLabels: { fontSize: 12 },
               }}
               verticalLabelRotation={15}
               showValuesOnTopOfBars
               fromZero
-              style={{ ...styles.chart, marginBottom: 12 }}
+              style={{ ...styles.chart, marginBottom: spacing.sm + 4 }}
               yAxisLabel=""
               yAxisSuffix="kg"
             />
@@ -417,7 +467,7 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
   },
   container: {
     flex: 1,
@@ -434,11 +484,11 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     width: '100%',
-    backgroundColor: colors.background,
+    backgroundColor: defaultColors.background,
     borderRadius: 16,
     padding: spacing.lg,
     marginVertical: spacing.sm,
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -452,11 +502,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: spacing.sm,
     borderWidth: 2,
-    borderColor: colors.backgroundSecondary,
-    backgroundColor: colors.backgroundSecondary,
+    borderColor: defaultColors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -470,7 +520,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h2,
-    color: colors.primary,
+    color: defaultColors.primary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
@@ -482,26 +532,26 @@ const styles = StyleSheet.create({
   infoText: {
     ...typography.body,
     marginBottom: spacing.xs,
-    color: colors.textPrimary,
+    color: defaultColors.textPrimary,
     textAlign: 'center',
   },
   infoLabel: {
     fontWeight: 'bold',
-    color: colors.primary,
+    color: defaultColors.primary,
   },
   sectionTitle: {
     ...typography.h3,
-    color: colors.primary,
+    color: defaultColors.primary,
     textAlign: 'left',
     marginBottom: spacing.md,
   },
   cardSection: {
     width: '100%',
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
     borderRadius: 14,
     padding: spacing.md,
     marginBottom: spacing.md,
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -518,11 +568,11 @@ const styles = StyleSheet.create({
   achievementItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: defaultColors.background,
     borderRadius: 10,
     padding: spacing.sm,
     marginBottom: spacing.sm,
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -532,7 +582,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
@@ -546,21 +596,21 @@ const styles = StyleSheet.create({
   achievementTitle: {
     ...typography.body,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: defaultColors.primary,
     marginBottom: 2,
   },
   achievementDescription: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
     marginBottom: 2,
   },
   achievementDate: {
     ...typography.caption,
-    color: colors.gray,
+    color: defaultColors.gray,
   },
   noAchievements: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: spacing.sm,
@@ -577,17 +627,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: 6,
-    backgroundColor: colors.error,
+    backgroundColor: defaultColors.error,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoutButtonText: {
     ...typography.button,
-    color: colors.textOnPrimary,
+    color: defaultColors.textOnPrimary,
   },
   bioText: {
     ...typography.body,
-    color: colors.textPrimary,
+    color: defaultColors.textPrimary,
     marginBottom: spacing.xs,
   },
   input: {
@@ -599,7 +649,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -607,7 +657,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 16,
     padding: 16,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -615,24 +665,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.background,
+    backgroundColor: defaultColors.background,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: defaultColors.primary,
     marginTop: 8,
     minWidth: 200,
     minHeight: MIN_TOUCH_TARGET,
   },
   languageButtonText: {
     ...typography.body,
-    color: colors.primary,
+    color: defaultColors.primary,
     fontWeight: '600',
   },
   languageArrow: {
     fontSize: 12,
-    color: colors.primary,
+    color: defaultColors.primary,
     marginLeft: 8,
   },
   modalOverlay: {
@@ -642,7 +692,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: defaultColors.background,
     borderRadius: 16,
     padding: 24,
     width: '80%',
@@ -650,7 +700,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...typography.h3,
-    color: colors.primary,
+    color: defaultColors.primary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -662,29 +712,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: defaultColors.backgroundSecondary,
     minHeight: MIN_TOUCH_TARGET,
   },
   languageOptionSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
   },
   languageOptionText: {
     ...typography.body,
-    color: colors.textPrimary,
+    color: defaultColors.textPrimary,
   },
   languageOptionTextSelected: {
-    color: colors.textOnPrimary,
+    color: defaultColors.textOnPrimary,
     fontWeight: '600',
   },
   checkmark: {
     fontSize: 20,
-    color: colors.textOnPrimary,
+    color: defaultColors.textOnPrimary,
   },
   modalCloseButton: {
     marginTop: 16,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
     borderRadius: 8,
     alignItems: 'center',
     minHeight: MIN_TOUCH_TARGET,
@@ -692,7 +742,7 @@ const styles = StyleSheet.create({
   },
   modalCloseButtonText: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: defaultColors.textSecondary,
     fontWeight: '600',
   },
 });

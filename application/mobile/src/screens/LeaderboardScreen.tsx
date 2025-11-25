@@ -12,21 +12,19 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { leaderboardService } from '../services/api';
+import { leaderboardService, getProfilePictureUrl } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 
-const DEFAULT_PROFILE_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541';
-
 interface LeaderboardUser {
   rank: number;
   username: string;
   total_waste: string;
-  profile_picture?: string;
   points: number;
+  profile_picture?: string;
   isCurrentUser?: boolean;
 }
 
@@ -74,8 +72,8 @@ export const LeaderboardScreen: React.FC = () => {
         rank: user.rank,
         username: user.username,
         total_waste: user.total_waste,
-        profile_picture: user.profile_picture || DEFAULT_PROFILE_IMAGE,
         points: user.points || 0,
+        profile_picture: user.profile_picture,
         isCurrentUser: false,
       }));
 
@@ -87,8 +85,8 @@ export const LeaderboardScreen: React.FC = () => {
           rank: data.current_user.rank,
           username: data.current_user.username,
           total_waste: data.current_user.total_waste,
-          profile_picture: data.current_user.profile_picture || DEFAULT_PROFILE_IMAGE,
           points: data.current_user.points || 0,
+          profile_picture: data.current_user.profile_picture,
           isCurrentUser: true,
         });
       } else {
@@ -162,31 +160,33 @@ export const LeaderboardScreen: React.FC = () => {
   };
 
   // Render leaderboard item
-  const renderLeaderboardItem = ({ item, index }: { item: LeaderboardUser; index: number }) => (
-    <View style={[styles.leaderboardRow, getUserRowStyle(item.isCurrentUser || false, index)]}>
-      <View style={styles.rankColumn}>
-        <Text style={[
-          styles.rankText,
-          { fontSize: (item.rank <= 3) ? 24 : 16 }
-        ]}>
-          {getRankDisplay(item.rank)}
-        </Text>
-      </View>
-      
-      <View style={styles.profileColumn}>
-        <TouchableOpacity
-          onPress={() => handleProfileClick(item.username)}
-          style={styles.profileImageContainer}
-        >
-          <Image
-            source={{ uri: item.profile_picture }}
-            style={styles.profileImage}
-            onError={() => {
-              console.log('Failed to load profile image');
-            }}
-          />
-        </TouchableOpacity>
-      </View>
+  const renderLeaderboardItem = ({ item, index }: { item: LeaderboardUser; index: number }) => {
+    // TODO: Re-enable profile picture loading when backend is fixed
+    const profileImageSource = require('../assets/profile_placeholder.png');
+
+    return (
+      <View style={[styles.leaderboardRow, getUserRowStyle(item.isCurrentUser || false, index)]}>
+        <View style={styles.rankColumn}>
+          <Text style={[
+            styles.rankText,
+            { fontSize: (item.rank <= 3) ? 24 : 16 }
+          ]}>
+            {getRankDisplay(item.rank)}
+          </Text>
+        </View>
+
+        <View style={styles.profileColumn}>
+          <TouchableOpacity
+            onPress={() => handleProfileClick(item.username)}
+            style={styles.profileImageContainer}
+          >
+            <Image
+              source={profileImageSource}
+              style={styles.profileImage}
+              defaultSource={require('../assets/profile_placeholder.png')}
+            />
+          </TouchableOpacity>
+        </View>
       
       <View style={styles.usernameColumn}>
         <Text style={[
@@ -205,12 +205,16 @@ export const LeaderboardScreen: React.FC = () => {
         <Text style={styles.pointsText}>{item.points}</Text>
       </View>
     </View>
-  );
+    );
+  };
 
   // Render current user row
   const renderCurrentUserRow = () => {
     if (!currentUser) return null;
-    
+
+    // TODO: Re-enable profile picture loading when backend is fixed
+    const currentUserProfileSource = require('../assets/profile_placeholder.png');
+
     return (
       <View style={styles.currentUserSection}>
         <Text style={styles.currentUserTitle}>{t('leaderboard.yourRanking')}</Text>
@@ -223,18 +227,16 @@ export const LeaderboardScreen: React.FC = () => {
               {getRankDisplay(currentUser.rank)}
             </Text>
           </View>
-          
+
           <View style={styles.profileColumn}>
             <TouchableOpacity
               onPress={() => handleProfileClick(currentUser.username)}
               style={styles.profileImageContainer}
             >
               <Image
-                source={{ uri: currentUser.profile_picture }}
+                source={currentUserProfileSource}
                 style={styles.profileImage}
-                onError={() => {
-                  console.log('Failed to load profile image');
-                }}
+                defaultSource={require('../assets/profile_placeholder.png')}
               />
             </TouchableOpacity>
           </View>
@@ -331,11 +333,9 @@ export const LeaderboardScreen: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={styles.modalUserInfo}>
+              {/* TODO: Re-enable profile picture loading when backend is fixed */}
               <Image
-                source={{ 
-                  uri: leaderboard.find(u => u.username === selectedUserBio?.username)?.profile_picture || 
-                       (currentUser && currentUser.username === selectedUserBio?.username ? currentUser.profile_picture : DEFAULT_PROFILE_IMAGE)
-                }}
+                source={require('../assets/profile_placeholder.png')}
                 style={styles.modalProfileImage}
               />
               <View style={styles.modalUserDetails}>

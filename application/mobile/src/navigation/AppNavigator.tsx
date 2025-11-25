@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -16,6 +16,7 @@ import { UserModeration } from '../screens/UserModeration';
 import { ChallengeModeration } from '../screens/ChallengeModeration';
 import { CommentModeration } from '../screens/CommentModeration';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
 import { Image } from 'react-native';
@@ -34,7 +35,8 @@ const iconMap: Record<string, any> = {
 
 const MainTabs = () => {
   const { t } = useTranslation();
-  
+  const { colors, isDarkMode } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -42,21 +44,22 @@ const MainTabs = () => {
         tabBarIcon: ({ size, focused }) => (
           <Image
             source={iconMap[route.name]}
-            style={{ 
-              width: size, 
+            style={{
+              width: size,
               height: size,
               opacity: focused ? 1 : 0.6,
+              tintColor: focused ? colors.primary : colors.textSecondary,
             }}
             resizeMode="contain"
             accessibilityLabel={`${route.name} tab`}
           />
         ),
-        tabBarActiveTintColor: '#228B22',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: 'white',
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: colors.lightGray,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
@@ -133,9 +136,35 @@ const AuthStack = () => (
 
 export const AppNavigator = () => {
   const { isAuthenticated, isAdmin } = useAuth();
+  const { colors, isDarkMode } = useTheme();
+
+  // Custom navigation themes
+  const customLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.background,
+      text: colors.textPrimary,
+      border: colors.lightGray,
+    },
+  };
+
+  const customDarkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.background,
+      text: colors.textPrimary,
+      border: colors.lightGray,
+    },
+  };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={isDarkMode ? customDarkTheme : customLightTheme}>
       {isAuthenticated ? (
         <RootStack.Navigator 
           screenOptions={{ 

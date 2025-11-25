@@ -155,8 +155,6 @@ export const AchievementsScreen: React.FC = () => {
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
         />
       )}
 

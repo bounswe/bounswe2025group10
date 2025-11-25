@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, FlatList, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, ActivityIndicator, FlatList, RefreshControl, Dimensions, Alert } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { API_URL, profilePublicService } from '../services/api';
+import { profilePublicService, postService, getProfilePictureUrl } from '../services/api';
 import { colors, spacing, typography } from '../utils/theme';
-import api from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 
@@ -25,14 +25,13 @@ export const OtherUserProfileScreen: React.FC = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
-  const getProfilePictureUrl = (u: string) => `${API_URL}/api/profile/${u}/picture/`;
-
   const fetchBio = useCallback(async () => {
     try {
       const data = await profilePublicService.getUserBio(username);
       setBio(data.bio || '');
     } catch (error) {
       console.warn('Error fetching user bio:', error);
+      Alert.alert('Error', 'Failed to load user profile.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -42,13 +41,14 @@ export const OtherUserProfileScreen: React.FC = () => {
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
-      const response = await api.get('/api/posts/all/');
-      const allPosts = response.data.data || [];
+      const response = await postService.getAllPosts();
+      const allPosts = response.data || [];
       const userPosts = allPosts.filter((p: any) => p.creator_username === username);
       setPosts(userPosts);
     } catch (error) {
       console.warn('Error fetching posts for user:', error);
-    } finally {
+      Alert.alert('Error', 'Failed to load posts.');
+    } finally{
       setLoadingPosts(false);
     }
   }, [username]);
@@ -58,9 +58,9 @@ export const OtherUserProfileScreen: React.FC = () => {
     fetchPosts();
   }, [fetchBio, fetchPosts]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    Promise.all([fetchBio(), fetchPosts()]);
+    await Promise.all([fetchBio(), fetchPosts()]);
   }, [fetchBio, fetchPosts]);
 
   if (loading) {
@@ -73,7 +73,8 @@ export const OtherUserProfileScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <Image source={{ uri: getProfilePictureUrl(username) }} style={styles.profilePic} defaultSource={PROFILE_PLACEHOLDER} />
+      {/* TODO: Re-enable profile picture loading when backend is fixed */}
+      <Image source={PROFILE_PLACEHOLDER} style={styles.profilePic} />
       <Text style={styles.username}>{username}</Text>
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
       <Text style={[styles.sectionTitle, { alignSelf: 'flex-start' }]}>Posts</Text>
@@ -97,14 +98,21 @@ export const OtherUserProfileScreen: React.FC = () => {
   };
 
   return (
-    <FlatList
-      style={{ backgroundColor: colors.backgroundSecondary }}
-      contentContainerStyle={styles.container}
-      data={loadingPosts ? [] : posts}
-      keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-      renderItem={renderPost}
-      ListHeaderComponent={renderHeader}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} />
+    <ScreenWrapper
+      title={`${username}'s Profile`}
+      scrollable={false}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
+      <FlatList
+        style={{ backgroundColor: colors.backgroundSecondary }}
+        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        data={loadingPosts ? [] : posts}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        renderItem={renderPost}
+        ListHeaderComponent={renderHeader}
+      />
+    </ScreenWrapper>
   );
 };
 

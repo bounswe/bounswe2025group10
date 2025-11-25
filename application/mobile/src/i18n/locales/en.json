@@ -48,7 +48,15 @@
       "PLASTIC": "Plastic",
       "PAPER": "Paper",
       "GLASS": "Glass",
-      "METAL": "Metal"
+      "METAL": "Metal",
+      "ELECTRONIC": "Electronic",
+      "ORGANIC": "Organic",
+      "OIL_FATS": "Oil",
+      "OILFATS": "Oil",
+      "OIL&FATS": "Oil",
+      "TEXTILE": "Textile",
+      "BATTERY": "Battery",
+      "OTHER": "Other"
     }
   },
   "profile": {
@@ -62,6 +70,11 @@
     "achievements": "Achievements",
     "language": "Language",
     "selectLanguage": "Select Language",
+    "theme": "Theme",
+    "selectTheme": "Select Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System Default",
     "logout": "Logout",
     "saveChanges": "Save Changes",
     "uploadPhoto": "Upload Photo",

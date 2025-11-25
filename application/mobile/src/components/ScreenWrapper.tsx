@@ -8,7 +8,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import { AppHeader } from './AppHeader';
-import { colors, spacing } from '../utils/theme';
+import { colors as defaultColors, spacing } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
@@ -39,6 +40,8 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   accessibilityLabel,
   testID,
 }) => {
+  const { colors } = useTheme();
+
   const content = (
     <View style={styles.content}>
       {children}
@@ -47,7 +50,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
 
   const scrollableContent = scrollable ? (
     <ScrollView
-      style={styles.scrollView}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -82,7 +85,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   );
 
   return (
-    <View style={styles.container} testID={testID}>
+    <View style={[styles.container, { backgroundColor: colors.background }]} testID={testID}>
       <AppHeader
         title={title}
         showBackButton={showBackButton}
@@ -99,7 +102,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
   },
   scrollView: {
     flex: 1,

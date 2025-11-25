@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {colors, spacing, typography, commonStyles} from '../../utils/theme';
+import {useRTL} from '../../hooks/useRTL';
 import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
 import {authService} from '../../services/api';
 import {useAuth} from '../../context/AuthContext';
@@ -21,6 +22,7 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const {t} = useTranslation();
+  const {textStyle} = useRTL();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -111,11 +113,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('auth.login')}</Text>
-      <Text style={styles.subtitle}>{jokeSetup || ''}</Text>
+      <Text style={[styles.title, textStyle]}>{t('auth.login')}</Text>
+      <Text style={[styles.subtitle, textStyle]}>{jokeSetup || ''}</Text>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, textStyle]}
         placeholder={t('auth.email')}
         placeholderTextColor={colors.textSecondary}
         value={email}
@@ -125,7 +127,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       />
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, textStyle]}
         placeholder={t('auth.password')}
         placeholderTextColor={colors.textSecondary}
         value={password}
@@ -147,9 +149,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       {/* Random joke section */}
       {jokeSetup ? (
         <View style={styles.jokeContainer}>
-          <Text style={styles.jokeSetup}>{jokeSetup}</Text>
+          <Text style={[styles.jokeSetup, textStyle]}>{jokeSetup}</Text>
           {jokePunchline ? (
-            <Text style={styles.jokePunchline}>{jokePunchline}</Text>
+            <Text style={[styles.jokePunchline, textStyle]}>{jokePunchline}</Text>
           ) : null}
         </View>
       ) : null}
@@ -157,7 +159,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
       <TouchableOpacity
         style={styles.signupLink}
         onPress={() => navigation.navigate('Signup')}>
-        <Text style={styles.signupText}>
+        <Text style={[styles.signupText, textStyle]}>
           {t('auth.dontHaveAccount')} <Text style={styles.signupTextBold}>{t('auth.signup')}</Text>
         </Text>
       </TouchableOpacity>

@@ -48,7 +48,15 @@
       "PLASTIC": "Plastik",
       "PAPER": "Kağıt",
       "GLASS": "Cam",
-      "METAL": "Metal"
+      "METAL": "Metal",
+      "ELECTRONIC": "Elektronik",
+      "ORGANIC": "Organik",
+      "OIL_FATS": "Yağ",
+      "OILFATS": "Yağ",
+      "OIL&FATS": "Yağ",
+      "TEXTILE": "Tekstil",
+      "BATTERY": "Pil",
+      "OTHER": "Diğer"
     }
   },
   "profile": {
@@ -62,6 +70,11 @@
     "achievements": "Başarımlar",
     "language": "Dil",
     "selectLanguage": "Dil Seç",
+    "theme": "Tema",
+    "selectTheme": "Tema Seç",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "themeSystem": "Sistem Varsayılanı",
     "logout": "Çıkış Yap",
     "saveChanges": "Değişiklikleri Kaydet",
     "uploadPhoto": "Fotoğraf Yükle",

@@ -1,4 +1,4 @@
-import {ViewStyle, TextStyle, PixelRatio} from 'react-native';
+import {ViewStyle, TextStyle, PixelRatio, I18nManager} from 'react-native';
 import {MIN_TOUCH_TARGET} from './accessibility';
 
 /**
@@ -8,7 +8,9 @@ import {MIN_TOUCH_TARGET} from './accessibility';
  * - Large text: 3:1
  * - UI components: 3:1
  */
-export const colors = {
+
+// Light theme colors
+export const lightColors = {
   // Primary colors - adjusted for better contrast
   primary: '#2E7D32', // Darker green for better contrast (was #4CAF50)
   primaryDark: '#1B5E20', // Even darker for emphasis
@@ -39,6 +41,44 @@ export const colors = {
   textDisabled: '#9E9E9E', // For disabled states
   textOnPrimary: '#FFFFFF', // White on primary green
 };
+
+// Dark theme colors - WCAG 2.1 AA compliant
+export const darkColors = {
+  // Primary colors - lighter for dark backgrounds
+  primary: '#66BB6A', // Lighter green for dark mode
+  primaryDark: '#4CAF50',
+  primaryLight: '#81C784',
+
+  // Base colors
+  white: '#FFFFFF',
+  black: '#000000',
+
+  // Gray scale - inverted for dark mode
+  darkGray: '#E0E0E0',
+  gray: '#B0B0B0',
+  lightGray: '#424242',
+
+  // Semantic colors - adjusted for dark backgrounds
+  error: '#EF5350', // Lighter red for dark mode
+  success: '#66BB6A',
+  warning: '#FFB74D', // Lighter orange
+  info: '#64B5F6', // Lighter blue
+
+  // Background variants
+  background: '#121212', // Material Design dark surface
+  backgroundSecondary: '#1E1E1E',
+
+  // Text colors with guaranteed contrast on dark
+  textPrimary: '#FFFFFF', // White on dark
+  textSecondary: '#B0B0B0', // 4.5:1+ on dark
+  textDisabled: '#757575',
+  textOnPrimary: '#000000', // Black on light primary
+};
+
+// Default colors (light theme) - for backward compatibility
+export const colors = lightColors;
+
+export type ThemeColors = typeof lightColors;
 
 /**
  * Consistent spacing scale
@@ -149,4 +189,68 @@ export const commonStyles = {
     fontSize: Math.round(16 * scale),
     fontWeight: '600' as TextStyle['fontWeight'],
   } as TextStyle,
+};
+
+/**
+ * RTL (Right-to-Left) utilities for Arabic and other RTL languages
+ * Note: These are static values computed at module load time.
+ * For dynamic RTL based on current language, use useRTL() hook or getRTLStyles()
+ */
+export const rtl = {
+  // Check if current layout is RTL (native level)
+  isRTL: I18nManager.isRTL,
+
+  // Get text alignment based on RTL
+  textAlign: (I18nManager.isRTL ? 'right' : 'left') as TextStyle['textAlign'],
+
+  // Get flex direction based on RTL
+  flexDirection: (I18nManager.isRTL ? 'row-reverse' : 'row') as ViewStyle['flexDirection'],
+
+  // Writing direction
+  writingDirection: (I18nManager.isRTL ? 'rtl' : 'ltr') as TextStyle['writingDirection'],
+};
+
+/**
+ * RTL-aware styles (static, based on native I18nManager.isRTL)
+ */
+export const rtlStyles = {
+  // Text that should align based on language direction
+  text: {
+    textAlign: rtl.textAlign,
+    writingDirection: rtl.writingDirection,
+  } as TextStyle,
+
+  // Row that should reverse in RTL
+  row: {
+    flexDirection: rtl.flexDirection,
+  } as ViewStyle,
+
+  // Standard row (always left-to-right, e.g., for icons + text)
+  rowLTR: {
+    flexDirection: 'row' as ViewStyle['flexDirection'],
+  } as ViewStyle,
+};
+
+/**
+ * Dynamic RTL styles based on language code (not native I18nManager)
+ * Use this when you need RTL to work immediately after language change
+ */
+const RTL_LANGUAGES = ['ar', 'he', 'fa', 'ur'];
+
+export const isRTLLanguage = (languageCode: string): boolean => {
+  return RTL_LANGUAGES.includes(languageCode);
+};
+
+export const getRTLStyles = (languageCode: string) => {
+  const isRTL = isRTLLanguage(languageCode);
+  return {
+    text: {
+      textAlign: (isRTL ? 'right' : 'left') as TextStyle['textAlign'],
+      writingDirection: (isRTL ? 'rtl' : 'ltr') as TextStyle['writingDirection'],
+    } as TextStyle,
+    row: {
+      flexDirection: (isRTL ? 'row-reverse' : 'row') as ViewStyle['flexDirection'],
+    } as ViewStyle,
+    isRTL,
+  };
 };

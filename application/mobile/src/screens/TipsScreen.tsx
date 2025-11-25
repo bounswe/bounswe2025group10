@@ -74,25 +74,31 @@ export const TipsScreen: React.FC = () => {
   };
 
   // Fetch tips
-  const fetchTips = useCallback(async () => {
-    if (!refreshing) setLoading(true);
+  const fetchTips = useCallback(async (isRefresh = false) => {
+    console.log('[TipsScreen] fetchTips called, isRefresh:', isRefresh);
+    if (!isRefresh) setLoading(true);
     setError(null);
     try {
       const response = await tipService.getAllTips();
-      setTips(response.data || []);
+      console.log('[TipsScreen] Got response:', response);
+      console.log('[TipsScreen] Tips data:', response?.data);
+      const tipsData = response?.data || [];
+      console.log('[TipsScreen] Setting tips, count:', tipsData.length);
+      setTips(tipsData);
     } catch (err: any) {
+      console.error('[TipsScreen] Error fetching tips:', err);
       setError(err.message);
-      Alert.alert('Error', 'Failed to fetch tips');
+      Alert.alert('Error', 'Failed to fetch tips: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, []);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchTips();
+    await fetchTips(true);
   }, [fetchTips]);
 
   // Create tip
@@ -165,6 +171,7 @@ export const TipsScreen: React.FC = () => {
 
   // Initial load
   useEffect(() => {
+    console.log('[TipsScreen] useEffect running, calling fetchTips');
     fetchTips();
   }, [fetchTips]);
 
@@ -269,26 +276,26 @@ export const TipsScreen: React.FC = () => {
       refreshing={refreshing}
       onRefresh={onRefresh}
       rightComponent={
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => setIsCreating(true)}
-            accessibilityLabel="Create new tip"
-            accessibilityRole="button"
-          >
-            <Text style={styles.createButtonText}>{t('common.submit')}</Text>
-          </TouchableOpacity>
-          <MoreDropdown
-            onTipsPress={handleTipsPress}
-            onAchievementsPress={handleAchievementsPress}
-            onLeaderboardPress={handleLeaderboardPress}
-            testID="tips-more-dropdown"
-          />
-        </View>
+        <MoreDropdown
+          onTipsPress={handleTipsPress}
+          onAchievementsPress={handleAchievementsPress}
+          onLeaderboardPress={handleLeaderboardPress}
+          testID="tips-more-dropdown"
+        />
       }
       testID="tips-screen"
       accessibilityLabel="Sustainability tips screen"
     >
+      {/* Submit button on the left */}
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={() => setIsCreating(true)}
+        accessibilityLabel="Create new tip"
+        accessibilityRole="button"
+      >
+        <Text style={styles.createButtonText}>+ {t('common.submit')}</Text>
+      </TouchableOpacity>
+
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : (
@@ -299,8 +306,6 @@ export const TipsScreen: React.FC = () => {
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
         />
       )}
 
@@ -450,19 +455,16 @@ export const TipsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   createButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: 8,
     minHeight: MIN_TOUCH_TARGET,
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginBottom: spacing.md,
   },
   createButtonText: {
     ...typography.button,

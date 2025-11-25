@@ -48,7 +48,15 @@
       "PLASTIC": "Plastique",
       "PAPER": "Papier",
       "GLASS": "Verre",
-      "METAL": "Métal"
+      "METAL": "Métal",
+      "ELECTRONIC": "Électronique",
+      "ORGANIC": "Organique",
+      "OIL_FATS": "Huile",
+      "OILFATS": "Huile",
+      "OIL&FATS": "Huile",
+      "TEXTILE": "Textile",
+      "BATTERY": "Pile",
+      "OTHER": "Autre"
     }
   },
   "profile": {
@@ -62,6 +70,11 @@
     "achievements": "Réalisations",
     "language": "Langue",
     "selectLanguage": "Sélectionner la langue",
+    "theme": "Thème",
+    "selectTheme": "Sélectionner le thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Par défaut système",
     "logout": "Déconnexion",
     "saveChanges": "Enregistrer les modifications",
     "uploadPhoto": "Télécharger une photo",
