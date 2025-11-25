@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { tipService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
@@ -459,6 +460,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   createButtonText: {
     ...typography.button,
@@ -519,6 +523,10 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     borderRadius: 20,
     backgroundColor: colors.lightGray,
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   reportButtonText: {
     fontSize: 16,
@@ -538,6 +546,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     marginRight: spacing.md,
     borderRadius: 8,
+    minHeight: MIN_TOUCH_TARGET,
   },
   actionButtonActive: {
     backgroundColor: colors.lightGray,
@@ -623,6 +632,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
     backgroundColor: colors.white,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cancelButtonText: {
     ...typography.button,
@@ -659,6 +671,8 @@ const styles = StyleSheet.create({
     borderColor: colors.lightGray,
     borderRadius: 8,
     marginBottom: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   reasonItemSelected: {
     borderColor: colors.primary,

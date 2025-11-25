@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,17 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../../utils/theme';
-import { authService } from '../../services/api';
-import { useTranslation } from 'react-i18next';
+import {colors, spacing, typography, commonStyles} from '../../utils/theme';
+import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
+import {authService} from '../../services/api';
+import {useTranslation} from 'react-i18next';
 
 interface SignupScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
-export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
-  const { t } = useTranslation();
+export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
+  const {t} = useTranslation();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +38,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await authService.signup({ email, username, password });
+      const response = await authService.signup({email, username, password});
 
       if (response.message === 'User created successfully.') {
         Alert.alert(t('common.success'), t('auth.signupSuccess'), [
@@ -51,7 +52,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       console.log('Signup error:', error.response?.data, error.message, error);
       Alert.alert(
         t('common.error'),
-        error.response?.data?.error || t('auth.invalidCredentials')
+        error.response?.data?.error || t('auth.invalidCredentials'),
       );
     } finally {
       setLoading(false);
@@ -66,6 +67,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder={t('auth.email')}
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -75,6 +77,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder={t('auth.username')}
+        placeholderTextColor={colors.textSecondary}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
@@ -83,6 +86,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder={t('auth.password')}
+        placeholderTextColor={colors.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -91,10 +95,9 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.textOnPrimary} />
         ) : (
           <Text style={styles.buttonText}>{t('auth.signup')}</Text>
         )}
@@ -102,8 +105,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
       <TouchableOpacity
         style={styles.loginLink}
-        onPress={() => navigation.navigate('Login')}
-      >
+        onPress={() => navigation.navigate('Login')}>
         <Text style={styles.loginText}>
           {t('auth.alreadyHaveAccount')} <Text style={styles.loginTextBold}>{t('auth.login')}</Text>
         </Text>
@@ -119,12 +121,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h1,
-    color: colors.primary,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginBottom: spacing.xl,
   },
   input: {
@@ -142,10 +144,12 @@ const styles = StyleSheet.create({
   loginLink: {
     marginTop: spacing.md,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   loginText: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   loginTextBold: {
     color: colors.primary,

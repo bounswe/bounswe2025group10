@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput, Modal } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { colors } from '../utils/theme';
+import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,10 +13,10 @@ import { useTranslation } from 'react-i18next';
 import { changeLanguage, LANGUAGES } from '../i18n';
 
 const chartConfig = {
-  backgroundGradientFrom: '#eafbe6',
-  backgroundGradientTo: '#eafbe6',
-  color: (opacity = 1) => `rgba(34, 139, 34, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  backgroundGradientFrom: colors.backgroundSecondary,
+  backgroundGradientTo: colors.backgroundSecondary,
+  color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // colors.primary
+  labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`, // colors.textPrimary
   barPercentage: 0.7,
   decimalPlaces: 0,
 };
@@ -232,16 +233,17 @@ const ProfileMain: React.FC = () => {
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}><Text style={styles.infoLabel}>{t('profile.username')}:</Text> {userData?.username || t('common.loading')}</Text>
         {editingBio ? (
-          <View style={{ width:'100%', alignItems:'center', marginBottom:12 }}>
+          <View style={{ width:'100%', alignItems:'center', marginBottom: spacing.sm }}>
             <TextInput
               style={[styles.input, {height:80}]}
               multiline
               value={bioInput}
               onChangeText={setBioInput}
               placeholder={t('profile.bio')}
+              placeholderTextColor={colors.textSecondary}
             />
-            <View style={{flexDirection:'row', marginTop:4}}>
-              <TouchableOpacity style={[styles.saveButton,{marginRight:8}]} onPress={async ()=>{
+            <View style={{flexDirection:'row', marginTop: spacing.xs}}>
+              <TouchableOpacity style={[styles.saveButton,{marginRight: spacing.sm}]} onPress={async ()=>{
                 try{
                   await profileService.updateBio(userData!.username,bioInput);
                   setBio(bioInput);
@@ -256,10 +258,13 @@ const ProfileMain: React.FC = () => {
             </View>
           </View>
         ) : (
-          <View style={{alignItems:'center', marginBottom:12}}>
+          <View style={{alignItems:'center', marginBottom: spacing.sm}}>
             <Text style={styles.bioText}>{bio || t('profile.bio')}</Text>
-            <TouchableOpacity onPress={()=>{setBioInput(bio); setEditingBio(true);}}>
-              <Text style={{color:'#228B22'}}>{t('profile.editProfile')}</Text>
+            <TouchableOpacity
+              style={{minHeight: MIN_TOUCH_TARGET, justifyContent: 'center'}}
+              onPress={()=>{setBioInput(bio); setEditingBio(true);}}
+            >
+              <Text style={{color: colors.primary, ...typography.body}}>{t('profile.editProfile')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -267,7 +272,7 @@ const ProfileMain: React.FC = () => {
         {/* Language Selector */}
         <View style={styles.languageSection}>
           <Text style={styles.infoLabel}>{t('profile.language')}:</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.languageButton}
             onPress={() => setLanguageModalVisible(true)}
           >
@@ -286,7 +291,7 @@ const ProfileMain: React.FC = () => {
         animationType="fade"
         onRequestClose={() => setLanguageModalVisible(false)}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setLanguageModalVisible(false)}
@@ -412,7 +417,7 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#eafbe6',
+    backgroundColor: colors.backgroundSecondary,
   },
   container: {
     flex: 1,
@@ -425,15 +430,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.lg,
   },
   mainContainer: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     borderRadius: 16,
-    padding: 20,
-    marginVertical: 10,
-    shadowColor: '#000',
+    padding: spacing.lg,
+    marginVertical: spacing.sm,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -445,13 +450,13 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 45,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: spacing.sm,
     borderWidth: 2,
-    borderColor: '#eafbe6',
-    backgroundColor: '#eafbe6',
+    borderColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -464,41 +469,39 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#228B22',
+    ...typography.h2,
+    color: colors.primary,
     textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   infoContainer: {
     width: '100%',
-    marginBottom: 18,
+    marginBottom: spacing.md,
     alignItems: 'center',
   },
   infoText: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#333',
+    ...typography.body,
+    marginBottom: spacing.xs,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   infoLabel: {
     fontWeight: 'bold',
-    color: '#228B22',
+    color: colors.primary,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#228B22',
+    ...typography.h3,
+    color: colors.primary,
     textAlign: 'left',
+    marginBottom: spacing.md,
   },
   cardSection: {
     width: '100%',
-    backgroundColor: '#f8fff6',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 14,
-    padding: 16,
-    marginBottom: 18,
-    shadowColor: '#000',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   chart: {
     borderRadius: 12,
@@ -515,11 +518,11 @@ const styles = StyleSheet.create({
   achievementItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -529,10 +532,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eafbe6',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.sm,
   },
   achievementIcon: {
     width: 32,
@@ -541,26 +544,26 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   achievementTitle: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: colors.primary,
     marginBottom: 2,
   },
   achievementDescription: {
-    fontSize: 13,
-    color: '#666',
+    ...typography.caption,
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   achievementDate: {
-    fontSize: 12,
-    color: '#888',
+    ...typography.caption,
+    color: colors.gray,
   },
   noAchievements: {
-    fontSize: 16,
-    color: '#666',
+    ...typography.body,
+    color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   uploadingOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -568,40 +571,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutButton: {
-    marginTop: 6,
+    marginTop: spacing.xs,
     alignSelf: 'flex-end',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     borderRadius: 6,
-    backgroundColor: '#ff4d4f',
+    backgroundColor: colors.error,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoutButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
+    ...typography.button,
+    color: colors.textOnPrimary,
   },
   bioText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 4,
+    ...typography.body,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   input: {
+    ...commonStyles.input,
     width: '100%',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
   },
   saveButton: {
-    padding: 10,
-    borderRadius: 4,
-    backgroundColor: '#228B22',
+    minHeight: MIN_TOUCH_TARGET,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   languageSection: {
     width: '100%',
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#f8fff6',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -609,23 +615,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#228B22',
+    borderColor: colors.primary,
     marginTop: 8,
     minWidth: 200,
+    minHeight: MIN_TOUCH_TARGET,
   },
   languageButtonText: {
-    fontSize: 16,
-    color: '#228B22',
+    ...typography.body,
+    color: colors.primary,
     fontWeight: '600',
   },
   languageArrow: {
     fontSize: 12,
-    color: '#228B22',
+    color: colors.primary,
     marginLeft: 8,
   },
   modalOverlay: {
@@ -635,16 +642,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: 24,
     width: '80%',
     maxWidth: 400,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#228B22',
+    ...typography.h3,
+    color: colors.primary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -656,34 +662,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: '#f8fff6',
+    backgroundColor: colors.backgroundSecondary,
+    minHeight: MIN_TOUCH_TARGET,
   },
   languageOptionSelected: {
-    backgroundColor: '#228B22',
+    backgroundColor: colors.primary,
   },
   languageOptionText: {
-    fontSize: 16,
-    color: '#333',
+    ...typography.body,
+    color: colors.textPrimary,
   },
   languageOptionTextSelected: {
-    color: '#fff',
+    color: colors.textOnPrimary,
     fontWeight: '600',
   },
   checkmark: {
     fontSize: 20,
-    color: '#fff',
+    color: colors.textOnPrimary,
   },
   modalCloseButton: {
     marginTop: 16,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.lightGray,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   modalCloseButtonText: {
-    fontSize: 16,
-    color: '#666',
+    ...typography.body,
+    color: colors.textSecondary,
     fontWeight: '600',
   },
 });

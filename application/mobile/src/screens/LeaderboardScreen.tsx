@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { leaderboardService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';

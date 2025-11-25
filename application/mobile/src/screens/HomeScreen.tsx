@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { useAuth } from '../context/AuthContext';
 import { wasteService, tipService, weatherService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
