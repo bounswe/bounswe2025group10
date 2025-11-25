@@ -3,30 +3,47 @@ import apiClient, { createAuthenticatedFetch, API_BASE_URL } from './api.js';
 
 export const postsService = {
   // Get all posts
-  getAllPosts: async (token) => {
+  getAllPosts: async (token, lang, pageSize) => {
     const authenticatedFetch = createAuthenticatedFetch(token);
-    const response = await authenticatedFetch('/api/posts/all/');
+    let url = '/api/posts/all/';
+    const params = [];
+    if (lang) params.push(`lang=${lang}`);
+    if (pageSize) params.push(`page_size=${pageSize}`);
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    const response = await authenticatedFetch(url);
     const result = await response.json();
     return result; // Return full paginated response
   },
 
   // Get posts from a specific URL (for pagination)
-  getPostsFromUrl: async (url, token) => {
+  getPostsFromUrl: async (url, token, lang, pageSize) => {
     const authenticatedFetch = createAuthenticatedFetch(token);
     // Extract path from full URL (e.g., "http://...api/posts/all/?page=2" -> "/api/posts/all/?page=2")
-    const path = url.includes('://') ? new URL(url).pathname + new URL(url).search : url;
+    let path = url.includes('://') ? new URL(url).pathname + new URL(url).search : url;
+    // Add lang and page_size parameters if not already in URL
+    const params = [];
+    if (lang && !path.includes('lang=')) params.push(`lang=${lang}`);
+    if (pageSize && !path.includes('page_size=')) params.push(`page_size=${pageSize}`);
+    if (params.length > 0) {
+      path += (path.includes('?') ? '&' : '?') + params.join('&');
+    }
     const response = await authenticatedFetch(path);
     const result = await response.json();
     return result;
   },
 
   // Create new post
-  createPost: async (postData, token) => {
+  createPost: async (postData, token, lang) => {
     const authenticatedFetch = createAuthenticatedFetch(token);
     const formData = new FormData();
     formData.append('text', postData.description);
     if (postData.image) {
       formData.append('image', postData.image);
+    }
+    if (lang) {
+      formData.append('lang', lang);
     }
 
     const response = await authenticatedFetch('/api/posts/create/', {

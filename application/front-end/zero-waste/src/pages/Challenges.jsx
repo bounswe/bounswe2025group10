@@ -11,7 +11,8 @@ import { challengesService } from "../services/challengesService";
 export default function Challenges() {
   const { token } = useAuth();
   const { currentTheme } = useTheme();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const [pageSize, setPageSize] = useState(21);
 
   const {
     data: challengesResponse,
@@ -20,7 +21,7 @@ export default function Challenges() {
     execute: refetchChallenges,
     setData: setChallengesResponse,
   } = useApi(
-    () => challengesService.getChallenges(token),
+    () => challengesService.getChallenges(token, language, pageSize),
     {
       initialData: { results: [] },
       showErrorToast: true,
@@ -75,11 +76,11 @@ export default function Challenges() {
     if (token) {
       fetchEnrolledChallengeIds();
     }
-  }, []);
+  }, [language, pageSize]);
 
   const fetchEnrolledChallengeIds = async () => {
     try {
-      const response = await challengesService.getEnrolledChallenges(token);
+      const response = await challengesService.getEnrolledChallenges(token, language, pageSize);
       const ids = response.results.map((entry) => entry.challenge);
       setEnrolledChallengeIds(ids);
     } catch (err) {
@@ -91,7 +92,7 @@ export default function Challenges() {
   const handleNextPage = async () => {
     if (challengesResponse?.next) {
       try {
-        const data = await challengesService.getChallengesFromUrl(challengesResponse.next, token);
+        const data = await challengesService.getChallengesFromUrl(challengesResponse.next, token, language, pageSize);
         setChallengesResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
@@ -103,13 +104,32 @@ export default function Challenges() {
   const handlePreviousPage = async () => {
     if (challengesResponse?.previous) {
       try {
-        const data = await challengesService.getChallengesFromUrl(challengesResponse.previous, token);
+        const data = await challengesService.getChallengesFromUrl(challengesResponse.previous, token, language, pageSize);
         setChallengesResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
         showToast(t('common.error', 'An error occurred'), "error");
       }
     }
+  };
+
+  // Calculate current page number from pagination URLs
+  const getCurrentPage = () => {
+    if (challengesResponse?.previous) {
+      const prevUrl = new URL(challengesResponse.previous, window.location.origin);
+      const prevPage = parseInt(prevUrl.searchParams.get('page') || '1');
+      return prevPage + 1;
+    } else if (challengesResponse?.next) {
+      return 1;
+    }
+    return 1;
+  };
+
+  const getTotalPages = () => {
+    if (challengesResponse?.count && pageSize) {
+      return Math.ceil(challengesResponse.count / pageSize);
+    }
+    return 1;
   };
 
   const handleCreateChallenge = async () => {
@@ -184,6 +204,33 @@ export default function Challenges() {
             {t('challenges.title', 'Challenges')}
           </h1>
           <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <label
+                className="text-sm font-medium"
+                style={{ color: currentTheme.text }}
+              >
+                {t('common.itemsPerPage', 'Items per page')}:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg px-3 py-1.5 text-sm border"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  color: currentTheme.text,
+                  borderColor: currentTheme.border
+                }}
+              >
+                <option value={3}>3</option>
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={12}>12</option>
+                <option value={15}>15</option>
+                <option value={18}>18</option>
+                <option value={21}>21</option>
+                <option value={24}>24</option>
+              </select>
+            </div>
             {token && (
               <button
                 onClick={() => setShowEnrolledOnly((prev) => !prev)}
@@ -306,7 +353,7 @@ export default function Challenges() {
 
                     {/* Footer */}
                     <div
-                      className="flex items-center justify-between border-t px-4 py-2 mt-auto"
+                      className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2 mt-auto"
                       style={{ borderColor: currentTheme.border }}
                     >
                       <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
@@ -316,7 +363,7 @@ export default function Challenges() {
                         <button
                           onClick={() => handleEnroll(challenge.id)}
                           disabled={enrolledChallengeIds.includes(challenge.id)}
-                          className="rounded-lg px-3 py-1 text-sm font-medium transition-all hover:opacity-80 disabled:cursor-not-allowed"
+                          className="rounded-lg px-2 py-1 text-xs font-medium transition-all hover:opacity-80 disabled:cursor-not-allowed whitespace-nowrap"
                           style={{
                             backgroundColor: enrolledChallengeIds.includes(challenge.id) ? currentTheme.secondary : currentTheme.secondary,
                             color: enrolledChallengeIds.includes(challenge.id) ? currentTheme.background : currentTheme.background,
@@ -334,7 +381,7 @@ export default function Challenges() {
         )}
 
         {/* Pagination Controls */}
-        {!isLoading && challenges.length > 0 && (challengesResponse?.next || challengesResponse?.previous) && (
+        {!isLoading && challenges.length > 0 && (
           <div className="flex justify-center items-center gap-4 mt-8 mb-4">
             <button
               onClick={handlePreviousPage}
@@ -347,9 +394,14 @@ export default function Challenges() {
             >
               ← {t('common.previous', 'Previous')}
             </button>
-            <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
-              {challengesResponse?.count ? `${challenges.length} of ${challengesResponse.count}` : ''}
-            </span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
+                {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
+              </span>
+              <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
+                {challengesResponse?.count ? `Total: ${challengesResponse.count}` : ''}
+              </span>
+            </div>
             <button
               onClick={handleNextPage}
               disabled={!challengesResponse?.next}

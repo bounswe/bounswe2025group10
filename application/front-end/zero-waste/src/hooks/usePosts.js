@@ -4,7 +4,7 @@ import { useAuth } from '../providers/AuthContext';
 import { postsService } from '../services/postsService';
 import { useApi } from './useApi';
 
-export const usePosts = () => {
+export const usePosts = (language, pageSize) => {
   const { token } = useAuth();
   const [savedPostIds, setSavedPostIds] = useState(new Set());
   const [postsData, setPostsData] = useState([]);
@@ -17,7 +17,7 @@ export const usePosts = () => {
     execute: fetchPosts,
     setData: setPostsResponse,
   } = useApi(
-    () => postsService.getAllPosts(token),
+    () => postsService.getAllPosts(token, language, pageSize),
     {
       initialData: { results: [] },
       showErrorToast: true,
@@ -41,7 +41,7 @@ export const usePosts = () => {
     loading: createLoading,
     execute: createPostApi,
   } = useApi(
-    (postData) => postsService.createPost(postData, token),
+    (postData) => postsService.createPost(postData, token, language),
     {
       showErrorToast: true, // Only show error toast, not success (we handle that in component)
       errorMessage: 'Failed to create post',
@@ -211,13 +211,13 @@ export const usePosts = () => {
     }
   };
 
-  // Load posts on mount
+  // Load posts on mount and when language or pageSize changes
   useEffect(() => {
     if (token) {
       fetchPosts();
       fetchSavedPosts();
     }
-  }, [token]);
+  }, [token, language, pageSize]);
 
   return {
     // Posts data
