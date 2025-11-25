@@ -36,9 +36,18 @@
     "adding": "Ajout...",
     "reset": "Réinitialiser",
     "report": "Signaler",
+    "reporting": "Signalement...",
+    "reportUser": "Signaler l'utilisateur",
+    "reportSuccess": "Utilisateur signalé avec succès",
     "next": "Suivant",
     "previous": "Précédent",
-    "total": "Total"
+    "total": "Total",
+    "reason": "Raison",
+    "reasonRequired": "Veuillez fournir une raison",
+    "enterReason": "Entrez la raison...",
+    "description": "Description",
+    "enterDescription": "Entrez la description...",
+    "loginRequired": "Veuillez vous connecter pour signaler"
   },
   "leaderboard": {
     "title": "🌿 Top 10 des champions zéro déchet",

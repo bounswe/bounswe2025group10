@@ -7,6 +7,7 @@ import AdminPanel from "./pages/admin/AdminPanel";
 import ChallengePanel from "./pages/admin/ChallengePanel";
 import CommentPanel from "./pages/admin/CommentPanel";
 import UserPanel from "./pages/admin/UserPanel";
+import ActivityPanel from "./pages/admin/ActivityPanel";
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
 import Profile from "./pages/profile/ProfilePage.jsx"
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/userPage" element={<UserPanel></UserPanel>} />
         <Route path="/challengePage" element={<ChallengePanel />} />
         <Route path="/commentPage" element={<CommentPanel />} />
+        <Route path="/activityPage" element={<ActivityPanel />} />
       </Route>
       
       

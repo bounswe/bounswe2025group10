@@ -36,9 +36,18 @@
     "adding": "Agregando...",
     "reset": "Restablecer",
     "report": "Reportar",
+    "reporting": "Reportando...",
+    "reportUser": "Reportar usuario",
+    "reportSuccess": "Usuario reportado exitosamente",
     "next": "Siguiente",
     "previous": "Anterior",
-    "total": "Total"
+    "total": "Total",
+    "reason": "Razón",
+    "reasonRequired": "Por favor proporcione una razón",
+    "enterReason": "Ingrese la razón...",
+    "description": "Descripción",
+    "enterDescription": "Ingrese la descripción...",
+    "loginRequired": "Por favor inicie sesión para reportar"
   },
   "leaderboard": {
     "title": "🌿 Los 10 mejores campeones de cero residuos",

@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../providers/ThemeContext";
 import { useLanguage } from "../../providers/LanguageContext";
+import { useAuth } from "../../providers/AuthContext";
+import { showToast } from "../../utils/toast";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const DEFAULT_PROFILE_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";
@@ -13,11 +15,17 @@ const DEFAULT_POST_IMAGE = "https://developers.elementor.com/docs/assets/img/ele
 export default function PublicProfile() {
   const { username } = useParams();
   const { currentTheme } = useTheme();
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
+  const { token, username: currentUsername } = useAuth();
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [achievements, setAchievements] = useState([]);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   // Fetch bio and avatar
   useEffect(() => {
@@ -27,6 +35,11 @@ export default function PublicProfile() {
         const bioRes = await fetch(`${API_BASE}/api/profile/${username}/bio/`);
         const bioData = await bioRes.json();
         setBio(bioData.bio || "");
+
+        // Store user ID for reporting
+        if (bioData.user_id) {
+          setUserId(bioData.user_id);
+        }
 
         try {
           const picRes = await fetch(`${API_BASE}/api/profile/${username}/picture/`);
@@ -71,6 +84,59 @@ export default function PublicProfile() {
     fetchAchievements();
   }, [username]);
 
+  // Report user function
+  const handleReportUser = async () => {
+    if (!token) {
+      showToast(t("common.loginRequired", "Please login to report"), "error");
+      return;
+    }
+
+    if (!reportReason.trim()) {
+      showToast(t("common.reasonRequired", "Please provide a reason"), "error");
+      return;
+    }
+
+    if (!userId) {
+      showToast(t("common.error", "User ID not found"), "error");
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      // Use the correct endpoint format: /api/<content_type>/<object_id>/report/
+      // Note: content_type should be lowercase model name "users"
+      const response = await fetch(`${API_BASE}/api/users/${userId}/report/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reason: reportReason,
+          description: reportDescription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Report user error response:", data);
+        throw new Error(data.detail || data.message || data.error || "Failed to report user");
+      }
+
+      showToast(t("common.reportSuccess", "User reported successfully"), "success");
+      setShowReportModal(false);
+      setReportReason("");
+      setReportDescription("");
+    } catch (error) {
+      console.error("Failed to report user:", error);
+      const errorMessage = error.message || t("common.error", "Failed to report user");
+      showToast(errorMessage, "error");
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   return (
     <Navbar>
       <motion.main
@@ -85,12 +151,27 @@ export default function PublicProfile() {
           </div>
         ) : (
           <div
-            className="max-w-xl mx-auto text-center border rounded-2xl shadow-sm p-8"
+            className="max-w-xl mx-auto text-center border rounded-2xl shadow-sm p-8 relative"
             style={{
               backgroundColor: currentTheme.background,
               borderColor: currentTheme.border
             }}
           >
+            {/* Report button - only show if viewing someone else's profile and user is logged in */}
+            {token && currentUsername !== username && (
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="absolute top-4 right-4 rounded-lg p-2 backdrop-blur-sm transition-opacity hover:opacity-100 opacity-60"
+                style={{
+                  backgroundColor: currentTheme.background + 'E6',
+                  border: `1px solid ${currentTheme.border}`,
+                }}
+                title={t('common.report', 'Report this user')}
+              >
+                <span className="text-sm">⚠️</span>
+              </button>
+            )}
+
             <div className="relative inline-block mb-6">
               <img
                 src={avatarUrl}
@@ -159,6 +240,96 @@ export default function PublicProfile() {
             </div>
           </div>
         )}
+
+        {/* Report User Modal */}
+        <AnimatePresence>
+          {showReportModal && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowReportModal(false)}
+            >
+              <motion.div
+                className="w-full max-w-md rounded-2xl border shadow-xl p-6"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="text-xl font-bold mb-4" style={{ color: currentTheme.text }}>
+                  {t("common.reportUser", "Report User")}
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium opacity-70 block mb-2" style={{ color: currentTheme.text }}>
+                      {t("common.reason", "Reason")} *
+                    </label>
+                    <input
+                      type="text"
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="w-full rounded-lg border p-3 bg-transparent focus:ring-2 outline-none"
+                      style={{
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                      placeholder={t("common.enterReason", "Enter reason...")}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium opacity-70 block mb-2" style={{ color: currentTheme.text }}>
+                      {t("common.description", "Description")}
+                    </label>
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-lg border p-3 bg-transparent focus:ring-2 outline-none resize-none"
+                      style={{
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                      placeholder={t("common.enterDescription", "Enter description...")}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => {
+                        setShowReportModal(false);
+                        setReportReason("");
+                        setReportDescription("");
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg border hover:opacity-70 transition-opacity"
+                      style={{
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    >
+                      {t("common.cancel", "Cancel")}
+                    </button>
+                    <button
+                      onClick={handleReportUser}
+                      disabled={isReporting || !reportReason.trim()}
+                      className="flex-1 px-4 py-2 rounded-lg text-white font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none"
+                      style={{ backgroundColor: "#dc2626" }}
+                    >
+                      {isReporting ? t("common.reporting", "Reporting...") : t("common.report", "Report")}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.main>
     </Navbar>
   );
