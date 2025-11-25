@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, FlatList, RefreshControl, Dimensions } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { API_URL, profilePublicService } from '../services/api';
-import { colors } from '../utils/theme';
+import { colors, spacing, typography } from '../utils/theme';
 import api from '../services/api';
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
@@ -96,7 +96,7 @@ export const OtherUserProfileScreen: React.FC = () => {
 
   return (
     <FlatList
-      style={{ backgroundColor: '#eafbe6' }}
+      style={{ backgroundColor: colors.backgroundSecondary }}
       contentContainerStyle={styles.container}
       data={loadingPosts ? [] : posts}
       keyExtractor={(item, index) => item.id?.toString() || index.toString()}
@@ -109,56 +109,54 @@ export const OtherUserProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#eafbe6',
+    padding: spacing.lg,
+    backgroundColor: colors.backgroundSecondary,
     flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eafbe6',
+    backgroundColor: colors.backgroundSecondary,
   },
   profilePic: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 16,
+    marginBottom: spacing.md,
     resizeMode: 'cover',
     backgroundColor: colors.lightGray,
   },
   username: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...typography.h2,
     color: colors.primary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   bio: {
-    fontSize: 16,
-    color: '#333',
+    ...typography.body,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...typography.h3,
     color: colors.primary,
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   postItem: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
     width: '100%',
   },
   postText: {
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 6,
+    ...typography.body,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
     textAlign: 'center',
   },
   postStatsRow: {
@@ -166,8 +164,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   postStat: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 12,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
   },
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import api from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -346,6 +347,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   createButtonText: {
     color: colors.white,
@@ -412,6 +416,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: 20,
     marginLeft: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeReactionButton: {
     backgroundColor: colors.lightGray,
@@ -454,6 +461,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginLeft: spacing.sm,
     marginTop: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalButtonText: {
     color: colors.white,
@@ -467,6 +477,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   commentsButtonText: {
     color: colors.primary,
@@ -495,6 +508,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   postCommentButtonText: {
     color: colors.white,

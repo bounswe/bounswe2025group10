@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { colors, spacing, typography } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
@@ -354,6 +355,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   approveButton: {
     backgroundColor: colors.success,
@@ -408,6 +411,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   retryButtonText: {
     ...typography.button,
