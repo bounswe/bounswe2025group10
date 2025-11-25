@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from datetime import timedelta
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +32,7 @@ SECRET_KEY = 'django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "192.168.1.155", "192.168.1.106"]
+ALLOWED_HOSTS = ["134.209.253.215", "localhost", '134-209-253-215.sslip.io', '127.0.0.1', '10.0.2.2', "209.38.114.201", "209-38-114-201.sslip.io", "zerowaste.ink"]
 
 
 # Application definition
@@ -41,14 +43,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
+    "api.apps.ApiConfig", 
     'challenges',
+    'notifications',
+    'channels',
+    'carbon',
     'django.contrib.auth',
     'django.contrib.admin',
-    # third-party apps
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    "django_filters",
+        'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +80,11 @@ CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 
+# Trust proxy headers for HTTPS detection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
 AUTH_USER_MODEL = 'api.Users'
 
 ROOT_URLCONF = 'project.urls'
@@ -91,6 +102,21 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 60,
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Zero Waste API',
+    'DESCRIPTION': 'API documentation for Zero Waste application',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SECURITY': [
+        {'BearerAuth': []},
+        {'TokenAuth': []},
+    ],
 }
 
 SIMPLE_JWT = {
@@ -184,3 +210,65 @@ if 'test' in sys.argv:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',
     }
+
+
+# Carbon emission factors (real values)
+# Local “Climatiq-style” emission factors (kg CO2e per kg or per item)
+# Highly reliable global-average landfill emission factors (kg CO2e per kg)
+LOCAL_EMISSION_FACTORS = {
+    # Plastic – inert in landfill; modern estimates: 0.009–0.033 kg/kg (DEFRA 2024, ADEME)
+    "waste-type_plastics-disposal_method_landfill": 0.02,
+
+    # Paper & cardboard – high methane generation; ~1.1–1.6 kg/kg (DEFRA 2025, EPA WARM)
+    "waste_type_paper_and_cardboard-disposal_method_landfill": 1.16,
+
+    # Glass – inert; ~0.009 kg/kg (DEFRA 2024 landfill factor)
+    "waste-type_glass-disposal_method_landfilled": 0.009,
+
+    # Metal (steel cans) – inert; ~0.009 kg/kg (DEFRA 2024)
+    "waste_type_scrap_metal_steel_cans-disposal_method_landfill": 0.009,
+
+    # Electronics (mixed WEEE) – inert unless containing refrigerants; ~0.021 kg/kg (DEFRA 2024)
+    "waste-type_weee_mixed-disposal_method_landfill": 0.021,
+
+    # Used vegetable cooking oil purification – LCA-based (Ecoinvent v3): ~1.1 kg/kg
+    "waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na": 1.10,
+
+    # Organic food & garden waste – high methane; ~0.656 kg/kg (DEFRA 2024)
+    "waste-type_mixed_food_and_organic_garden-disposal_method_landfill": 0.656,
+}
+
+
+CARBON_DECIMALS = 6
+
+WASTE_TYPE_TO_ACTIVITY_ID = {
+    'PLASTIC': 'waste-type_plastics-disposal_method_landfill',
+    'PAPER': 'waste_type_paper_and_cardboard-disposal_method_landfill',
+    'GLASS': 'waste-type_glass-disposal_method_landfilled',
+    'METAL': 'waste_type_scrap_metal_steel_cans-disposal_method_landfill',
+    'ELECTRONIC': 'waste-type_weee_mixed-disposal_method_landfill',
+    'OIL&FATS': 'waste_management-type_used_vegetable_cooking_oil_purified_treatment_of_used_vegetable_cooking_oil_purification-disposal_method_na',
+    'ORGANIC': 'waste-type_mixed_food_and_organic_garden-disposal_method_landfill',
+}
+
+# email settings for invitation emails
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp-relay.brevo.com"       
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "9c45cb001@smtp-brevo.com"
+EMAIL_HOST_PASSWORD = "bskyBVOhTWMa17c"
+DEFAULT_FROM_EMAIL = "no_reply@zerowaste.ink"
+
+
+#asgi settings
+ASGI_APPLICATION = "project.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # 'redis' = docker-compose service name
+        },
+    },
+}

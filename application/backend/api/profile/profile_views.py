@@ -8,10 +8,44 @@ from django.conf import settings
 from django.http import FileResponse
 from datetime import datetime
 import mimetypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 
 from api.models import Users
 
+@extend_schema(
+    summary="Upload profile picture",
+    description="Upload or update the profile picture for the authenticated user. Accepts JPEG/PNG files up to 5MB. Replaces existing profile picture if present.",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'image': {'type': 'string', 'format': 'binary', 'description': 'Profile picture image (JPEG/PNG, max 5MB)'}
+            },
+            'required': ['image']
+        }
+    },
+    responses={
+        200: OpenApiResponse(
+            description="Profile picture uploaded successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value={
+                        'message': 'Profile picture uploaded successfully',
+                        'data': {
+                            'profile_picture': 'http://localhost:8000/media/users/3/profile_20251122_143000.jpg'
+                        }
+                    }
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - no image provided or invalid file type/size"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+        500: OpenApiResponse(description="Internal server error")
+    },
+    tags=['Profile']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -72,10 +106,22 @@ def upload_profile_picture(request):
         request.user.profile_image = filepath.replace('\\', '/')  # Use forward slashes for URLs
         request.user.save(update_fields=['profile_image'])
         
+        # Build absolute HTTPS URL for profile picture
+        from django.conf import settings
+        profile_picture_url = None
+        if request.user.profile_image:
+            if request.user.profile_image.startswith(('http://', 'https://')):
+                profile_picture_url = request.user.profile_image
+            else:
+                media_url = request.build_absolute_uri(settings.MEDIA_URL)
+                if request.is_secure() and media_url.startswith('http://'):
+                    media_url = media_url.replace('http://', 'https://', 1)
+                profile_picture_url = f"{media_url.rstrip('/')}/{request.user.profile_image.lstrip('/')}"
+        
         return Response({
             'message': 'Profile picture uploaded successfully',
             'data': {
-                'profile_picture': request.user.profile_image_url
+                'profile_picture': profile_picture_url
             }
         }, status=status.HTTP_200_OK)
         
@@ -84,6 +130,68 @@ def upload_profile_picture(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema(
+    summary="Get or update user bio",
+    description="GET: Retrieve user bio (public, no authentication required). PUT: Update own bio (must be authenticated and can only update own bio).",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user'
+        )
+    ],
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'bio': {
+                    'type': 'string',
+                    'description': 'New bio text (max 500 characters)',
+                    'example': 'Environmental advocate passionate about zero waste living and sustainable practices.'
+                }
+            },
+            'required': ['bio']
+        }
+    },
+    examples=[
+        OpenApiExample(
+            'PUT Request',
+            value={'bio': 'Environmental advocate passionate about zero waste living and sustainable practices.'},
+            request_only=True
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'username': {'type': 'string'},
+                    'bio': {'type': 'string', 'nullable': True},
+                    'message': {'type': 'string'}
+                }
+            },
+            description="Bio retrieved or updated successfully",
+            examples=[
+                OpenApiExample(
+                    'GET Response',
+                    value={'username': 'john_doe', 'bio': 'Passionate about zero waste living'},
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'PUT Response',
+                    value={'message': 'Bio updated successfully.', 'bio': 'Updated bio text'}
+                )
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - no bio provided"),
+        401: OpenApiResponse(description="Unauthorized - authentication required for PUT"),
+        403: OpenApiResponse(description="Forbidden - can only update own bio"),
+        404: OpenApiResponse(description="User not found")
+    },
+    tags=['Profile']
+)
 @api_view(['GET', 'PUT'])
 @permission_classes([AllowAny])
 def user_bio(request, username):
@@ -114,6 +222,39 @@ def user_bio(request, username):
     return Response({'message': 'Bio updated successfully.', 'bio': user.bio}, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Download user profile picture",
+    description="Download the profile picture file for a specific user. Returns the actual image file (JPEG/PNG) as binary data with appropriate content-type headers. Use this endpoint to retrieve and display profile pictures.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user whose profile picture to download'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={'type': 'string', 'format': 'binary'},
+            description="Profile picture file (binary image data with content-type: image/jpeg or image/png)"
+        ),
+        404: OpenApiResponse(
+            description="User not found or no profile picture available",
+            examples=[
+                OpenApiExample(
+                    'User not found',
+                    value={'error': 'User not found.'}
+                ),
+                OpenApiExample(
+                    'No profile picture',
+                    value={'error': 'No profile picture found.'}
+                )
+            ]
+        )
+    },
+    tags=['Profile']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def download_profile_picture_public(request, username):

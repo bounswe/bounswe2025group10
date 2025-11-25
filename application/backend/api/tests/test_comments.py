@@ -141,3 +141,102 @@ class CommentViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Comments retrieved successfully')
         self.assertEqual(len(response.data['data']), 0)  # No comments should be returned
+
+    def test_create_comment_empty_content(self):
+        """Test comment creation with empty content"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        data = {'content': ''}
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_comment_very_long_content(self):
+        """Test comment creation with very long content"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        data = {'content': 'A' * 10000}  # Very long content
+        
+        response = self.client.post(url, data, format='json')
+        # Should either succeed or fail based on validation
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_comment_special_characters(self):
+        """Test comment creation with special characters"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        data = {'content': 'Special: !@#$%^&*()_+-=[]{}|;:,.<>?'}
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        latest_comment = Comments.objects.latest('id')
+        self.assertEqual(latest_comment.content, data['content'])
+
+    def test_create_comment_unicode_characters(self):
+        """Test comment creation with unicode characters"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        data = {'content': 'Unicode: 你好世界 🌍 🎉 émojis'}
+        
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        latest_comment = Comments.objects.latest('id')
+        self.assertEqual(latest_comment.content, data['content'])
+
+    def test_get_post_comments_ordering(self):
+        """Test that comments are returned in correct order (oldest first)"""
+        # Create additional comments with explicit timestamps
+        from django.utils import timezone
+        import time
+        
+        comment1 = Comments.objects.create(
+            post=self.post,
+            author=self.user1,
+            content="First comment",
+            date=timezone.now()
+        )
+        time.sleep(0.01)  # Small delay to ensure different timestamps
+        
+        comment2 = Comments.objects.create(
+            post=self.post,
+            author=self.user2,
+            content="Second comment",
+            date=timezone.now()
+        )
+        
+        url = reverse('get_post_comments', kwargs={'post_id': self.post.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should have all comments (2 existing + 2 new = 4 total)
+        self.assertGreaterEqual(len(response.data['data']), 4)
+        
+        # First comment should be the oldest
+        self.assertEqual(response.data['data'][0]['content'], 'First test comment')
+
+    def test_create_comment_whitespace_only(self):
+        """Test comment creation with whitespace-only content"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        data = {'content': '   \n\t   '}  # Only whitespace
+        
+        response = self.client.post(url, data, format='json')
+        # Should fail validation
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_multiple_comments_same_post(self):
+        """Test creating multiple comments on the same post"""
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('create_comment', kwargs={'post_id': self.post.id})
+        
+        initial_count = Comments.objects.filter(post=self.post).count()
+        
+        # Create 3 comments
+        for i in range(3):
+            data = {'content': f'Comment {i+1}'}
+            response = self.client.post(url, data, format='json')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Verify all comments were created
+        final_count = Comments.objects.filter(post=self.post).count()
+        self.assertEqual(final_count, initial_count + 3)

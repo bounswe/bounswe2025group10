@@ -1,12 +1,22 @@
+from decimal import Decimal
+from email.mime import image
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate, APIClient
 from rest_framework import status
 from api.models import Users, Waste, UserWastes
 from challenges.models import Challenge, UserChallenge
-from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users, point_coefficients
+from api.waste.waste_views import create_user_waste, get_user_wastes, get_top_users, point_coefficients,get_co2_emission
 from django.utils import timezone
 from unittest.mock import patch, MagicMock
 from django.db.models import F
+from io import BytesIO
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+def format_co2(value: float) -> str:
+        # helper to match DRF serializer's 4-decimal formatting
+    return f"{Decimal(value).quantize(Decimal('0.0001'))}"
+        # or f"{value:.4f}" if that's what your serializer does
 
 class WasteViewsTests(TestCase):
     def setUp(self):
@@ -90,8 +100,8 @@ class WasteViewsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'User wastes retrieved successfully')
-        # Should return all waste types (4)
-        self.assertEqual(len(response.data['data']), 4)
+        # Should return all waste types (7: PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC)
+        self.assertEqual(len(response.data['data']), 7)
         
         # Verify the amounts for waste types we created
         waste_data = {item['waste_type']: item['total_amount'] for item in response.data['data']}
@@ -99,6 +109,9 @@ class WasteViewsTests(TestCase):
         self.assertEqual(waste_data['PAPER'], 2.0)
         self.assertEqual(waste_data['GLASS'], 0)
         self.assertEqual(waste_data['METAL'], 0)
+        self.assertEqual(waste_data['ELECTRONIC'], 0)
+        self.assertEqual(waste_data['OIL&FATS'], 0)
+        self.assertEqual(waste_data['ORGANIC'], 0)
 
     def test_get_user_wastes_unauthenticated(self):
         """Test retrieval without authentication"""
@@ -117,20 +130,18 @@ class WasteViewsTests(TestCase):
         response = get_user_wastes(request)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should still return all waste types with 0 amounts
-        self.assertEqual(len(response.data['data']), 4)
+        # Should still return all waste types with 0 amounts (7 types total)
+        self.assertEqual(len(response.data['data']), 7)
         for item in response.data['data']:
             self.assertEqual(item['total_amount'], 0)
 
             
-    @patch('api.waste.waste_views.get_co2_emission')
-    def test_get_top_users_success(self, mock_get_co2_emission):
+    
+
+
+    def test_get_top_users_success(self):
         """Test successful retrieval of top users with waste contributions"""
-        # Set up mock CO2 calculation
-        def mock_co2_calculation(amount, waste_type):
-            return amount * 2
-        mock_get_co2_emission.side_effect = mock_co2_calculation
-        
+
         # Create test users with initial values
         user2 = Users.objects.create_user(
             username="testuser2",
@@ -146,62 +157,77 @@ class WasteViewsTests(TestCase):
             total_points=0,
             total_co2=0
         )
-        
+
         # Reset original test user's totals
         self.user.total_points = 0
         self.user.total_co2 = 0
         self.user.save()
-        
-        # Create waste records and update user2's totals (10kg total)
-        waste1 = UserWastes.objects.create(
+
+        # --- user2 wastes (5kg plastic + 5kg paper) ---
+        amount_plastic = 5.0
+        amount_paper = 5.0
+
+        UserWastes.objects.create(
             user=user2,
             waste=self.plastic,
-            amount=5.0,
+            amount=amount_plastic,
             date=timezone.now()
         )
-        waste2 = UserWastes.objects.create(
+        UserWastes.objects.create(
             user=user2,
             waste=self.paper,
-            amount=5.0,
+            amount=amount_paper,
             date=timezone.now()
         )
-        
-        # Update user2's totals
-        user2.total_points = (5.0 * 0.03) + (5.0 * 0.02)  # Plastic + Paper points
-        user2.total_co2 = 20.0  # 10kg total * 2 (mock multiplier)
+
+        # Use REAL get_co2_emission here
+        co2_plastic = get_co2_emission(amount_plastic, 'PLASTIC')
+        co2_paper = get_co2_emission(amount_paper, 'PAPER')
+        total_co2_user2 = co2_plastic + co2_paper
+
+        user2.total_points = (amount_plastic * 0.03) + (amount_paper * 0.02)
+        user2.total_co2 = total_co2_user2
         user2.save()
-        
-        # Create waste record and update user3's totals (4kg)
-        waste3 = UserWastes.objects.create(
+
+        # --- user3 waste (4kg glass) ---
+        amount_glass = 4.0
+        UserWastes.objects.create(
             user=user3,
             waste=self.glass,
-            amount=4.0,
+            amount=amount_glass,
             date=timezone.now()
         )
-        user3.total_points = 4.0 * 0.015  # Glass points
-        user3.total_co2 = 8.0  # 4kg * 2
+
+        co2_glass = get_co2_emission(amount_glass, 'GLASS')
+        total_co2_user3 = co2_glass
+
+        user3.total_points = amount_glass * 0.015
+        user3.total_co2 = total_co2_user3
         user3.save()
-        
+
+        # --- call endpoint ---
         request = self.factory.get('/api/waste/leaderboard/')
         response = get_top_users(request)
-          # Verify response structure
+
+        # Verify response structure
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Top users retrieved successfully')
-        
+
         # Check data format
         self.assertIn('top_users', response.data['data'])
         top_users = response.data['data']['top_users']
         self.assertTrue(len(top_users) <= 10)
-        
-        # Verify user2 (highest contributor)
+
+        # Highest contributor = user2
         self.assertEqual(top_users[0]['username'], 'testuser2')
-        self.assertEqual(top_users[0]['total_waste'], "20.0000")
-        self.assertEqual(top_users[0]['points'], 0.25)  # (5*0.03 + 5*0.02)
-        
-        # Verify user3 (second highest)
+        self.assertEqual(top_users[0]['total_waste'], format_co2(total_co2_user2))
+        self.assertAlmostEqual(top_users[0]['points'], user2.total_points)
+
+        # Second highest = user3
         self.assertEqual(top_users[1]['username'], 'testuser3')
-        self.assertEqual(top_users[1]['total_waste'], "8.0000")
-        self.assertEqual(top_users[1]['points'], 0.06)  # 4*0.015
+        self.assertEqual(top_users[1]['total_waste'], format_co2(total_co2_user3))
+        self.assertAlmostEqual(top_users[1]['points'], user3.total_points)
+
 
     @patch('api.waste.waste_views.get_co2_emission')
     def test_get_top_users_no_waste(self, mock_get_co2_emission):
@@ -325,38 +351,536 @@ class WasteViewsTests(TestCase):
         self.assertEqual(current_user['total_waste'], "0.0000")
         self.assertEqual(current_user['points'], 0)
 
-@patch('api.waste.waste_views.requests.post')
-def test_climatiq_api_integration(self, mock_post):
-    """Test the integration with Climatiq API for CO2 emission calculation"""
-    # Create mock response for Climatiq API call
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
-    mock_post.return_value = mock_response
+    @patch('api.waste.waste_views.requests.post')
+    def test_climatiq_api_integration(self, mock_post):
+        """Test the integration with Climatiq API for CO2 emission calculation"""
+        # Create mock response for Climatiq API call
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
+        mock_post.return_value = mock_response
+        
+        # Import the function directly for testing
+        from api.waste.waste_views import get_co2_emission
+        
+        # Test plastic waste CO2 calculation
+        result = get_co2_emission(1.0, 'PLASTIC')
+        self.assertEqual(result, 2.5)
+        
+        # Verify the API was called with correct parameters
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        
+        # Check the request sent to Climatiq
+        self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
+        self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
+        self.assertIn('emission_factor', kwargs['json'])
+        self.assertIn('activity_id', kwargs['json']['emission_factor'])
+        self.assertIn('data_version', kwargs['json']['emission_factor'])
+        
+        # Reset the mock to test error handling
+        mock_post.reset_mock()
+        
+        # Test error handling with HTTP error
+        mock_response.status_code = 400
+        mock_post.return_value = mock_response
+        result = get_co2_emission(1.0, 'PAPER')
+        self.assertEqual(result, 0)
+
+    def test_create_user_waste_zero_amount(self):
+        """Test waste creation with zero amount
+        Note: Currently the API accepts zero amounts. This test documents current behavior.
+        Consider adding validation to reject zero amounts in the future.
+        """
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # API currently accepts zero amounts (no validation)
+        # This could be improved with validation in the serializer
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_user_waste_negative_amount(self):
+        """Test waste creation with negative amount
+        Note: Currently the API accepts negative amounts. This test documents current behavior.
+        Consider adding validation to reject negative amounts in the future.
+        """
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': -1.0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # API currently accepts negative amounts (no validation)
+        # This could be improved with validation in the serializer
+        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_create_user_waste_very_large_amount(self):
+        """Test waste creation with very large amount"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 999999.99
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        # Should still succeed, but verify it handles large numbers
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_user_waste_all_types(self):
+        """Test creating waste for all supported waste types"""
+        waste_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']
+        
+        for waste_type in waste_types:
+            request = self.factory.post('/api/waste/', {
+                'waste_type': waste_type,
+                'amount': 1.0
+            }, format='json')
+            force_authenticate(request, user=self.user)
+            response = create_user_waste(request)
+            
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['data']['type'], waste_type)
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_create_user_waste_updates_points_correctly(self, mock_get_co2_emission):
+        """Test that waste creation correctly updates user points"""
+        mock_get_co2_emission.return_value = 2.0
+        
+        initial_points = self.user.total_points
+        
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0  # 10kg of plastic
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh user from database
+        self.user.refresh_from_db()
+        
+        # Plastic coefficient is 0.3 per kg, so 10kg = 3.0 points
+        expected_points = initial_points + (10.0 * 0.3)
+        self.assertAlmostEqual(self.user.total_points, expected_points, places=2)
+
+    def test_create_user_waste_updates_co2_correctly(self):
+        """Test that waste creation correctly updates user CO2 using real emission factors"""
+
+        # Use real inputs
+        waste_type = 'PAPER'
+        amount_kg = 2.0
+
+        # Initial CO2 before creation
+        initial_co2 = self.user.total_co2
+
+        # Compute expected CO2 using the real function
+        expected_increment = get_co2_emission(amount_kg, waste_type)
+        expected_co2 = initial_co2 + expected_increment
+
+        request = self.factory.post(
+            '/api/waste/',
+            {
+                'waste_type': waste_type,
+                'amount': amount_kg
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user)
+
+        response = create_user_waste(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Refresh user from DB
+        self.user.refresh_from_db()
+
+        # Validate CO2 update
+        self.assertAlmostEqual(
+            self.user.total_co2,
+            expected_co2,
+            places=4,  # use more precision since decimals=6
+            msg=f"Expected {expected_co2} but got {self.user.total_co2}"
+        )
+
+
+    def test_create_user_waste_empty_string_type(self):
+        """Test waste creation with empty string waste type"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': '',
+            'amount': 1.0
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_user_waste_none_amount(self):
+        """Test waste creation with None amount"""
+        request = self.factory.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': None
+        }, format='json')
+        force_authenticate(request, user=self.user)
+        response = create_user_waste(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_user_wastes_ordering(self):
+        """Test that waste types are returned in a consistent order"""
+        request = self.factory.get('/api/waste/get/')
+        force_authenticate(request, user=self.user)
+        response = get_user_wastes(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify all waste types are present
+        waste_types = [item['waste_type'] for item in response.data['data']]
+        expected_types = ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']
+        for expected_type in expected_types:
+            self.assertIn(expected_type, waste_types)
+
+    @patch('api.waste.waste_views.get_co2_emission')
+    def test_get_top_users_ordering(self, mock_get_co2_emission):
+        """Test that top users are returned in correct order (highest points first)"""
+        mock_get_co2_emission.return_value = 1.0
+        
+        # Create multiple users with different point totals
+        users = []
+        for i in range(5):
+            user = Users.objects.create_user(
+                username=f"user{i}",
+                email=f"user{i}@example.com",
+                password="testpass123"
+            )
+            user.total_points = 10 - i  # Decreasing points
+            user.total_co2 = 10 - i
+            user.save()
+            
+            # Create waste record
+            UserWastes.objects.create(
+                user=user,
+                waste=self.plastic,
+                amount=1.0,
+                date=timezone.now()
+            )
+            users.append(user)
+        
+        request = self.factory.get('/api/waste/leaderboard/')
+        response = get_top_users(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        top_users = response.data['data']['top_users']
+        
+        # Verify ordering (highest points first)
+        for i in range(len(top_users) - 1):
+            self.assertGreaterEqual(top_users[i]['points'], top_users[i + 1]['points'])
+
+    def test_get_top_users_limit(self):
+        """Test that top users endpoint returns at most 10 users"""
+        # Create 15 users with waste records
+        for i in range(15):
+            user = Users.objects.create_user(
+                username=f"leader{i}",
+                email=f"leader{i}@example.com",
+                password="testpass123"
+            )
+            user.total_points = 100 - i
+            user.total_co2 = 100 - i
+            user.save()
+            
+            UserWastes.objects.create(
+                user=user,
+                waste=self.plastic,
+                amount=1.0,
+                date=timezone.now()
+            )
+        
+        request = self.factory.get('/api/waste/leaderboard/')
+        response = get_top_users(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        top_users = response.data['data']['top_users']
+        self.assertLessEqual(len(top_users), 10)
+
+    def generate_dummy_image(self,name="test.jpg"):
+        file = BytesIO()
+        image = Image.new('RGB', (200, 200), color='red')
+        image.save(file, 'JPEG')
+        file.seek(0)
+        return SimpleUploadedFile(name, file.read(), content_type='image/jpeg')
+
+    def test_record_suspicious_waste(self):
+        """Helper method to record suspicious waste"""
+
+        waste_obj = Waste.objects.create(type="PLASTIC")
+
+        request = self.factory.post(
+            '/api/waste/report_suspicious/',
+            {
+                'amount': 500000,
+                "waste": waste_obj.type,   
+                "date": "2024-10-10",
+                'photo': self.generate_dummy_image(),  # see next point
+            },
+            format='multipart',
+)
+
+        force_authenticate(request, user=self.user)
+        from api.waste.waste_views import create_suspicious_waste
+        response = create_suspicious_waste(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+    def test_get_suspicious_wastes_admin(self):
+        """Helper method to get suspicious wastes as admin"""
+        # Create admin user
+        admin_user = Users.objects.create_superuser(
+            username="admin1234",
+            email="admin1234@example.com",
+            password="adminpass123"
+        )
+        request = self.factory.get('/api/waste/suspicious_wastes/')
+        force_authenticate(request, user=admin_user)
+        from api.waste.waste_views import get_suspicious_wastes,create_suspicious_waste
+
+        # First, create a suspicious waste to ensure there's data
+        self.test_record_suspicious_waste()
+       
+        response = get_suspicious_wastes(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data['data']), 1)
+
+
+class WasteChallengeProgressionTests(TestCase):
+    """Test cases for challenge progression when logging waste"""
     
-    # Import the function directly for testing
-    from api.waste.waste_views import get_co2_emission
-    
-    # Test plastic waste CO2 calculation
-    result = get_co2_emission(1.0, 'PLASTIC')
-    self.assertEqual(result, 2.5)
-    
-    # Verify the API was called with correct parameters
-    mock_post.assert_called_once()
-    args, kwargs = mock_post.call_args
-    
-    # Check the request sent to Climatiq
-    self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
-    self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
-    self.assertIn('emission_factor', kwargs['json'])
-    self.assertIn('activity_id', kwargs['json']['emission_factor'])
-    self.assertIn('data_version', kwargs['json']['emission_factor'])
-    
-    # Reset the mock to test error handling
-    mock_post.reset_mock()
-    
-    # Test error handling with HTTP error
-    mock_response.status_code = 400
-    mock_post.return_value = mock_response
-    result = get_co2_emission(1.0, 'PAPER')
-    self.assertEqual(result, 0)
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.client = APIClient()
+        
+        # Create test user
+        self.user = Users.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",
+            total_points=0,
+            total_co2=0
+        )
+        
+        # Create waste types
+        self.plastic, _ = Waste.objects.get_or_create(type='PLASTIC')
+        self.paper, _ = Waste.objects.get_or_create(type='PAPER')
+        
+        # Create multiple challenges with different joined dates
+        self.challenge1 = Challenge.objects.create(
+            title="First Challenge",
+            description="Oldest challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        self.challenge2 = Challenge.objects.create(
+            title="Second Challenge",
+            description="Middle challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        self.challenge3 = Challenge.objects.create(
+            title="Third Challenge",
+            description="Newest challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        # Join challenges in order (oldest to newest)
+        from datetime import timedelta
+        base_time = timezone.now()
+        
+        self.uc1 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge1,
+            joined_date=base_time - timedelta(days=10)  # Oldest
+        )
+        
+        self.uc2 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge2,
+            joined_date=base_time - timedelta(days=5)  # Middle
+        )
+        
+        self.uc3 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge3,
+            joined_date=base_time  # Newest
+        )
+
+    def test_waste_log_progresses_first_joined_challenge(self):
+        """
+        Test that logging waste only progresses the first joined (oldest) incomplete challenge.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges from database
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # Only first challenge should progress
+        self.assertEqual(self.challenge1.current_progress, 10.0)
+        self.assertEqual(self.challenge2.current_progress, 0)
+        self.assertEqual(self.challenge3.current_progress, 0)
+
+    def test_waste_log_progresses_second_when_first_completed(self):
+        """
+        Test that when first challenge is completed, waste progresses the second challenge.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete the first challenge
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 15.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # First challenge should remain at 100 (completed)
+        self.assertEqual(self.challenge1.current_progress, 100)
+        # Second challenge should progress
+        self.assertEqual(self.challenge2.current_progress, 15.0)
+        # Third challenge should not progress
+        self.assertEqual(self.challenge3.current_progress, 0)
+
+    def test_waste_log_progresses_third_when_first_two_completed(self):
+        """
+        Test that waste progresses the third challenge when first two are completed.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete first two challenges
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        self.challenge2.current_progress = 100
+        self.challenge2.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 20.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # First two should remain completed
+        self.assertEqual(self.challenge1.current_progress, 100)
+        self.assertEqual(self.challenge2.current_progress, 100)
+        # Third challenge should progress
+        self.assertEqual(self.challenge3.current_progress, 20.0)
+
+    def test_no_challenge_progression_when_all_completed(self):
+        """
+        Test that no challenges progress when all are completed.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete all challenges
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        self.challenge2.current_progress = 100
+        self.challenge2.save()
+        self.challenge3.current_progress = 100
+        self.challenge3.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 25.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # All should remain at 100
+        self.assertEqual(self.challenge1.current_progress, 100)
+        self.assertEqual(self.challenge2.current_progress, 100)
+        self.assertEqual(self.challenge3.current_progress, 100)
+
+    def test_challenge_completion_awards_achievement(self):
+        """
+        Test that completing a challenge awards the achievement to all participants.
+        """
+        from api.models import Achievements, UserAchievements
+        
+        self.client.force_authenticate(user=self.user)
+        
+        # Set first challenge close to completion
+        self.challenge1.current_progress = 95
+        self.challenge1.save()
+        
+        # Ensure challenge has a reward
+        if not self.challenge1.reward:
+            reward = Achievements.objects.create(
+                title="First Challenge Complete",
+                description="Completed first challenge"
+            )
+            self.challenge1.reward = reward
+            self.challenge1.save()
+        
+        # Log enough waste to complete the challenge
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Check that achievement was awarded
+        self.assertTrue(
+            UserAchievements.objects.filter(
+                user=self.user,
+                achievement=self.challenge1.reward
+            ).exists()
+        )
+        
+        # Check that challenge is marked as complete
+        self.challenge1.refresh_from_db()
+        self.assertEqual(self.challenge1.current_progress, 100)

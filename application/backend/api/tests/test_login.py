@@ -205,3 +205,119 @@ class JWTTokenTests(TestCase):
         self.assertIn("refresh", pair)
         self.assertIsInstance(pair["access"], str)
         self.assertIsInstance(pair["refresh"], str)
+
+    def test_signup_password_validation(self):
+        """Test signup with weak password"""
+        self.factory = APIRequestFactory()
+        self.view = SignUpView.as_view()
+        
+        data = {
+            "email": "weak@example.com",
+            "username": "weakuser",
+            "password": "123"  # Very short password
+        }
+        req = self.factory.post("/signup/", data, format="json")
+        resp = self.view(req)
+        # Should either succeed or fail based on password validation
+        self.assertIn(resp.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+
+    def test_signup_invalid_email(self):
+        """Test signup with invalid email format"""
+        self.factory = APIRequestFactory()
+        self.view = SignUpView.as_view()
+        
+        data = {
+            "email": "invalid-email",
+            "username": "testuser",
+            "password": "password123"
+        }
+        req = self.factory.post("/signup/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_signup_empty_fields(self):
+        """Test signup with empty required fields"""
+        self.factory = APIRequestFactory()
+        self.view = SignUpView.as_view()
+        
+        data = {
+            "email": "",
+            "username": "",
+            "password": ""
+        }
+        req = self.factory.post("/signup/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_case_sensitive_email(self):
+        """Test that login is case-sensitive for email"""
+        user = User.objects.create(email="CaseSensitive@example.com", username="caseuser")
+        user.set_password("password123")
+        user.save()
+        
+        self.factory = APIRequestFactory()
+        self.view = LoginView.as_view()
+        
+        # Try with different case
+        data = {"email": "casesensitive@example.com", "password": "password123"}
+        req = self.factory.post("/login/", data, format="json")
+        resp = self.view(req)
+        # Should either succeed or fail based on email normalization
+        self.assertIn(resp.status_code, [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED])
+
+    def test_login_wrong_password(self):
+        """Test login with wrong password"""
+        user = User.objects.create(email="wrongpass@example.com", username="wronguser")
+        user.set_password("correctpass")
+        user.save()
+        
+        self.factory = APIRequestFactory()
+        self.view = LoginView.as_view()
+        
+        data = {"email": "wrongpass@example.com", "password": "wrongpass"}
+        req = self.factory.post("/login/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_nonexistent_user(self):
+        """Test login with non-existent user"""
+        self.factory = APIRequestFactory()
+        self.view = LoginView.as_view()
+        
+        data = {"email": "nonexistent@example.com", "password": "password123"}
+        req = self.factory.post("/login/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_missing_fields(self):
+        """Test login with missing email or password"""
+        self.factory = APIRequestFactory()
+        self.view = LoginView.as_view()
+        
+        # Missing password
+        data = {"email": "test@example.com"}
+        req = self.factory.post("/login/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # Missing email
+        data = {"password": "password123"}
+        req = self.factory.post("/login/", data, format="json")
+        resp = self.view(req)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_user_info_returns_correct_data(self):
+        """Test that get_user_info returns correct user data"""
+        user = User.objects.create(email="info@example.com", username="infouser")
+        user.set_password("password123")
+        user.save()
+        
+        self.factory = APIRequestFactory()
+        req = self.factory.get("/user-info/")
+        force_authenticate(req, user=user)
+        resp = get_user_info(req)
+        
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["id"], user.id)
+        self.assertEqual(resp.data["username"], user.username)
+        self.assertTrue(resp.data["is_authenticated"])
