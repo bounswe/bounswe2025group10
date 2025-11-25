@@ -61,8 +61,6 @@
   },
   "community": {
     "title": "المجتمع",
-    "mostRecent": "الأحدث",
-    "mostLiked": "الأكثر إعجاباً",
     "showAll": "عرض جميع المنشورات",
     "showSaved": "عرض المحفوظة",
     "createPost": "إنشاء منشور",

@@ -2,65 +2,76 @@
  * @vitest-environment jsdom
  */
 
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import ProtectedUserRoute from "../../Login/ProtectedUserRoute";
 
-///////////////////////////////////////////////////////////////////////////
-// mock <AuthContent />
-///////////////////////////////////////////////////////////////////////////
-// ❶  Import *and* mock – importing lets us access the same fn instance later
-import { useAuth } from "../../Login/AuthContent";
-
-vi.mock("../../Login/AuthContent", () => ({
+/* -------------------------------------------------------------
+ * Mock AuthContext
+ * ----------------------------------------------------------- */
+vi.mock("../../providers/AuthContext.jsx", () => ({
   useAuth: vi.fn(),
 }));
 
-///////////////////////////////////////////////////////////////////////////
-// helper
-///////////////////////////////////////////////////////////////////////////
-const renderWithToken = (token) => {
-  // ❷  Tell the stub what to return for this render
+/* -------------------------------------------------------------
+ * Mock react-router-dom (Navigate + Outlet)
+ * ----------------------------------------------------------- */
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    Navigate: ({ to }) => <div>navigate-{to}</div>,
+    Outlet: () => <div>PROTECTED-CONTENT</div>,
+  };
+});
+
+/* After mocks */
+import { useAuth } from "../../providers/AuthContext.jsx";
+import ProtectedUserRoute from "../../routes/ProtectedUserRoute.jsx";
+
+/* -------------------------------------------------------------
+ * Helper
+ * ----------------------------------------------------------- */
+const renderWithAuthState = ({ isAuthenticated }) => {
   useAuth.mockReturnValue({
-    token,
-    isAuthenticated: Boolean(token),
+    isAuthenticated,
+    token: isAuthenticated ? "valid" : null,
   });
 
-  render(
+  return render(
     <MemoryRouter initialEntries={["/secret"]}>
       <Routes>
         <Route element={<ProtectedUserRoute />}>
           <Route path="/secret" element={<div>SECRET PAGE</div>} />
         </Route>
+
         <Route path="/login" element={<div>LOGIN PAGE</div>} />
       </Routes>
     </MemoryRouter>
   );
 };
 
-///////////////////////////////////////////////////////////////////////////
-// tests
-///////////////////////////////////////////////////////////////////////////
+/* -------------------------------------------------------------
+ * Tests
+ * ----------------------------------------------------------- */
 describe("<ProtectedUserRoute />", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("doesn’t show protected content when invalid token", () => {
-    renderWithToken(null);
-    expect(screen.queryByText("SECRET PAGE")).not.toBeInTheDocument();
+  it("blocks protected content when not authenticated", () => {
+    renderWithAuthState({ isAuthenticated: false });
+    expect(screen.queryByText("PROTECTED-CONTENT")).not.toBeInTheDocument();
   });
 
-  it("shows protected content when valid token", () => {
-    renderWithToken("valid-token");
-    expect(screen.getByText("SECRET PAGE")).toBeInTheDocument();
+  it("renders protected content when authenticated", () => {
+    renderWithAuthState({ isAuthenticated: true });
+    expect(screen.getByText("PROTECTED-CONTENT")).toBeInTheDocument();
   });
 
-  it("redirects to /login when no token", () => {
-    renderWithToken(null);
-    expect(screen.getByText("LOGIN PAGE")).toBeInTheDocument();
+  it("redirects to /login when not authenticated", () => {
+    renderWithAuthState({ isAuthenticated: false });
+    expect(screen.getByText("navigate-/login")).toBeInTheDocument();
   });
 });

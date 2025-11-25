@@ -6,8 +6,7 @@ import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import PostCard from "../../Admin/PostCard"; // ← adjust to your actual path
-
+import PostCard from  "@/components/features/PostCard"; 
 describe("<PostCard />", () => {
   const mockProps = {
     image: "https://picsum.photos/600/300",

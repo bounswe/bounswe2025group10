@@ -2,80 +2,86 @@
  * @vitest-environment jsdom
  */
 
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import SignupPage from "../../pages/auth/SignupPage";
 
-const signupMock = vi.fn(async () => true);
+// ----------- MOCK AuthContext -----------
+const signupMock = vi.fn().mockResolvedValue({
+  success: true,
+  message: "Created",
+});
 
-vi.mock("../../Login/AuthContent", () => ({
-  useAuth: () => ({ signup: signupMock }),
-  default: ({ children }) => <>{children}</>, // stub AuthProvider
+vi.mock("../../providers/AuthContext", () => ({
+  useAuth: () => ({
+    signup: signupMock,
+  }),
 }));
 
+// ----------- MOCK react-router navigate -----------
+const navigateMock = vi.fn();
 
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import SignupPage from "../../Login/SignupPage";
-import { MemoryRouter } from "react-router-dom";
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
 
+// ----------- mock toast -----------
+vi.mock("../../utils/toast.js", () => ({
+  showToast: vi.fn(),
+}));
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
-describe("Signup Page",()=>{
-
-  it("renders UI components",()=>{
-
-    //render the sign up page component
+// =====================================================
+//                     TESTS
+// =====================================================
+describe("Signup Page", () => {
+  it("renders UI components", () => {
     render(
       <MemoryRouter>
         <SignupPage />
       </MemoryRouter>
     );
-  
 
-    const username=screen.getByLabelText(/username/i)
-    const password=screen.getByLabelText(/password/i)
-    const email=screen.getByLabelText(/email/i)
-    const button=screen.getByRole("button", { name: /sign up/i })
-    
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    expect(screen.getByLabelText("Username")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toBeInTheDocument();
+    expect(screen.getByText("Sign Up")).toBeInTheDocument();
+  });
 
-    expect(username).toBeInTheDocument()
-    expect(password).toBeInTheDocument()
-    expect(email).toBeInTheDocument()
-    expect(button).toBeInTheDocument()
-
-  })
-
-
-  it("when clicked to the button, it must send email,username,password ",async ()=>{
-
-
-
-    
-
-    //render the sign up page component
+  it("when submit clicked → sends email, username, password", async () => {
     render(
       <MemoryRouter>
         <SignupPage />
       </MemoryRouter>
     );
-  
 
-    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/username/i), 'tester');
-    await userEvent.type(screen.getByLabelText(/password/i), 'secret123');
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "asya@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Username"), {
+      target: { value: "asya" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "12345678" },
+    });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: /sign up/i })
+    fireEvent.click(screen.getByText("Sign Up"));
+
+    await waitFor(() =>
+      expect(signupMock).toHaveBeenCalledWith(
+        "asya@example.com",
+        "asya",
+        "12345678"
+      )
     );
-
-    expect(signupMock).toHaveBeenCalledOnce()
-    expect(signupMock).toHaveBeenCalledWith(
-      "test@example.com",
-      "tester",
-      "secret123"
-    );
-
-  })
-
-
-}) 
+  });
+});

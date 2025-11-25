@@ -235,19 +235,7 @@ export default function Community() {
             {t('community.title', 'Community')}
           </h1>
           <div className="flex flex-wrap gap-3">
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="rounded-lg border px-3 py-2 text-sm"
-              style={{
-                backgroundColor: currentTheme.background,
-                borderColor: currentTheme.border,
-                color: currentTheme.text
-              }}
-            >
-              <option value="recent">{t('community.mostRecent', 'Most Recent')}</option>
-              <option value="likes">{t('community.mostLiked', 'Most Liked')}</option>
-            </select>
+
             <button
               onClick={() => {
                 setShowingSaved(!showingSaved);

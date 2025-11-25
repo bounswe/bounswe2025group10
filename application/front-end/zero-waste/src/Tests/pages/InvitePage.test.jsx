@@ -2,114 +2,151 @@
  * @vitest-environment jsdom
  */
 import React from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MemoryRouter } from "react-router-dom";
-import InviteFriend from "../../pages/InviteFriend.jsx";
-import { AuthProvider } from "../../Login/AuthContent";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import Invite from "@/pages/Invite.jsx";
 
-// ────────────────────────────────────────────
-// Mock toast
-// ────────────────────────────────────────────
-vi.mock("../../utils/toast.js", () => ({
-  showToast: vi.fn(),
+// ─────────────────────────────────────────────
+// Mock providers
+// ─────────────────────────────────────────────
+vi.mock("../../providers/AuthContext", () => ({
+  useAuth: () => ({ token: "test-token" }),
 }));
 
-// ────────────────────────────────────────────
-// Mock Navbar
-// ────────────────────────────────────────────
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback || key,
+    isRTL: false,
+  }),
+}));
+
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#ffffff",
+      border: "#dddddd",
+      text: "#000000",
+      secondary: "#00ff00",
+    },
+  }),
+}));
+
+// Minimal Navbar mock
 vi.mock("../../components/layout/Navbar", () => ({
-  default: ({ children }) => (
-    <div data-testid="mock-navbar">
-      Navbar
-      <div>{children}</div>
-    </div>
-  ),
+  default: ({ children }) => <div>{children}</div>,
 }));
 
-// ────────────────────────────────────────────
-// Mock inviteService
-// ────────────────────────────────────────────
+// Mock toast
+const showToastMock = vi.fn();
+vi.mock("../../utils/toast", () => ({
+  showToast: (...args) => showToastMock(...args),
+}));
+
+// Mock invite service
 const sendInviteMock = vi.fn();
-vi.mock("../../services/inviteService.js", () => ({
+vi.mock("../../services/inviteService", () => ({
   inviteService: {
     sendInvite: (...args) => sendInviteMock(...args),
   },
 }));
 
-// Wrapper with MemoryRouter + AuthProvider
-const wrapper = ({ children }) => (
-  <MemoryRouter>
-    <AuthProvider>{children}</AuthProvider>
-  </MemoryRouter>
-);
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
-describe("<InviteFriend />", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe("<Invite />", () => {
+  it("renders correctly", () => {
+    render(<Invite />);
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it("shows an error when email is empty", () => {
+    render(<Invite />);
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      "invite.errors.noEmail",
+      "error"
+    );
   });
 
-  it("renders page with email input and a button", () => {
-    render(<InviteFriend />, { wrapper });
-
-    expect(screen.getByTestId("mock-navbar")).toBeInTheDocument();
-    expect(screen.getByRole("textbox")).toBeInTheDocument();
-    expect(screen.getByRole("button")).toBeInTheDocument();
-  });
-
-  it("shows error toast when trying to send without email", () => {
-    const { showToast } = require("../../utils/toast.js");
-
-    render(<InviteFriend />, { wrapper });
-
-    const button = screen.getByRole("button");
-    fireEvent.click(button);
-
-    expect(showToast).toHaveBeenCalledTimes(1);
-  });
-
-  it("sends invite when email is entered", async () => {
-    const { showToast } = require("../../utils/toast.js");
-    sendInviteMock.mockResolvedValueOnce({ message: "ok" });
-
-    render(<InviteFriend />, { wrapper });
-
-    const input = screen.getByRole("textbox");
-    const button = screen.getByRole("button");
-
-    fireEvent.change(input, { target: { value: "friend@example.com" } });
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(sendInviteMock).toHaveBeenCalledTimes(1);
+  it("sends invite successfully", async () => {
+    sendInviteMock.mockResolvedValue({
+      message: "Invite sent!",
     });
 
-    expect(showToast).toHaveBeenCalledTimes(1);
+    render(<Invite />);
+
+    fireEvent.change(screen.getByPlaceholderText("friend@example.com"), {
+      target: { value: "friend@mail.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => {
+      expect(sendInviteMock).toHaveBeenCalledWith(
+        "friend@mail.com",
+        "test-token"
+      );
+      expect(showToastMock).toHaveBeenCalledWith("Invite sent!", "success");
+    });
   });
 
-  it("shows error toast when service fails", async () => {
-    const { showToast } = require("../../utils/toast.js");
-    sendInviteMock.mockRejectedValueOnce(new Error("fail"));
+  it("shows error toast on failure", async () => {
+    sendInviteMock.mockRejectedValue({
+      response: { data: { error: "Already invited!" } },
+    });
 
-    render(<InviteFriend />, { wrapper });
+    render(<Invite />);
 
-    const input = screen.getByRole("textbox");
+    fireEvent.change(screen.getByPlaceholderText("friend@example.com"), {
+      target: { value: "friend@mail.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => {
+      expect(showToastMock).toHaveBeenCalledWith("Already invited!", "error");
+    });
+  });
+
+  it("shows fallback error when no server message exists", async () => {
+    sendInviteMock.mockRejectedValue({});
+
+    render(<Invite />);
+
+    fireEvent.change(screen.getByPlaceholderText("friend@example.com"), {
+      target: { value: "friend@mail.com" },
+    });
+
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => {
+      expect(showToastMock).toHaveBeenCalledWith(
+        "invite.errors.failed",
+        "error"
+      );
+    });
+  });
+
+  it("disables the button while loading", async () => {
+    // mock infinite pending promise to simulate loading
+    sendInviteMock.mockImplementation(
+      () => new Promise(() => {})
+    );
+
+    render(<Invite />);
+
+    fireEvent.change(screen.getByPlaceholderText("friend@example.com"), {
+      target: { value: "friend@mail.com" },
+    });
+
     const button = screen.getByRole("button");
-
-    fireEvent.change(input, { target: { value: "friend@example.com" } });
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(showToast).toHaveBeenCalled();
+      expect(button).toBeDisabled();
     });
   });
 });
