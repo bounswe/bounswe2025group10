@@ -8,5 +8,14 @@
   "primaryText": "#ffffff",
   "secondary": "#28a745",
   "border": "#dee2e6",
-  "hover": "#f8f9fa"
+  "hover": "#f8f9fa",
+  "chartColors": {
+    "plastic": "#ff6b6b",
+    "paper": "#4ecdc4",
+    "glass": "#ffe66d",
+    "metal": "#a8dadc",
+    "electronic": "#b19cd9",
+    "oilfats": "#ffbe0b",
+    "organic": "#06d6a0"
+  }
 }

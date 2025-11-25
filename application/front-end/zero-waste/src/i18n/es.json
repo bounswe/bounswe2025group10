@@ -13,7 +13,8 @@
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
     "admin": "Administrador",
-    "recycling": "Centros de Reciclaje",
+    "recyclingCenters": "Centros de Reciclaje",
+    "statistics": "Estadísticas",
     "inviteFriend": "Invitar a un Amigo"
   },
   "common": {
@@ -319,5 +320,31 @@
       "noEmail": "Por favor ingrese un correo.",
       "failed": "Error al enviar la invitación."
     }
+  },
+  "statistics": {
+    "title": "Estadísticas",
+    "subtitle": "Ver tu progreso de reciclaje y estadísticas de la comunidad",
+    "wasteProgress": "Tu Progreso",
+    "noWasteData": "Aún no hay datos de residuos. ¡Comienza a registrar tus esfuerzos de reciclaje!",
+    "wasteByType": "Residuos por Tipo",
+    "wasteDistribution": "Distribución de Residuos",
+    "summary": "Resumen",
+    "wasteType": "Tipo de Residuo",
+    "quantity": "Cantidad (g)",
+    "totalWasteLogged": "Has registrado un total de",
+    "grams": "gramos",
+    "ofWaste": "de residuos",
+    "topType": "Tu tipo más reciclado es",
+    "communityStats": "Estadísticas de la Comunidad",
+    "totalPosts": "Total de Publicaciones",
+    "totalTips": "Total de Consejos",
+    "activeChallenges": "Desafíos Activos",
+    "environmentalImpact": "Impacto Ambiental",
+    "impactDescription": "¡Al reciclar tus residuos, has tenido un impacto positivo en el medio ambiente!",
+    "co2Saved": "CO₂ Ahorrado",
+    "treesEquivalent": "Equivalente en Árboles",
+    "energySaved": "Energía Ahorrada",
+    "wasteEncouragement": "¡Trabajo increíble! Cada artículo que reciclas ayuda a reducir la contaminación y conservar los recursos naturales. ¡Sigue con el gran esfuerzo!",
+    "communityEncouragement": "¡Gracias por ser un miembro activo de nuestra comunidad! Juntos, estamos construyendo un futuro sostenible e inspirando a otros a marcar la diferencia."
   }
 }

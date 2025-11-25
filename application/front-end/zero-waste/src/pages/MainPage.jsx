@@ -296,7 +296,7 @@ export default function MainPage() {
                           >
                             <p className="font-semibold text-sm mb-1">{payload[0].payload.type}</p>
                             <p className="text-xs" style={{ color: currentTheme.secondary }}>
-                              {t('mainPage.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} kg</span>
+                              {t('mainPage.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
                             </p>
                           </div>
                         );
@@ -304,14 +304,13 @@ export default function MainPage() {
                       return null;
                     }}
                   />
-                  <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                    {Array.isArray(translatedChartData) && translatedChartData.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={currentTheme.secondary}
-                        opacity={0.7 + (index * 0.05)}
-                      />
-                    ))}
+                  <Bar dataKey="quantity">
+                    {translatedChartData.map((entry, index) => {
+                      // Get color from theme chartColors
+                      const typeKey = entry.type.toLowerCase().replace(/\s+/g, '').replace('&', '');
+                      const color = currentTheme.chartColors?.[typeKey] || currentTheme.secondary;
+                      return <Cell key={index} fill={color} />;
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

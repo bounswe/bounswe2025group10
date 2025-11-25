@@ -16,13 +16,14 @@ export default function Navbar({ active = "home", children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { key: "home", path: "/", icon: "🏠" },
-    { key: "tips", path: "/tips", icon: "💡" },
-    { key: "achievements", path: "/achievements", icon: "🏆" },
-    { key: "leaderboard", path: "/leaderboard", icon: "📊" },
-    { key: "challenges", path: "/challenges", icon: "🎯" },
-    { key: "community", path: "/community", icon: "👥" },
-    { key: "recycling", path: "/recycling-centers", icon: "♻️" },
+    { key: 'home', path: '/', icon: '🏠' },
+    { key: 'tips', path: '/tips', icon: '💡' },
+    { key: 'challenges', path: '/challenges', icon: '🎯' },
+    { key: 'community', path: '/community', icon: '👥' },
+    { key: 'leaderboard', path: '/leaderboard', icon: '🏆' },
+    { key: 'achievements', path: '/achievements', icon: '🏅' },
+    { key: 'recyclingCenters', path: '/recycling-centers', icon: '♻️' },
+    { key: 'statistics', path: '/statistics', icon: '📊' },
   ];
 
   return (
