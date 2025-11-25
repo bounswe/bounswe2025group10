@@ -9,7 +9,7 @@ export const tipsService = {
     if (pageSize) params.page_size = pageSize;
 
     const response = await apiClient.get('/api/tips/all', {
-      headers: { Authorization: `Bearer ${token} ` },
+      headers: { Authorization: `Bearer ${token}` },
       params,
     });
     return response.data;
@@ -24,7 +24,7 @@ export const tipsService = {
     if (pageSize) params.page_size = pageSize;
 
     const response = await apiClient.get(path, {
-      headers: { Authorization: `Bearer ${token} ` },
+      headers: { Authorization: `Bearer ${token}` },
       params,
     });
     return response.data;
@@ -45,7 +45,7 @@ export const tipsService = {
       payload.lang = lang;
     }
     const response = await apiClient.post('/api/tips/create/', payload, {
-      headers: { Authorization: `Bearer ${token} ` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
@@ -53,7 +53,7 @@ export const tipsService = {
   // Like a tip
   likeTip: async (tipId, token) => {
     const response = await apiClient.post(`/api/tips/${tipId}/like/`, {}, {
-      headers: { Authorization: `Bearer ${token} ` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
@@ -61,15 +61,15 @@ export const tipsService = {
   // Dislike a tip
   dislikeTip: async (tipId, token) => {
     const response = await apiClient.post(`/api/tips/${tipId}/dislike/`, {}, {
-      headers: { Authorization: `Bearer ${token} ` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
 
   // Report a tip
   reportTip: async (tipId, reportData, token) => {
-    const response = await apiClient.post(`/ api / tips / ${tipId} /report/`, reportData, {
-      headers: { Authorization: `Bearer ${token} ` },
+    const response = await apiClient.post(`/api/tips/${tipId}/report/`, reportData, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
