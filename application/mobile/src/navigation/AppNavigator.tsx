@@ -20,6 +20,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
 import { Image } from 'react-native';
 import { SCREEN_NAMES } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -31,73 +32,77 @@ const iconMap: Record<string, any> = {
   Profile: require('../assets/profile.png'),
 };
 
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarIcon: ({ size, focused }) => (
-        <Image
-          source={iconMap[route.name]}
-          style={{ 
-            width: size, 
-            height: size,
-            opacity: focused ? 1 : 0.6,
-          }}
-          resizeMode="contain"
-          accessibilityLabel={`${route.name} tab`}
-        />
-      ),
-      tabBarActiveTintColor: '#228B22',
-      tabBarInactiveTintColor: 'gray',
-      tabBarStyle: {
-        backgroundColor: 'white',
-        borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
-        height: 60,
-        paddingBottom: 8,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontWeight: '600',
-      },
-      tabBarAccessibilityLabel: `${route.name} tab`,
-    })}
-  >
-    <Tab.Screen 
-      name={SCREEN_NAMES.HOME} 
-      component={HomeScreen} 
-      options={{ 
-        tabBarLabel: 'Home',
+const MainTabs = () => {
+  const { t } = useTranslation();
+  
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ size, focused }) => (
+          <Image
+            source={iconMap[route.name]}
+            style={{ 
+              width: size, 
+              height: size,
+              opacity: focused ? 1 : 0.6,
+            }}
+            resizeMode="contain"
+            accessibilityLabel={`${route.name} tab`}
+          />
+        ),
+        tabBarActiveTintColor: '#228B22',
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#E0E0E0',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        tabBarAccessibilityLabel: `${route.name} tab`,
+      })}
+    >
+      <Tab.Screen 
+        name={SCREEN_NAMES.HOME} 
+        component={HomeScreen} 
+        options={{ 
+          tabBarLabel: t('home.title'),
         tabBarAccessibilityLabel: 'Home tab',
       }} 
     />
-    <Tab.Screen 
-      name={SCREEN_NAMES.COMMUNITY} 
-      component={CommunityScreen} 
-      options={{ 
-        tabBarLabel: 'Community',
-        tabBarAccessibilityLabel: 'Community tab',
-      }} 
-    />
-    <Tab.Screen 
-      name={SCREEN_NAMES.CHALLENGES} 
-      component={ChallengesScreen} 
-      options={{ 
-        tabBarLabel: 'Challenges',
-        tabBarAccessibilityLabel: 'Challenges tab',
-      }} 
-    />
-    <Tab.Screen 
-      name={SCREEN_NAMES.PROFILE} 
-      component={ProfileScreen} 
-      options={{ 
-        tabBarLabel: 'Profile',
-        tabBarAccessibilityLabel: 'Profile tab',
-      }} 
-    />
-  </Tab.Navigator>
-);
+      <Tab.Screen 
+        name={SCREEN_NAMES.COMMUNITY} 
+        component={CommunityScreen} 
+        options={{ 
+          tabBarLabel: t('community.title'),
+          tabBarAccessibilityLabel: 'Community tab',
+        }} 
+      />
+      <Tab.Screen 
+        name={SCREEN_NAMES.CHALLENGES} 
+        component={ChallengesScreen} 
+        options={{ 
+          tabBarLabel: t('challenges.title'),
+          tabBarAccessibilityLabel: 'Challenges tab',
+        }} 
+      />
+      <Tab.Screen 
+        name={SCREEN_NAMES.PROFILE} 
+        component={ProfileScreen} 
+        options={{ 
+          tabBarLabel: t('profile.title'),
+          tabBarAccessibilityLabel: 'Profile tab',
+        }} 
+      />
+    </Tab.Navigator>
+  );
+};
 
 const AuthStack = () => (
   <RootStack.Navigator 

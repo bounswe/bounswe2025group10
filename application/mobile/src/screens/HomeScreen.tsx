@@ -19,6 +19,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAppNavigation, SCREEN_NAMES } from '../hooks/useNavigation';
 import { MoreDropdown } from '../components/MoreDropdown';
+import { useTranslation } from 'react-i18next';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -37,6 +38,15 @@ const WASTE_TYPES = [
 ];
 
 export const HomeScreen: React.FC = () => {
+  const { t } = useTranslation();
+  
+  // Waste types with translations
+  const WASTE_TYPES = [
+    { key: 'PLASTIC', label: t('home.wasteTypes.PLASTIC') },
+    { key: 'PAPER', label: t('home.wasteTypes.PAPER') },
+    { key: 'GLASS', label: t('home.wasteTypes.GLASS') },
+    { key: 'METAL', label: t('home.wasteTypes.METAL') },
+  ];
   const { logout, userData } = useAuth();
   const { navigateToScreen } = useAppNavigation();
 
@@ -148,12 +158,12 @@ export const HomeScreen: React.FC = () => {
       setWasteQuantity('');
       setSelectedWasteType(null);
       fetchWasteData();
-      Alert.alert('Success', 'Waste entry added successfully!');
+      Alert.alert(t('common.success'), t('home.addWaste'));
     } catch (error: any) {
       let message = 'Unknown error';
       if (error.response?.data) {message = JSON.stringify(error.response.data);}
       else if (error.message) {message = error.message;}
-      Alert.alert('Error', `Failed to add waste entry.\n${message}`);
+      Alert.alert(t('common.error'), `${message}`);
     }
   };
 
@@ -164,8 +174,12 @@ export const HomeScreen: React.FC = () => {
     setShowWasteTypeModal(false);
   };
 
-  // prepare chart data
-  const barLabels = wasteData.map((i) => i.waste_type);
+  // prepare chart data with translated labels
+  const barLabels = wasteData.map((i) => {
+    const wasteType = i.waste_type?.toUpperCase();
+    // Translate waste type if translation exists, otherwise use original
+    return t(`home.wasteTypes.${wasteType}`, { defaultValue: i.waste_type });
+  });
   const barData = wasteData.map((i) => i.total_amount);
   const screenWidth = Dimensions.get('window').width - 32;
 
@@ -182,12 +196,12 @@ export const HomeScreen: React.FC = () => {
   );
 
   const renderEmptyTips = () => (
-    <Text style={styles.tipText}>No tips available. Be the first to add one!</Text>
+    <Text style={styles.tipText}>{t('home.noWasteLogged')}</Text>
   );
 
   return (
     <ScreenWrapper
-      title="Home"
+      title={t('home.title')}
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
@@ -205,20 +219,20 @@ export const HomeScreen: React.FC = () => {
       {/* User greeting */}
       <View style={styles.userInfoRow}>
         <Text style={styles.username}>
-          {userData?.username ? `Hello, ${userData.username}` : 'Loading...'}
+          {userData?.username ? t('home.greeting', { username: userData.username }) : t('common.loading')}
         </Text>
       </View>
 
       {/* Weather line */}
       {weather && (
         <Text style={{ alignSelf: 'center', marginBottom: spacing.sm, color: colors.gray }}>
-          {`Istanbul Weather: ${weather.temperature}°C`}
+          {t('home.istanbulWeather', { temperature: weather.temperature })}
         </Text>
       )}
 
       {/* Bar chart */}
       <View style={styles.chartContainer}>
-        <Text style={styles.sectionTitle}>Your Progress</Text>
+        <Text style={styles.sectionTitle}>{t('home.wasteHistory')}</Text>
         <View style={styles.chartPlaceholder}>
           {loadingWaste ? (
             <Text style={{ color: colors.gray }}>[Loading waste data...]</Text>
@@ -248,14 +262,14 @@ export const HomeScreen: React.FC = () => {
           onPress={() => setShowWasteTypeModal(true)}
         >
           <Text style={[styles.wasteTypeButtonText, !selectedWasteType && styles.placeholderText]}>
-            {selectedWasteType ? selectedWasteType.label : 'Select waste type'}
+            {selectedWasteType ? selectedWasteType.label : t('home.selectWasteType')}
           </Text>
           <Text style={styles.dropdownArrow}>▼</Text>
         </TouchableOpacity>
         
         <TextInput
           style={styles.input}
-          placeholder="Quantity (kg)"
+          placeholder={t('home.quantity')}
           value={wasteQuantity}
           onChangeText={setWasteQuantity}
           keyboardType="numeric"
@@ -266,7 +280,7 @@ export const HomeScreen: React.FC = () => {
           onPress={handleAddWaste}
           disabled={!selectedWasteType || !wasteQuantity}
         >
-          <Text style={styles.addButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>{t('home.addWaste')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -279,7 +293,7 @@ export const HomeScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Waste Type</Text>
+            <Text style={styles.modalTitle}>{t('home.selectWasteType')}</Text>
             <ScrollView style={styles.wasteTypeList}>
               {WASTE_TYPES.map((type) => (
                 <TouchableOpacity
@@ -295,7 +309,7 @@ export const HomeScreen: React.FC = () => {
               style={styles.modalCloseButton}
               onPress={() => setShowWasteTypeModal(false)}
             >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              <Text style={styles.modalCloseButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -303,7 +317,7 @@ export const HomeScreen: React.FC = () => {
 
       {/* Latest Tips header */}
       <Text style={[styles.sectionTitle, { marginBottom: spacing.sm }]}>
-        Latest Tips
+        {t('home.recentTips')}
       </Text>
 
       {/* Tips list + logout footer */}
@@ -315,7 +329,7 @@ export const HomeScreen: React.FC = () => {
         ListEmptyComponent={loadingTips ? undefined : renderEmptyTips}
         ListFooterComponent={
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
+            <Text style={styles.logoutButtonText}>{t('common.logout')}</Text>
           </TouchableOpacity>
         }
         keyboardShouldPersistTaps="handled"

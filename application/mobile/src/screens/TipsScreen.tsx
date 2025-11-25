@@ -17,6 +17,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 
 interface Tip {
   id: number;
@@ -39,11 +40,15 @@ const REPORT_REASONS = [
 ];
 
 export const TipsScreen: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigation = useAppNavigation();
   const [tips, setTips] = useState<Tip[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Translation state - track which tips are translated
+  const [translatedTips, setTranslatedTips] = useState<{[key: number]: {title: string, description: string}}>({});
 
   // Create tip modal state
   const [isCreating, setIsCreating] = useState(false);
@@ -162,25 +167,58 @@ export const TipsScreen: React.FC = () => {
     fetchTips();
   }, [fetchTips]);
 
-  // Render tip card
-  const renderTipCard = ({ item }: { item: Tip }) => (
-    <View style={styles.tipCard}>
-      <View style={styles.tipHeader}>
-        <View style={styles.tipContent}>
-          <Text style={styles.tipTitle}>{item.title}</Text>
-          <Text style={styles.tipDescription}>{item.description}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.reportButton}
-          onPress={() => setReportingId(item.id)}
-          accessibilityLabel="Report this tip"
-          accessibilityRole="button"
-        >
-          <Text style={styles.reportButtonText}>⚠️</Text>
-        </TouchableOpacity>
-      </View>
+  // Toggle translation for a tip
+  const toggleTranslation = (tipId: number, originalTitle: string, originalDescription: string) => {
+    if (translatedTips[tipId]) {
+      // Remove translation (show original)
+      const newTranslated = { ...translatedTips };
+      delete newTranslated[tipId];
+      setTranslatedTips(newTranslated);
+    } else {
+      // Add simple mock translation (in real app, call translation API)
+      const isCurrentlyTurkish = i18n.language === 'tr';
+      setTranslatedTips({
+        ...translatedTips,
+        [tipId]: {
+          title: isCurrentlyTurkish ? `[EN] ${originalTitle}` : `[TR] ${originalTitle}`,
+          description: isCurrentlyTurkish ? `[EN] ${originalDescription}` : `[TR] ${originalDescription}`,
+        }
+      });
+    }
+  };
 
-      <View style={styles.tipActions}>
+  // Render tip card
+  const renderTipCard = ({ item }: { item: Tip }) => {
+    const isTranslated = !!translatedTips[item.id];
+    const displayTitle = isTranslated ? translatedTips[item.id].title : item.title;
+    const displayDescription = isTranslated ? translatedTips[item.id].description : item.description;
+
+    return (
+      <View style={styles.tipCard}>
+        <View style={styles.tipHeader}>
+          <View style={styles.tipContent}>
+            <Text style={styles.tipTitle}>{displayTitle}</Text>
+            <Text style={styles.tipDescription}>{displayDescription}</Text>
+          </View>
+          <View style={{flexDirection: 'row'}}>
+            <TouchableOpacity
+              style={[styles.translateButton, isTranslated && styles.translateButtonActive]}
+              onPress={() => toggleTranslation(item.id, item.title, item.description)}
+            >
+              <Text style={styles.translateButtonText}>🌐</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reportButton}
+              onPress={() => setReportingId(item.id)}
+              accessibilityLabel="Report this tip"
+              accessibilityRole="button"
+            >
+              <Text style={styles.reportButtonText}>⚠️</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.tipActions}>
         <TouchableOpacity
           style={[
             styles.actionButton,
@@ -212,19 +250,20 @@ export const TipsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>No tips available yet</Text>
-      <Text style={styles.emptyStateSubtext}>Be the first to share a sustainability tip!</Text>
+      <Text style={styles.emptyStateText}>{t('tips.noTips')}</Text>
+      <Text style={styles.emptyStateSubtext}>{t('tips.createFirst')}</Text>
     </View>
   );
 
   return (
     <ScreenWrapper
-      title="Sustainability Tips"
+      title={t('tips.title')}
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
@@ -236,7 +275,7 @@ export const TipsScreen: React.FC = () => {
             accessibilityLabel="Create new tip"
             accessibilityRole="button"
           >
-            <Text style={styles.createButtonText}>Create Tip</Text>
+            <Text style={styles.createButtonText}>{t('common.submit')}</Text>
           </TouchableOpacity>
           <MoreDropdown
             onTipsPress={handleTipsPress}
@@ -272,7 +311,7 @@ export const TipsScreen: React.FC = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create Tip</Text>
+            <Text style={styles.modalTitle}>{t('tips.title')}</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={closeCreateModal}
@@ -463,6 +502,18 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.gray,
     lineHeight: 20,
+  },
+  translateButton: {
+    padding: spacing.xs,
+    borderRadius: 20,
+    backgroundColor: colors.lightGray,
+    marginRight: spacing.xs,
+  },
+  translateButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  translateButtonText: {
+    fontSize: 16,
   },
   reportButton: {
     padding: spacing.xs,

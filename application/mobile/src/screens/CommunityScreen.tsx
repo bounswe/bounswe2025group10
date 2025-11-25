@@ -4,6 +4,7 @@ import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 interface Post {
   id: number;
@@ -32,6 +33,7 @@ interface Comment {
 const BASE_URL = 'https://134-209-253-215.sslip.io';
 
 export const CommunityScreen = () => {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -222,7 +224,7 @@ export const CommunityScreen = () => {
           style={styles.commentsButton}
           onPress={() => openCommentsModal(item.id)}
         >
-          <Text style={styles.commentsButtonText}>View Comments</Text>
+          <Text style={styles.commentsButtonText}>{t('community.comments')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -230,9 +232,9 @@ export const CommunityScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Community Posts</Text>
+      <Text style={styles.title}>{t('community.title')}</Text>
       <TouchableOpacity style={styles.createButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.createButtonText}>+ Create</Text>
+        <Text style={styles.createButtonText}>+ {t('community.createPost')}</Text>
       </TouchableOpacity>
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
@@ -254,26 +256,26 @@ export const CommunityScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Post</Text>
+            <Text style={styles.modalTitle}>{t('community.createPost')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="What's on your mind?"
+              placeholder={t('community.writePost')}
               value={newText}
               onChangeText={setNewText}
               multiline
             />
             <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
-              <Text style={styles.modalButtonText}>{imageFile ? 'Image Selected' : 'Pick Image'}</Text>
+              <Text style={styles.modalButtonText}>{imageFile ? t('community.addImage') : t('community.addImage')}</Text>
             </TouchableOpacity>
             {imageFile && (
               <Image source={{ uri: imageFile.uri }} style={{ width: 100, height: 100, marginBottom: 8, alignSelf: 'center' }} />
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
               <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)} disabled={creating}>
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={styles.modalButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalButton} onPress={createPost} disabled={creating}>
-                <Text style={styles.modalButtonText}>{creating ? 'Sharing...' : 'Share'}</Text>
+                <Text style={styles.modalButtonText}>{creating ? t('common.loading') : t('community.post')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -286,9 +288,9 @@ export const CommunityScreen = () => {
         onRequestClose={closeCommentsModal}
       >
         <View style={{ flex: 1, backgroundColor: 'white' }}>
-          <Text style={{ ...typography.h2, color: colors.primary, margin: spacing.md }}>Comments</Text>
+          <Text style={{ ...typography.h2, color: colors.primary, margin: spacing.md }}>{t('community.comments')}</Text>
           <TouchableOpacity onPress={closeCommentsModal} style={{ alignSelf: 'flex-end', margin: spacing.md }}>
-            <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Close</Text>
+            <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t('common.cancel')}</Text>
           </TouchableOpacity>
           {loadingComments ? (
             <ActivityIndicator size="large" color={colors.primary} />
@@ -310,14 +312,14 @@ export const CommunityScreen = () => {
                   </View>
                 ))
               ) : (
-                <Text style={{ color: colors.gray, textAlign: 'center', marginTop: spacing.lg }}>No comments yet.</Text>
+                <Text style={{ color: colors.gray, textAlign: 'center', marginTop: spacing.lg }}>{t('community.noPostsYet')}</Text>
               )}
             </ScrollView>
           )}
           <View style={styles.newCommentContainer}>
             <TextInput
               style={styles.newCommentInput}
-              placeholder="Write a comment..."
+              placeholder={t('community.writeComment')}
               value={newComment}
               onChangeText={setNewComment}
               editable={!postingComment}
@@ -327,7 +329,7 @@ export const CommunityScreen = () => {
               onPress={postComment}
               disabled={!newComment.trim() || postingComment}
             >
-              <Text style={styles.postCommentButtonText}>{postingComment ? 'Posting...' : 'Post'}</Text>
+              <Text style={styles.postCommentButtonText}>{postingComment ? t('common.loading') : t('community.post')}</Text>
             </TouchableOpacity>
           </View>
         </View>

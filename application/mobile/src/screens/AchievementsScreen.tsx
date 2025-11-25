@@ -15,6 +15,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 
 interface Achievement {
   id: number;
@@ -30,6 +31,7 @@ interface UserAchievement {
 }
 
 export const AchievementsScreen: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useAppNavigation();
   const [achievements, setAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,7 @@ export const AchievementsScreen: React.FC = () => {
           {item.achievement.description}
         </Text>
         <Text style={styles.earnedDate}>
-          Earned: {new Date(item.earned_at).toLocaleDateString()}
+          {t('achievements.earned')}: {new Date(item.earned_at).toLocaleDateString()}
         </Text>
       </View>
     </View>
@@ -111,16 +113,16 @@ export const AchievementsScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateIcon}>🏆</Text>
-      <Text style={styles.emptyStateText}>No achievements earned yet</Text>
+      <Text style={styles.emptyStateText}>{t('achievements.myAchievements')}</Text>
       <Text style={styles.emptyStateSubtext}>
-        Start participating in challenges and activities to earn your first achievement!
+        {t('achievements.startParticipating')}
       </Text>
     </View>
   );
 
   return (
     <ScreenWrapper
-      title="Achievements"
+      title={t('achievements.title')}
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
@@ -139,9 +141,9 @@ export const AchievementsScreen: React.FC = () => {
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : error ? (
         <View style={styles.errorState}>
-          <Text style={styles.errorText}>Failed to load achievements</Text>
+          <Text style={styles.errorText}>{t('achievements.failedToLoad')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchAchievements}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('achievements.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (

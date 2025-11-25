@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { colors, spacing, typography } from '../utils/theme';
+import { useTranslation } from 'react-i18next';
 
 interface MoreDropdownProps {
   onTipsPress?: () => void;
@@ -22,24 +23,25 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
   onLeaderboardPress,
   testID = 'more-dropdown',
 }) => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
   const menuItems = [
     {
       id: 'tips',
-      title: 'Tips',
+      title: t('tips.title'),
       icon: '💡',
       onPress: onTipsPress,
     },
     {
       id: 'achievements',
-      title: 'Achievements',
+      title: t('achievements.title'),
       icon: '🏆',
       onPress: onAchievementsPress,
     },
     {
       id: 'leaderboard',
-      title: 'Leaderboard',
+      title: t('leaderboard.title'),
       icon: '📊',
       onPress: onLeaderboardPress,
     },
@@ -62,7 +64,7 @@ export const MoreDropdown: React.FC<MoreDropdownProps> = ({
         accessibilityHint="Opens a menu with additional options"
         testID={testID}
       >
-        <Text style={styles.moreButtonText}>More</Text>
+        <Text style={styles.moreButtonText}>{t('common.more') || 'More'}</Text>
         <Text style={styles.dropdownArrow}>▼</Text>
       </TouchableOpacity>
 

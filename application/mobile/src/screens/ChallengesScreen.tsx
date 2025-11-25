@@ -5,6 +5,7 @@ import {
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api, { challengeService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useTranslation } from 'react-i18next';
 
 interface Challenge {
   id: number;
@@ -25,6 +26,7 @@ interface UserChallenge {
 }
 
 export const ChallengesScreen = () => {
+  const { t } = useTranslation();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [enrolledChallenges, setEnrolledChallenges] = useState<UserChallenge[]>([]);
   const [loading, setLoading] = useState(false);
@@ -214,7 +216,7 @@ export const ChallengesScreen = () => {
         <View style={styles.challengeFooter}>
           <View style={styles.challengeInfo}>
             <Text style={styles.challengeType}>
-              {item.is_public === true ? '🌍 Public' : '🔒 Private'}
+              {item.is_public === true ? '🌍 ' + t('challenges.join') : '🔒 ' + t('challenges.leave')}
             </Text>
           </View>
           
@@ -232,7 +234,7 @@ export const ChallengesScreen = () => {
               styles.actionButtonText,
               item.is_enrolled === true ? styles.leaveButtonText : styles.joinButtonText
             ]}>
-              {item.is_enrolled === true ? 'Already Joined' : 'Join Challenge'}
+              {item.is_enrolled === true ? t('challenges.completed') : t('challenges.join')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -244,13 +246,13 @@ export const ChallengesScreen = () => {
     <View style={styles.screenContainer}>
       {/* Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>Challenges</Text>
+        <Text style={styles.title}>{t('challenges.title')}</Text>
       </View>
       
       {/* Header Controls */}
       <View style={styles.headerControls}>
         <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>Show Enrolled Only</Text>
+          <Text style={styles.toggleLabel}>{t('challenges.myChallenges')}</Text>
           <Switch
             value={showEnrolledOnly}
             onValueChange={setShowEnrolledOnly}
@@ -265,7 +267,7 @@ export const ChallengesScreen = () => {
           style={styles.createButton}
           onPress={() => setShowCreateModal(true)}
         >
-          <Text style={styles.createButtonText}>Create Challenge</Text>
+          <Text style={styles.createButtonText}>{t('challenges.createChallenge')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -292,7 +294,7 @@ export const ChallengesScreen = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create New Challenge</Text>
+            <Text style={styles.modalTitle}>{t('challenges.createChallenge')}</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowCreateModal(false)}
@@ -304,15 +306,15 @@ export const ChallengesScreen = () => {
             <View style={styles.modalContent}>
               {/* Description text */}
               <Text style={styles.modalDescription}>
-                Fill out the fields below to add a new sustainability challenge.
+                {t('challenges.description')}
               </Text>
 
               {/* Title */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Title</Text>
+                <Text style={styles.inputLabel}>{t('challenges.challengeName')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter challenge title"
+                  placeholder={t('challenges.challengeName')}
                   value={title}
                   onChangeText={setTitle}
                 />
@@ -320,10 +322,10 @@ export const ChallengesScreen = () => {
 
               {/* Description */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Description</Text>
+                <Text style={styles.inputLabel}>{t('challenges.description')}</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
-                  placeholder="Enter challenge description"
+                  placeholder={t('challenges.description')}
                   value={description}
                   onChangeText={setDescription}
                   multiline
@@ -333,10 +335,10 @@ export const ChallengesScreen = () => {
 
               {/* Target Amount */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Target Amount</Text>
+                <Text style={styles.inputLabel}>{t('challenges.targetAmount')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter target amount"
+                  placeholder={t('challenges.targetAmount')}
                   value={targetAmount}
                   onChangeText={setTargetAmount}
                   keyboardType="numeric"
@@ -345,7 +347,7 @@ export const ChallengesScreen = () => {
               
               {/* Public Toggle */}
               <View style={styles.publicToggle}>
-                <Text style={styles.publicLabel}>Make challenge public</Text>
+                <Text style={styles.publicLabel}>{t('challenges.join')}</Text>
                 <Switch
                   value={isPublic}
                   onValueChange={setIsPublic}
@@ -360,14 +362,14 @@ export const ChallengesScreen = () => {
                   style={styles.cancelButton}
                   onPress={() => setShowCreateModal(false)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
                   style={styles.submitButton}
                   onPress={createChallenge}
                 >
-                  <Text style={styles.submitButtonText}>Create</Text>
+                  <Text style={styles.submitButtonText}>{t('common.submit')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -12,12 +12,14 @@ import { colors, spacing, typography, commonStyles } from '../../utils/theme';
 import { authService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 interface LoginScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.allFieldsRequired'));
       return;
     }
 
@@ -56,7 +58,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       if (!response || !response.token) {
         console.error('Invalid response format:', response);
-        Alert.alert('Error', 'Invalid server response');
+        Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
@@ -67,7 +69,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       console.log('Context login result:', loginResult);
 
       if (!loginResult) {
-        Alert.alert('Error', 'Failed to complete login process');
+        Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
@@ -75,7 +77,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     } catch (error: any) {
       console.error('Login error:', error);
 
-      let errorMessage = 'An error occurred during login';
+      let errorMessage = t('auth.invalidCredentials');
 
       if (error.response) {
         // The request was made and the server responded with a status code
@@ -95,7 +97,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         errorMessage = error.message || errorMessage;
       }
 
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -103,12 +105,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+      <Text style={styles.title}>{t('auth.login')}</Text>
+      <Text style={styles.subtitle}>{jokeSetup || ''}</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('auth.email')}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -117,7 +119,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder={t('auth.password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -131,7 +133,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>{t('auth.login')}</Text>
         )}
       </TouchableOpacity>
 
@@ -148,7 +150,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         onPress={() => navigation.navigate('Signup')}
       >
         <Text style={styles.signupText}>
-          Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
+          {t('auth.dontHaveAccount')} <Text style={styles.signupTextBold}>{t('auth.signup')}</Text>
         </Text>
       </TouchableOpacity>
     </View>
