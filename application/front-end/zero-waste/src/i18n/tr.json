@@ -14,8 +14,7 @@
     "signup": "Kayıt Ol",
     "admin": "Yönetici",
     "recycling": "Geri Dönüşüm Merkezleri",
-    "invite": "Arkadaş Davet Et"
-
+    "inviteFriend": "Arkadaş Davet Et"
   },
   "common": {
     "language": "Dil",
@@ -47,7 +46,10 @@
     "enterReason": "Sebep girin...",
     "description": "Açıklama",
     "enterDescription": "Açıklama girin...",
-    "loginRequired": "Bildirmek için lütfen giriş yapın"
+    "loginRequired": "Bildirmek için lütfen giriş yapın",
+    "notifications": "Bildirimler",
+    "markAllRead": "Tümünü okundu işaretle",
+    "noNotifications": "Bildirim yok"
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",
@@ -306,17 +308,16 @@
       "cable": "Kablo",
       "it_equipment": "Bilgisayar Ekipmanı"
     }
-  },  
+  },
   "invite": {
-  "title": "Arkadaş Davet Et",
-  "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
-  "emailLabel": "Arkadaşının E-postası",
-  "send": "Davetiye Gönder",
-  "sending": "Gönderiliyor...",
-  "errors": {
-    "noEmail": "Lütfen bir e-posta adresi girin.",
-    "failed": "Davet gönderilirken bir hata oluştu."
+    "title": "Arkadaş Davet Et",
+    "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
+    "emailLabel": "Arkadaşının E-postası",
+    "send": "Davetiye Gönder",
+    "sending": "Gönderiliyor...",
+    "errors": {
+      "noEmail": "Lütfen bir e-posta adresi girin.",
+      "failed": "Davet gönderilirken bir hata oluştu."
+    }
   }
-}
-
 }

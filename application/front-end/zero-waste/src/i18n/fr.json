@@ -14,8 +14,7 @@
     "signup": "S'inscrire",
     "admin": "Administrateur",
     "recycling": "Centres de Recyclage",
-    "invite": "Inviter un Ami"
-
+    "inviteFriend": "Inviter un Ami"
   },
   "common": {
     "language": "Langue",
@@ -47,7 +46,10 @@
     "enterReason": "Entrez la raison...",
     "description": "Description",
     "enterDescription": "Entrez la description...",
-    "loginRequired": "Veuillez vous connecter pour signaler"
+    "loginRequired": "Veuillez vous connecter pour signaler",
+    "notifications": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Pas de notifications"
   },
   "leaderboard": {
     "title": "🌿 Top 10 des champions zéro déchet",
@@ -307,16 +309,14 @@
     }
   },
   "invite": {
-  "title": "Inviter un Ami",
-  "subtitle": "Envoyez un lien d’invitation à votre ami par e-mail.",
-  "emailLabel": "Email de l’Ami",
-  "send": "Envoyer l’Invitation",
-  "sending": "Envoi...",
-  "errors": {
-    "noEmail": "Veuillez entrer une adresse e-mail.",
-    "failed": "Échec de l’envoi de l’invitation."
+    "title": "Inviter un Ami",
+    "subtitle": "Envoyez un lien d’invitation à votre ami par e-mail.",
+    "emailLabel": "Email de l’Ami",
+    "send": "Envoyer l’Invitation",
+    "sending": "Envoi...",
+    "errors": {
+      "noEmail": "Veuillez entrer une adresse e-mail.",
+      "failed": "Échec de l’envoi de l’invitation."
+    }
   }
-}
-
-
 }
