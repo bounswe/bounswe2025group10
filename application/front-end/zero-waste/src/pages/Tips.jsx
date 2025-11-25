@@ -11,7 +11,8 @@ import { tipsService } from "../services/tipsService";
 export default function Tips() {
   const { token } = useAuth();
   const { currentTheme } = useTheme();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const [pageSize, setPageSize] = useState(9);
 
   const {
     data: tipsResponse,
@@ -20,7 +21,7 @@ export default function Tips() {
     execute: refetchTips,
     setData: setTipsResponse,
   } = useApi(
-    () => tipsService.getTips(token),
+    () => tipsService.getTips(token, language, pageSize),
     {
       initialData: { results: [] },
       showErrorToast: true,
@@ -38,7 +39,7 @@ export default function Tips() {
     loading: isCreating,
     execute: createTip,
   } = useApi(
-    (tipData) => tipsService.createTip(tipData, token),
+    (tipData) => tipsService.createTip(tipData, token, language),
     {
       showSuccessToast: true,
       successMessage: 'Tip created successfully!',
@@ -70,7 +71,7 @@ export default function Tips() {
   const handleNextPage = async () => {
     if (tipsResponse?.next) {
       try {
-        const data = await tipsService.getTipsFromUrl(tipsResponse.next, token);
+        const data = await tipsService.getTipsFromUrl(tipsResponse.next, token, language, pageSize);
         setTipsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
@@ -82,13 +83,32 @@ export default function Tips() {
   const handlePreviousPage = async () => {
     if (tipsResponse?.previous) {
       try {
-        const data = await tipsService.getTipsFromUrl(tipsResponse.previous, token);
+        const data = await tipsService.getTipsFromUrl(tipsResponse.previous, token, language, pageSize);
         setTipsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
         showToast(t('common.error', 'An error occurred'), "error");
       }
     }
+  };
+
+  // Calculate current page number from pagination URLs
+  const getCurrentPage = () => {
+    if (tipsResponse?.previous) {
+      const prevUrl = new URL(tipsResponse.previous, window.location.origin);
+      const prevPage = parseInt(prevUrl.searchParams.get('page') || '1');
+      return prevPage + 1;
+    } else if (tipsResponse?.next) {
+      return 1;
+    }
+    return 1;
+  };
+
+  const getTotalPages = () => {
+    if (tipsResponse?.count && pageSize) {
+      return Math.ceil(tipsResponse.count / pageSize);
+    }
+    return 1;
   };
 
   const handleLike = async (tipId) => {
@@ -167,7 +187,7 @@ export default function Tips() {
 
   useEffect(() => {
     refetchTips();
-  }, []);
+  }, [language, pageSize]);
 
   return (
     <Navbar active="tips">
@@ -184,16 +204,45 @@ export default function Tips() {
           >
             {t('tips.title', 'Sustainability Tips')}
           </h1>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
-            style={{
-              backgroundColor: currentTheme.secondary,
-              color: currentTheme.background
-            }}
-          >
-            {t('tips.createTip', 'Create Tip')}
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label
+                className="text-sm font-medium"
+                style={{ color: currentTheme.text }}
+              >
+                {t('common.itemsPerPage', 'Items per page')}:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg px-3 py-1.5 text-sm border"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  color: currentTheme.text,
+                  borderColor: currentTheme.border
+                }}
+              >
+                <option value={3}>3</option>
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={12}>12</option>
+                <option value={15}>15</option>
+                <option value={18}>18</option>
+                <option value={21}>21</option>
+                <option value={24}>24</option>
+              </select>
+            </div>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
+              style={{
+                backgroundColor: currentTheme.secondary,
+                color: currentTheme.background
+              }}
+            >
+              {t('tips.createTip', 'Create Tip')}
+            </button>
+          </div>
         </header>
 
         {isLoading ? (
@@ -290,7 +339,7 @@ export default function Tips() {
         )}
 
         {/* Pagination Controls */}
-        {!isLoading && tips.length > 0 && (tipsResponse?.next || tipsResponse?.previous) && (
+        {!isLoading && tips.length > 0 && (
           <div className="flex justify-center items-center gap-4 mt-8 mb-4">
             <button
               onClick={handlePreviousPage}
@@ -303,9 +352,14 @@ export default function Tips() {
             >
               ← {t('common.previous', 'Previous')}
             </button>
-            <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
-              {tipsResponse?.count ? `${tips.length} of ${tipsResponse.count}` : ''}
-            </span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
+                {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
+              </span>
+              <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
+                {tipsResponse?.count ? `Total: ${tipsResponse.count}` : ''}
+              </span>
+            </div>
             <button
               onClick={handleNextPage}
               disabled={!tipsResponse?.next}
