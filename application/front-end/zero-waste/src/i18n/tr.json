@@ -13,7 +13,8 @@
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
     "admin": "Yönetici",
-    "recycling": "Geri Dönüşüm Merkezleri",
+    "recyclingCenters": "Geri Dönüşüm Merkezleri",
+    "statistics": "İstatistikler",
     "inviteFriend": "Arkadaş Davet Et"
   },
   "common": {
@@ -228,7 +229,8 @@
       "oilFats": "Yağ ve Katı Yağlar",
       "organic": "Organik"
     },
-    "pointsLabel": "puan"
+    "pointsLabel": "puan",
+    "quantity": "Miktar"
   },
   "profile": {
     "achievements": "Başarılar",
@@ -320,5 +322,31 @@
       "noEmail": "Lütfen bir e-posta adresi girin.",
       "failed": "Davet gönderilirken bir hata oluştu."
     }
+  },
+  "statistics": {
+    "title": "İstatistikler",
+    "subtitle": "Atık geri dönüşüm ilerlemenizi ve topluluk bilgilerinizi görüntüleyin",
+    "wasteProgress": "Atık İlerlemeniz",
+    "noWasteData": "Henüz atık verisi yok. Geri dönüşüm çabalarınızı kaydetmeye başlayın!",
+    "wasteByType": "Türe Göre Atık",
+    "wasteDistribution": "Atık Dağılımı",
+    "summary": "Özet",
+    "wasteType": "Atık Türü",
+    "quantity": "Miktar (g)",
+    "totalWasteLogged": "Toplam",
+    "grams": "gram",
+    "ofWaste": "atık kaydettiniz",
+    "topType": "En çok geri dönüştürdüğünüz tür",
+    "communityStats": "Topluluk İstatistikleri",
+    "totalPosts": "Toplam Gönderi",
+    "totalTips": "Toplam İpucu",
+    "activeChallenges": "Aktif Meydan Okumalar",
+    "environmentalImpact": "Çevresel Etki",
+    "impactDescription": "Atıklarınızı geri dönüştürerek çevre üzerinde olumlu bir etki yarattınız!",
+    "co2Saved": "Tasarruf Edilen CO₂",
+    "treesEquivalent": "Ağaç Eşdeğeri",
+    "energySaved": "Tasarruf Edilen Enerji",
+    "wasteEncouragement": "Harika iş! Geri dönüştürdüğünüz her öğe kirliliği azaltmaya ve doğal kaynakları korumaya yardımcı oluyor. Harika çalışmanıza devam edin!",
+    "communityEncouragement": "Topluluğumuzun aktif bir üyesi olduğunuz için teşekkür ederiz! Birlikte sürdürülebilir bir gelecek inşa ediyor ve başkalarına ilham veriyoruz."
   }
 }

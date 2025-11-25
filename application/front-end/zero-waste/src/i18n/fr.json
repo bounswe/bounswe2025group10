@@ -5,6 +5,16 @@
   "nav": {
     "home": "Accueil",
     "community": "Communauté",
+    "totalPosts": "Total des Publications",
+    "totalTips": "Total des Conseils",
+    "activeChallenges": "Défis Actifs",
+    "environmentalImpact": "Impact Environnemental",
+    "impactDescription": "En recyclant vos déchets, vous avez eu un impact positif sur l'environnement!",
+    "co2Saved": "CO₂ Économisé",
+    "treesEquivalent": "Équivalent Arbres",
+    "energySaved": "Énergie Économisée",
+    "wasteEncouragement": "Excellent travail! Chaque article que vous recyclez aide à réduire la pollution et à préserver les ressources naturelles. Continuez vos efforts formidables!",
+    "communityEncouragement": "Merci d'être un membre actif de notre communauté! Ensemble, nous construisons un avenir durable et inspirons les autres à faire la différence.",
     "challenges": "Défis",
     "tips": "Conseils",
     "achievements": "Réalisations",
@@ -13,7 +23,8 @@
     "login": "Se Connecter",
     "signup": "S'inscrire",
     "admin": "Administrateur",
-    "recycling": "Centres de Recyclage",
+    "recyclingCenters": "Centres de Recyclage",
+    "statistics": "Statistiques",
     "inviteFriend": "Inviter un Ami"
   },
   "common": {
@@ -228,7 +239,8 @@
       "oilFats": "Huiles et Graisses",
       "organic": "Organique"
     },
-    "pointsLabel": "points"
+    "pointsLabel": "points",
+    "quantity": "Quantité"
   },
   "profile": {
     "achievements": "Réalisations",

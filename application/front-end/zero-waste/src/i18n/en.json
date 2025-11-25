@@ -13,7 +13,8 @@
     "login": "Login",
     "signup": "Sign Up",
     "admin": "Admin",
-    "recycling": "Recycling Centers",
+    "recyclingCenters": "Recycling Centers",
+    "statistics": "Statistics",
     "inviteFriend": "Invite Friend"
   },
   "common": {
@@ -229,7 +230,8 @@
       "oilFats": "Oil & Fats",
       "organic": "Organic"
     },
-    "pointsLabel": "points"
+    "pointsLabel": "points",
+    "quantity": "Quantity"
   },
   "profile": {
     "achievements": "Achievements",
@@ -321,5 +323,31 @@
       "noEmail": "Please enter an email address.",
       "failed": "Failed to send invitation."
     }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "subtitle": "View your waste recycling progress and community insights",
+    "wasteProgress": "Your Waste Progress",
+    "noWasteData": "No waste data yet. Start logging your recycling efforts!",
+    "wasteByType": "Waste by Type",
+    "wasteDistribution": "Waste Distribution",
+    "summary": "Summary",
+    "wasteType": "Waste Type",
+    "quantity": "Quantity (g)",
+    "totalWasteLogged": "You've logged a total of",
+    "grams": "grams",
+    "ofWaste": "of waste",
+    "topType": "Your top recycled type is",
+    "communityStats": "Community Statistics",
+    "totalPosts": "Total Posts",
+    "totalTips": "Total Tips",
+    "activeChallenges": "Active Challenges",
+    "environmentalImpact": "Environmental Impact",
+    "impactDescription": "By recycling your waste, you've made a positive impact on the environment!",
+    "co2Saved": "CO₂ Saved",
+    "treesEquivalent": "Trees Equivalent",
+    "energySaved": "Energy Saved",
+    "wasteEncouragement": "Amazing work! Every item you recycle helps reduce pollution and conserve natural resources. Keep up the great effort!",
+    "communityEncouragement": "Thank you for being an active member of our community! Together, we're building a sustainable future and inspiring others to make a difference."
   }
 }
