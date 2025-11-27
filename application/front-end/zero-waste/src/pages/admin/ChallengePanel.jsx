@@ -1,56 +1,100 @@
-import React from "react";
-import { Nav, Container, Row, Col } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Nav, Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../providers/AuthContext";
 import ChallengeCard from "../../components/features/AdminChallengeCard";
-import { useState } from "react";
 
 function ChallengePanel({ children }) {
-  const { token } = useAuth();
-  const apiUrl = import.meta.env.VITE_API_URL; //get api 
-  const [challenges,setChallenges]=useState([])
-    // ▸▸ CHALLENGES ──────────────────────────────
-    const getChallenges= async ()=>{
-      try {
-        const response = await fetch(`${apiUrl}/api/admin/reports/`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-      
-        const data = await response.json();
-        console.log(data);
+  const { token, logout } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-        setChallenges(data.results.filter(item => item.content_type === "challenge"));
+  const [challenges, setChallenges] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [nextPage, setNextPage] = useState(null);
+  const [previousPage, setPreviousPage] = useState(null);
 
-      } catch (error) {
-        console.error("Failed to fetch admin reports:", error);
+  const getChallenges = async (page = 1) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/?page=${page}&type=challenge`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log("Admin reports data:", data);
+
+      // Data is already filtered by backend
+      setChallenges(data.results || []);
+
+      // Set pagination info
+      setNextPage(data.next);
+      setPreviousPage(data.previous);
+
+      // Calculate total pages
+      if (data.count) {
+        setTotalPages(Math.ceil(data.count / 10));
+      }
+    } catch (error) {
+      console.error("Failed to fetch admin reports:", error);
+      setError("Failed to load challenges. Please try again.");
+    } finally {
+      setLoading(false);
     }
-      getChallenges() //get comments
-        
-     //deletes given post given 
-    const deleteChallenge=async (challenge_id)=>{
-      try {
-        const response = await fetch(`${apiUrl}/api/admin/reports/${challenge_id}/moderate/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action: "delete_media" })
-        });
-      
-        const data = await response.json();
-        console.log(data);
-    }
-    catch (error) {
+  };
+
+  useEffect(() => {
+    getChallenges(currentPage);
+  }, [currentPage]);
+
+  const deleteChallenge = async (challenge_id) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/reports/${challenge_id}/moderate/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "delete_media" })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Delete response:", data);
+
+      // Refresh the list after deletion
+      getChallenges(currentPage);
+    } catch (error) {
       console.error("Error deleting challenge:", error);
+      alert("Failed to delete challenge. Please try again.");
     }
+  };
+
+  const handleNextPage = () => {
+    if (nextPage && currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
     }
-    // ────────────────────────────────────────────────
+  };
+
+  const handlePreviousPage = () => {
+    if (previousPage && currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
   
   return (
     <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
@@ -97,12 +141,29 @@ function ChallengePanel({ children }) {
               >
                 Comment Moderation
               </Nav.Link>
+              <Nav.Link
+                as={Link}
+                to="/activityPage"
+                className="text-white"
+                style={{ backgroundColor: "#388e3c" }}
+              >
+                Activities
+              </Nav.Link>
             </Nav>
           </div>
 
-          <footer className="mt-4 text-white-50 small">
-            <div>Zero Waste Admin © 2025</div>
-          </footer>
+          <div className="mt-auto">
+            <Button
+              variant="light"
+              className="w-100 mb-3"
+              onClick={logout}
+            >
+              Log Out
+            </Button>
+            <footer className="text-white-50 small">
+              <div>Zero Waste Admin © 2025</div>
+            </footer>
+          </div>
         </Col>
 
         {/* Main content area */}
@@ -111,20 +172,65 @@ function ChallengePanel({ children }) {
             <h2 className="text-success fw-bold">📋 Challenges</h2>
             <hr />
           </div>
-          {/* Centered mock challenges list */}
-          <div className="d-flex flex-column align-items-center">
-            {challenges.map((ch) => (
-              <ChallengeCard
-                key={ch.id}
-                challengeId={ch.id}
 
-                name={ch.content.title}
-                duration={ch.content.current_progress}
+          {/* Error message */}
+          {error && (
+            <Alert variant="danger" className="mb-4">
+              {error}
+            </Alert>
+          )}
 
-                onDelete={(id) => deleteChallenge(ch.id)}
-              />
-            ))}
-          </div>
+          {/* Loading spinner */}
+          {loading ? (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "300px" }}>
+              <Spinner animation="border" variant="success" />
+            </div>
+          ) : (
+            <>
+              {/* Challenges list */}
+              <div className="d-flex flex-column align-items-center">
+                {challenges.length === 0 ? (
+                  <Alert variant="info">No reported challenges found.</Alert>
+                ) : (
+                  challenges.map((ch) => (
+                    <ChallengeCard
+                      key={ch.id}
+                      challengeId={ch.id}
+                      name={ch.content?.title || "Untitled Challenge"}
+                      duration={ch.content?.current_progress || "N/A"}
+                      reason={ch.reason}
+                      description={ch.description}
+                      onDelete={(id) => deleteChallenge(ch.id)}
+                    />
+                  ))
+                )}
+              </div>
+
+              {/* Pagination controls */}
+              {challenges.length > 0 && (
+                <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
+                  <Button
+                    variant="success"
+                    onClick={handlePreviousPage}
+                    disabled={!previousPage || currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="fw-bold">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="success"
+                    onClick={handleNextPage}
+                    disabled={!nextPage || currentPage >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+
           {children}
         </Col>
       </Row>

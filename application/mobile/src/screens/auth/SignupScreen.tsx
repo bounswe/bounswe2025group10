@@ -36,7 +36,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       const response = await authService.signup({ email, username, password });
-      
+
       if (response.message === 'User created successfully.') {
         Alert.alert('Success', 'Account created successfully! Please login.', [
           {
@@ -149,4 +149,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '700',
   },
-}); 
+});

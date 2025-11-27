@@ -25,7 +25,7 @@ vi.mock("react-toastify", () => {
 });
 
 import { toast } from "react-toastify";
-import Alert from "../../components/Alert.jsx"; // adjust path if needed
+import Alert from "../../components/ui/Alert.jsx"; // adjust path if needed
 
 beforeEach(() => {
   // clear history for every spy before each test

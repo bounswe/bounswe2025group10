@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from django.db.models import Q, F
 from .models import Challenge, UserChallenge
 from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
 
@@ -39,8 +40,8 @@ class ChallengeListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @extend_schema(
-        summary="List all challenges",
-        description="Retrieve all challenges. Authenticated users see public challenges and their own private challenges. Unauthenticated users see only public challenges."
+        summary="List all incomplete challenges",
+        description="Retrieve all incomplete challenges (excluding completed ones where current_progress >= target_amount). Authenticated users see public incomplete challenges and their own incomplete private challenges. Unauthenticated users see only public incomplete challenges."
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
@@ -55,14 +56,20 @@ class ChallengeListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         '''
         Customize the queryset to show public challenges to everyone and non-public challenges only to their creators.
+        Exclude completed challenges (where current_progress >= target_amount).
         '''
+        from django.db.models import Q
         user = self.request.user
+        
+        # Filter out completed challenges
+        incomplete_filter = Q(current_progress__lt=F('target_amount')) | Q(target_amount__isnull=True)
+        
         if user.is_authenticated:
-            # Authorized users can see their own challenges and public challenges
-            return Challenge.objects.filter(is_public=True) | Challenge.objects.filter(creator=user)
+            # Authorized users can see their own incomplete challenges and public incomplete challenges
+            return (Challenge.objects.filter(is_public=True) | Challenge.objects.filter(creator=user)).filter(incomplete_filter)
         else:
-            # Unauthenticated users can only see public challenges
-            return Challenge.objects.filter(is_public=True)
+            # Unauthenticated users can only see public incomplete challenges
+            return Challenge.objects.filter(is_public=True).filter(incomplete_filter)
         
     def perform_create(self, serializer):
         '''
@@ -167,7 +174,7 @@ class ChallengeDeleteView(generics.DestroyAPIView):
 
 @extend_schema(
     summary="Join a challenge",
-    description="Enroll the authenticated user in a challenge. Users can only join public challenges or challenges they created. Cannot join a challenge twice.",
+    description="Enroll the authenticated user in a challenge. Users can only join public challenges or challenges they created. Cannot join a challenge twice. Maximum of 3 active challenges per user.",
     request=ChallengeParticipationSerializer,
     responses={
         201: OpenApiResponse(
@@ -183,7 +190,7 @@ class ChallengeDeleteView(generics.DestroyAPIView):
                 )
             ]
         ),
-        400: OpenApiResponse(description="Bad request - already participating or challenge not public"),
+        400: OpenApiResponse(description="Bad request - already participating, challenge not public, or maximum 3 challenges reached"),
         401: OpenApiResponse(description="Unauthorized - authentication required"),
         404: OpenApiResponse(description="Challenge not found")
     },

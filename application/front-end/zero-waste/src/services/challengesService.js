@@ -3,17 +3,23 @@ import apiClient, { createAuthenticatedFetch } from './api.js';
 
 export const challengesService = {
   // Get all challenges
-  getChallenges: async (token) => {
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+  getChallenges: async (token, lang, pageSize) => {
+    const params = {};
+    if (lang) params.lang = lang;
+    if (pageSize) params.page_size = pageSize;
+    const config = token ? { headers: { Authorization: `Bearer ${token}` }, params } : { params };
     const response = await apiClient.get('/api/challenges/', config);
     return response.data; // Return full paginated response
   },
 
   // Get challenges from a specific URL (for pagination)
-  getChallengesFromUrl: async (url, token) => {
+  getChallengesFromUrl: async (url, token, lang, pageSize) => {
     // Extract path from full URL (e.g., "http://...api/challenges/?page=2" -> "/api/challenges/?page=2")
     const path = url.includes('://') ? new URL(url).pathname + new URL(url).search : url;
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const params = {};
+    if (lang) params.lang = lang;
+    if (pageSize) params.page_size = pageSize;
+    const config = token ? { headers: { Authorization: `Bearer ${token}` }, params } : { params };
     const response = await apiClient.get(path, config);
     return response.data;
   },
@@ -38,19 +44,27 @@ export const challengesService = {
   },
 
   // Get enrolled challenges
-  getEnrolledChallenges: async (token) => {
+  getEnrolledChallenges: async (token, lang, pageSize) => {
+    const params = {};
+    if (lang) params.lang = lang;
+    if (pageSize) params.page_size = pageSize;
     const response = await apiClient.get('/api/challenges/enrolled/', {
       headers: { Authorization: `Bearer ${token}` },
+      params,
     });
     return response.data; // Return full paginated response
   },
 
   // Get enrolled challenges from a specific URL (for pagination)
-  getEnrolledChallengesFromUrl: async (url, token) => {
+  getEnrolledChallengesFromUrl: async (url, token, lang, pageSize) => {
     // Extract path from full URL (e.g., "http://...api/challenges/enrolled/?page=2" -> "/api/challenges/enrolled/?page=2")
     const path = url.includes('://') ? new URL(url).pathname + new URL(url).search : url;
+    const params = {};
+    if (lang) params.lang = lang;
+    if (pageSize) params.page_size = pageSize;
     const response = await apiClient.get(path, {
       headers: { Authorization: `Bearer ${token}` },
+      params,
     });
     return response.data;
   },

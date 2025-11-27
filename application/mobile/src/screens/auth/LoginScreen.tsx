@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../../utils/theme';
 import { authService } from '../../services/api';
-import { storage } from '../../utils/storage';
-import { CommonActions } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
@@ -51,35 +49,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       console.log('Attempting login with email:', email);
-      
+
       // First try to get the token
       const response = await authService.login({ email, password });
       console.log('Login response received:', response);
-      
+
       if (!response || !response.token) {
         console.error('Invalid response format:', response);
         Alert.alert('Error', 'Invalid server response');
         return;
       }
 
+      console.log('Token received:', response.token.access ? 'Yes' : 'No');
+
       // Then try to login with the context
       const loginResult = await login(email, password);
       console.log('Context login result:', loginResult);
-      
+
       if (!loginResult) {
         Alert.alert('Error', 'Failed to complete login process');
+        return;
       }
+
+      console.log('Login completed successfully!');
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       let errorMessage = 'An error occurred during login';
-      
+
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         console.error('Server error response:', {
           status: error.response.status,
-          data: error.response.data
+          data: error.response.data,
         });
         errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
       } else if (error.request) {
@@ -91,7 +94,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         console.error('Request setup error:', error.message);
         errorMessage = error.message || errorMessage;
       }
-      
+
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
@@ -207,4 +210,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: 'bold',
   },
-}); 
+});

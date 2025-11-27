@@ -5,7 +5,7 @@ import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import UserCard from "../../Admin/UserCard";   // ← adjust path if needed
+import UserCard from "@/components/features/UserCard";
 
 describe("<UserCard />", () => {
   it("shows the username and badge counts", () => {
@@ -18,14 +18,25 @@ describe("<UserCard />", () => {
       />
     );
 
-    expect(screen.getByText("eco_ninja")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();    // posts badge
-    expect(screen.getByText("1")).toBeInTheDocument();    // comments badge
+    expect(
+      screen.getByText((text) => text.includes("eco_ninja"))
+    ).toBeInTheDocument();
+
+    // badges
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("calls onDelete with username when Delete is clicked", () => {
     const delSpy = vi.fn();
-    render(<UserCard username="green_guru" onDelete={delSpy} />);
+    render(
+      <UserCard
+        username="green_guru"
+        flaggedPosts={0}
+        flaggedComments={0}
+        onDelete={delSpy}
+      />
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
     expect(delSpy).toHaveBeenCalledTimes(1);

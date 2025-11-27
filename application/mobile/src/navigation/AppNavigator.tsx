@@ -7,10 +7,19 @@ import { CommunityScreen } from '../screens/CommunityScreen';
 import { ChallengesScreen } from '../screens/ChallengesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { OtherUserProfileScreen } from '../screens/OtherUserProfileScreen';
+import { TipsScreen } from '../screens/TipsScreen';
+import { AchievementsScreen } from '../screens/AchievementsScreen';
+import { LeaderboardScreen } from '../screens/LeaderboardScreen';
+import { AdminPanel } from '../screens/AdminPanel';
+import { PostModeration } from '../screens/PostModeration';
+import { UserModeration } from '../screens/UserModeration';
+import { ChallengeModeration } from '../screens/ChallengeModeration';
+import { CommentModeration } from '../screens/CommentModeration';
 import { useAuth } from '../context/AuthContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
 import { Image } from 'react-native';
+import { SCREEN_NAMES } from '../hooks/useNavigation';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -26,44 +35,208 @@ const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
-      tabBarIcon: ({ color, size, focused }) => (
+      tabBarIcon: ({ size, focused }) => (
         <Image
           source={iconMap[route.name]}
-          style={{ width: size, height: size }}
+          style={{ 
+            width: size, 
+            height: size,
+            opacity: focused ? 1 : 0.6,
+          }}
           resizeMode="contain"
+          accessibilityLabel={`${route.name} tab`}
         />
       ),
       tabBarActiveTintColor: '#228B22',
       tabBarInactiveTintColor: 'gray',
+      tabBarStyle: {
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#E0E0E0',
+        height: 60,
+        paddingBottom: 8,
+        paddingTop: 8,
+      },
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: '600',
+      },
+      tabBarAccessibilityLabel: `${route.name} tab`,
     })}
   >
-    <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
-    <Tab.Screen name="Community" component={CommunityScreen} options={{ tabBarLabel: 'Community' }} />
-    <Tab.Screen name="Challenges" component={ChallengesScreen} options={{ tabBarLabel: 'Challenges' }} />
-    <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+    <Tab.Screen 
+      name={SCREEN_NAMES.HOME} 
+      component={HomeScreen} 
+      options={{ 
+        tabBarLabel: 'Home',
+        tabBarAccessibilityLabel: 'Home tab',
+      }} 
+    />
+    <Tab.Screen 
+      name={SCREEN_NAMES.COMMUNITY} 
+      component={CommunityScreen} 
+      options={{ 
+        tabBarLabel: 'Community',
+        tabBarAccessibilityLabel: 'Community tab',
+      }} 
+    />
+    <Tab.Screen 
+      name={SCREEN_NAMES.CHALLENGES} 
+      component={ChallengesScreen} 
+      options={{ 
+        tabBarLabel: 'Challenges',
+        tabBarAccessibilityLabel: 'Challenges tab',
+      }} 
+    />
+    <Tab.Screen 
+      name={SCREEN_NAMES.PROFILE} 
+      component={ProfileScreen} 
+      options={{ 
+        tabBarLabel: 'Profile',
+        tabBarAccessibilityLabel: 'Profile tab',
+      }} 
+    />
   </Tab.Navigator>
 );
 
 const AuthStack = () => (
-  <RootStack.Navigator screenOptions={{ headerShown: false }}>
-    <RootStack.Screen name="Login" component={LoginScreen} />
-    <RootStack.Screen name="Signup" component={SignupScreen} />
+  <RootStack.Navigator 
+    screenOptions={{ 
+      headerShown: false,
+      gestureEnabled: true,
+      animation: 'slide_from_right',
+    }}
+  >
+    <RootStack.Screen 
+      name={SCREEN_NAMES.LOGIN} 
+      component={LoginScreen}
+      options={{
+        title: 'Login',
+        headerShown: false,
+      }}
+    />
+    <RootStack.Screen 
+      name={SCREEN_NAMES.SIGNUP} 
+      component={SignupScreen}
+      options={{
+        title: 'Sign Up',
+        headerShown: false,
+      }}
+    />
   </RootStack.Navigator>
 );
 
 export const AppNavigator = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   return (
     <NavigationContainer>
       {isAuthenticated ? (
-        <RootStack.Navigator screenOptions={{ headerShown: false }}>
-          <RootStack.Screen name="MainTabs" component={MainTabs} />
-          <RootStack.Screen name="OtherProfile" component={OtherUserProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
+        <RootStack.Navigator 
+          screenOptions={{ 
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        >
+          {isAdmin ? (
+            // Admin user sees admin panel and moderation screens
+            <>
+              <RootStack.Screen 
+                name="AdminPanel" 
+                component={AdminPanel}
+                options={{
+                  title: 'Admin Panel',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="PostModeration" 
+                component={PostModeration}
+                options={{
+                  title: 'Post Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="UserModeration" 
+                component={UserModeration}
+                options={{
+                  title: 'User Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="ChallengeModeration" 
+                component={ChallengeModeration}
+                options={{
+                  title: 'Challenge Moderation',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name="CommentModeration" 
+                component={CommentModeration}
+                options={{
+                  title: 'Comment Moderation',
+                  headerShown: false,
+                }}
+              />
+            </>
+          ) : (
+            // Regular user sees normal app
+            <>
+              <RootStack.Screen 
+                name={SCREEN_NAMES.MAIN_TABS} 
+                component={MainTabs}
+                options={{
+                  title: 'Zero Waste App',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.OTHER_PROFILE} 
+                component={OtherUserProfileScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Profile',
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.TIPS} 
+                component={TipsScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.ACHIEVEMENTS} 
+                component={AchievementsScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.LEADERBOARD} 
+                component={LeaderboardScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+            </>
+          )}
         </RootStack.Navigator>
       ) : (
         <AuthStack />
       )}
     </NavigationContainer>
   );
-}; 
+};

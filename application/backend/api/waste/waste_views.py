@@ -27,7 +27,7 @@ point_coefficients = {
 
 @extend_schema(
     summary="Log waste disposal",
-    description="Record waste disposal for the authenticated user. Automatically calculates points and CO2 emissions, updates user totals, and progresses challenges. Awards achievements when challenges are completed.",
+    description="Record waste disposal for the authenticated user. Automatically calculates points and CO2 emissions, updates user totals, and progresses the first joined incomplete challenge (oldest by joined_date). Awards achievements when challenges are completed.",
     request=UserWasteSerializer,
     responses={
         201: OpenApiResponse(
@@ -82,22 +82,29 @@ def create_user_waste(request):
             request.user.total_co2 = F('total_co2') + co2_emission
             request.user.save()
 
-            # Get the challenges the user is participating in
-            user_challenges = UserChallenge.objects.filter(user=request.user)
+            # Get the challenges the user is participating in, ordered by joined_date (oldest first)
+            user_challenges = UserChallenge.objects.filter(user=request.user).order_by('joined_date')
 
-            # Update the current_progress of each challenge
+            # Only progress the first challenge (oldest joined, not yet completed)
+            first_incomplete_challenge = None
             for user_challenge in user_challenges:
                 challenge = user_challenge.challenge
+                # Check if this challenge is not yet completed
+                if challenge.current_progress < challenge.target_amount:
+                    first_incomplete_challenge = challenge
+                    break
+            
+            # Update only the first incomplete challenge
+            if first_incomplete_challenge:
+                challenge = first_incomplete_challenge
                 challenge.current_progress = F('current_progress') + logged_amount # F expression ensures that the update is atomic
                 challenge.save() # Save the F expression to the database
 
                 # Refresh the challenge instance to get the updated value
                 challenge.refresh_from_db()
 
-
                 # Distribute achievements if challenge is completed
-                challenge.refresh_from_db()
-                if challenge.current_progress > challenge.target_amount:
+                if challenge.current_progress >= challenge.target_amount:
 
                     challenge.current_progress = challenge.target_amount
 

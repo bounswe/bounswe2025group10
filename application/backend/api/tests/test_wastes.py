@@ -655,3 +655,232 @@ class WasteViewsTests(TestCase):
         response = get_suspicious_wastes(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data['data']), 1)
+
+
+class WasteChallengeProgressionTests(TestCase):
+    """Test cases for challenge progression when logging waste"""
+    
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.client = APIClient()
+        
+        # Create test user
+        self.user = Users.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",
+            total_points=0,
+            total_co2=0
+        )
+        
+        # Create waste types
+        self.plastic, _ = Waste.objects.get_or_create(type='PLASTIC')
+        self.paper, _ = Waste.objects.get_or_create(type='PAPER')
+        
+        # Create multiple challenges with different joined dates
+        self.challenge1 = Challenge.objects.create(
+            title="First Challenge",
+            description="Oldest challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        self.challenge2 = Challenge.objects.create(
+            title="Second Challenge",
+            description="Middle challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        self.challenge3 = Challenge.objects.create(
+            title="Third Challenge",
+            description="Newest challenge",
+            is_public=True,
+            target_amount=100,
+            current_progress=0,
+            creator=self.user
+        )
+        
+        # Join challenges in order (oldest to newest)
+        from datetime import timedelta
+        base_time = timezone.now()
+        
+        self.uc1 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge1,
+            joined_date=base_time - timedelta(days=10)  # Oldest
+        )
+        
+        self.uc2 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge2,
+            joined_date=base_time - timedelta(days=5)  # Middle
+        )
+        
+        self.uc3 = UserChallenge.objects.create(
+            user=self.user,
+            challenge=self.challenge3,
+            joined_date=base_time  # Newest
+        )
+
+    def test_waste_log_progresses_first_joined_challenge(self):
+        """
+        Test that logging waste only progresses the first joined (oldest) incomplete challenge.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges from database
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # Only first challenge should progress
+        self.assertEqual(self.challenge1.current_progress, 10.0)
+        self.assertEqual(self.challenge2.current_progress, 0)
+        self.assertEqual(self.challenge3.current_progress, 0)
+
+    def test_waste_log_progresses_second_when_first_completed(self):
+        """
+        Test that when first challenge is completed, waste progresses the second challenge.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete the first challenge
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 15.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # First challenge should remain at 100 (completed)
+        self.assertEqual(self.challenge1.current_progress, 100)
+        # Second challenge should progress
+        self.assertEqual(self.challenge2.current_progress, 15.0)
+        # Third challenge should not progress
+        self.assertEqual(self.challenge3.current_progress, 0)
+
+    def test_waste_log_progresses_third_when_first_two_completed(self):
+        """
+        Test that waste progresses the third challenge when first two are completed.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete first two challenges
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        self.challenge2.current_progress = 100
+        self.challenge2.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 20.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # First two should remain completed
+        self.assertEqual(self.challenge1.current_progress, 100)
+        self.assertEqual(self.challenge2.current_progress, 100)
+        # Third challenge should progress
+        self.assertEqual(self.challenge3.current_progress, 20.0)
+
+    def test_no_challenge_progression_when_all_completed(self):
+        """
+        Test that no challenges progress when all are completed.
+        """
+        self.client.force_authenticate(user=self.user)
+        
+        # Complete all challenges
+        self.challenge1.current_progress = 100
+        self.challenge1.save()
+        self.challenge2.current_progress = 100
+        self.challenge2.save()
+        self.challenge3.current_progress = 100
+        self.challenge3.save()
+        
+        # Log waste
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 25.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Refresh challenges
+        self.challenge1.refresh_from_db()
+        self.challenge2.refresh_from_db()
+        self.challenge3.refresh_from_db()
+        
+        # All should remain at 100
+        self.assertEqual(self.challenge1.current_progress, 100)
+        self.assertEqual(self.challenge2.current_progress, 100)
+        self.assertEqual(self.challenge3.current_progress, 100)
+
+    def test_challenge_completion_awards_achievement(self):
+        """
+        Test that completing a challenge awards the achievement to all participants.
+        """
+        from api.models import Achievements, UserAchievements
+        
+        self.client.force_authenticate(user=self.user)
+        
+        # Set first challenge close to completion
+        self.challenge1.current_progress = 95
+        self.challenge1.save()
+        
+        # Ensure challenge has a reward
+        if not self.challenge1.reward:
+            reward = Achievements.objects.create(
+                title="First Challenge Complete",
+                description="Completed first challenge"
+            )
+            self.challenge1.reward = reward
+            self.challenge1.save()
+        
+        # Log enough waste to complete the challenge
+        response = self.client.post('/api/waste/', {
+            'waste_type': 'PLASTIC',
+            'amount': 10.0
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Check that achievement was awarded
+        self.assertTrue(
+            UserAchievements.objects.filter(
+                user=self.user,
+                achievement=self.challenge1.reward
+            ).exists()
+        )
+        
+        # Check that challenge is marked as complete
+        self.challenge1.refresh_from_db()
+        self.assertEqual(self.challenge1.current_progress, 100)

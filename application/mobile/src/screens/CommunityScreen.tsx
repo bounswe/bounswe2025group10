@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import api from '../services/api';
-import { launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 
 interface Post {
@@ -48,8 +48,8 @@ export const CommunityScreen = () => {
 
   const navigation = useNavigation<any>();
 
-  const fetchPosts = async () => {
-    if (!refreshing) setLoading(true);
+  const fetchPosts = useCallback(async () => {
+    if (!refreshing) {setLoading(true);}
     try {
       const response = await api.get('/api/posts/all/');
       setPosts(response.data.data); // response.data.data is the array of posts
@@ -59,22 +59,24 @@ export const CommunityScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]);
 
   const pickImage = async () => {
-    launchImageLibrary(
-      { mediaType: 'photo', quality: 0.8 },
-      (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) {
-          Alert.alert('Error', response.errorMessage || 'Image picker error');
-          return;
-        }
-        if (response.assets && response.assets.length > 0) {
-          setImageFile(response.assets[0]);
-        }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled) {return;}
+
+      if (result.assets && result.assets.length > 0) {
+        setImageFile(result.assets[0]);
       }
-    );
+    } catch (error) {
+      Alert.alert('Error', 'Image picker error');
+    }
   };
 
   const createPost = async () => {
@@ -85,12 +87,12 @@ export const CommunityScreen = () => {
     setCreating(true);
     try {
       const formData = new FormData();
-      if (newText) formData.append('text', newText);
+      if (newText) {formData.append('text', newText);}
       if (imageFile) {
         formData.append('image', {
           uri: imageFile.uri,
-          name: imageFile.fileName || 'photo.jpg',
-          type: imageFile.type || 'image/jpeg',
+          name: 'photo.jpg',
+          type: 'image/jpeg',
         });
       }
       await api.post('/api/posts/create/', formData, {
@@ -112,19 +114,19 @@ export const CommunityScreen = () => {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   const handleReaction = async (postId: number, type: 'like' | 'dislike') => {
     try {
       const response = await api.post(`/api/posts/${postId}/${type}/`);
       if (response.data && response.data.data) {
         const updatedPost = response.data.data;
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
             post.id === postId ? { ...post, ...updatedPost } : post
           )
         );
@@ -160,7 +162,7 @@ export const CommunityScreen = () => {
   };
 
   const postComment = async () => {
-    if (!selectedPostId || !newComment.trim()) return;
+    if (!selectedPostId || !newComment.trim()) {return;}
     setPostingComment(true);
     try {
       await api.post(`/api/posts/${selectedPostId}/comments/create/`, { content: newComment });
@@ -199,16 +201,16 @@ export const CommunityScreen = () => {
           <Image source={{ uri: imageUrl }} style={styles.postImage} />
         ) : null}
         <View style={styles.statsRow}>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]} 
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]}
             onPress={() => handleReaction(item.id, 'like')}
           >
             <Text style={[styles.reactionText, item.is_user_liked && styles.activeReactionText]}>
               👍 {item.like_count}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]} 
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]}
             onPress={() => handleReaction(item.id, 'dislike')}
           >
             <Text style={[styles.reactionText, item.is_user_disliked && styles.activeReactionText]}>
@@ -498,4 +500,4 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: 'bold',
   },
-}); 
+});

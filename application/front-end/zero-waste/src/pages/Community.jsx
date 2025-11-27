@@ -19,7 +19,8 @@ const DEFAULT_POST_IMAGE = "https://developers.elementor.com/docs/assets/img/ele
 export default function Community() {
   const { token } = useAuth();
   const { currentTheme } = useTheme();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+  const [pageSize, setPageSize] = useState(9);
   const {
     posts,
     postsLoading: isLoading,
@@ -35,7 +36,7 @@ export default function Community() {
     fetchPosts,
     postsResponse,
     setPostsResponse,
-  } = usePosts();
+  } = usePosts(language, pageSize);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -80,7 +81,7 @@ export default function Community() {
   const handleNextPage = async () => {
     if (postsResponse?.next) {
       try {
-        const data = await postsService.getPostsFromUrl(postsResponse.next, token);
+        const data = await postsService.getPostsFromUrl(postsResponse.next, token, language, pageSize);
         setPostsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
@@ -92,13 +93,32 @@ export default function Community() {
   const handlePreviousPage = async () => {
     if (postsResponse?.previous) {
       try {
-        const data = await postsService.getPostsFromUrl(postsResponse.previous, token);
+        const data = await postsService.getPostsFromUrl(postsResponse.previous, token, language, pageSize);
         setPostsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
         showToast(t('common.error', 'An error occurred'), "error");
       }
     }
+  };
+
+  // Calculate current page number from pagination URLs
+  const getCurrentPage = () => {
+    if (postsResponse?.previous) {
+      const prevUrl = new URL(postsResponse.previous, window.location.origin);
+      const prevPage = parseInt(prevUrl.searchParams.get('page') || '1');
+      return prevPage + 1;
+    } else if (postsResponse?.next) {
+      return 1;
+    }
+    return 1;
+  };
+
+  const getTotalPages = () => {
+    if (postsResponse?.count && pageSize) {
+      return Math.ceil(postsResponse.count / pageSize);
+    }
+    return 1;
   };
 
 
@@ -235,19 +255,33 @@ export default function Community() {
             {t('community.title', 'Community')}
           </h1>
           <div className="flex flex-wrap gap-3">
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="rounded-lg border px-3 py-2 text-sm"
-              style={{
-                backgroundColor: currentTheme.background,
-                borderColor: currentTheme.border,
-                color: currentTheme.text
-              }}
-            >
-              <option value="recent">{t('community.mostRecent', 'Most Recent')}</option>
-              <option value="likes">{t('community.mostLiked', 'Most Liked')}</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <label
+                className="text-sm font-medium"
+                style={{ color: currentTheme.text }}
+              >
+                {t('common.itemsPerPage', 'Items per page')}:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg px-3 py-1.5 text-sm border"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  color: currentTheme.text,
+                  borderColor: currentTheme.border
+                }}
+              >
+                <option value={3}>3</option>
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={12}>12</option>
+                <option value={15}>15</option>
+                <option value={18}>18</option>
+                <option value={21}>21</option>
+                <option value={24}>24</option>
+              </select>
+            </div>
             <button
               onClick={() => {
                 setShowingSaved(!showingSaved);
@@ -773,7 +807,7 @@ export default function Community() {
         </AnimatePresence>
 
         {/* Pagination Controls - Only show for regular posts, not saved posts */}
-        {!showingSaved && !isLoading && sortedPosts.length > 0 && (postsResponse?.next || postsResponse?.previous) && (
+        {!isLoading && !showingSaved && posts.length > 0 && (
           <div className="flex justify-center items-center gap-4 mt-8 mb-4">
             <button
               onClick={handlePreviousPage}
@@ -786,9 +820,14 @@ export default function Community() {
             >
               ← {t('common.previous', 'Previous')}
             </button>
-            <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
-              {postsResponse?.count ? `${t('common.total', 'Total')}: ${postsResponse.count}` : ''}
-            </span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
+                {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
+              </span>
+              <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
+                {postsResponse?.count ? `${t('common.total', 'Total')}: ${postsResponse.count}` : ''}
+              </span>
+            </div>
             <button
               onClick={handleNextPage}
               disabled={!postsResponse?.next}

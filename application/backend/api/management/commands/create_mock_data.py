@@ -827,22 +827,35 @@ def generate_mock_data(
         challenges.append(ch)
 
 
-    # Public challenges: many members; private: creator only
+    # Public challenges: assign users but respect max 3 challenges per user
+    # Private challenges: creator only
+    user_challenge_counts = {user.id: 0 for user in users}
+    
     for ch in challenges:
         if ch.is_public:
-            chosen_users = random.sample(users, random.randint(1, len(users)))
-            for u in chosen_users:
+            # Randomly select users but ensure they don't exceed 3 challenges
+            available_users = [u for u in users if user_challenge_counts[u.id] < 3]
+            if available_users:
+                # Choose a random number of users to join this challenge
+                num_participants = random.randint(1, min(len(available_users), len(users) // 2))
+                chosen_users = random.sample(available_users, num_participants)
+                
+                for u in chosen_users:
+                    UserChallenge.objects.create(
+                        user=u,
+                        challenge=ch,
+                        joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                    )
+                    user_challenge_counts[u.id] += 1
+        else:
+            # Private challenge: only creator joins (if they have room)
+            if user_challenge_counts[ch.creator.id] < 3:
                 UserChallenge.objects.create(
-                    user=u,
+                    user=ch.creator,
                     challenge=ch,
                     joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
                 )
-        else:
-            UserChallenge.objects.create(
-                user=ch.creator,
-                challenge=ch,
-                joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
-            )
+                user_challenge_counts[ch.creator.id] += 1
 
     # ------------------------------- REPORTS ---------------------------------
     comment_ct = ContentType.objects.get_for_model(Comments)

@@ -7,13 +7,17 @@ import { Card, Button, Row, Col } from "react-bootstrap";
  * Props
  *  • commentId   : number|string
  *  • username    : string
- *  • description : string  (comment body)
+ *  • content     : string  (comment body)
+ *  • reason      : string  (report reason)
+ *  • description : string  (report description)
  *  • onDelete    : function(id)  – callback when Delete is clicked
  */
 
 export default function CommentCard({
   commentId,
   username,
+  content,
+  reason,
   description,
   onDelete,
 }) {
@@ -27,7 +31,17 @@ export default function CommentCard({
           <Col>
             <div className="fw-semibold text-success">{username}</div>
             <div className="text-muted small mb-2">Comment ID : {commentId}</div>
-            <Card.Text className="mb-0">{description}</Card.Text>
+            <Card.Text className="mb-2">{content}</Card.Text>
+            {reason && (
+              <div className="mt-2">
+                <strong className="text-danger">Report Reason:</strong> {reason}
+              </div>
+            )}
+            {description && (
+              <div className="text-muted small mt-1">
+                <strong>Description:</strong> {description}
+              </div>
+            )}
           </Col>
 
           <Col xs="auto">

@@ -2,111 +2,54 @@
  * @vitest-environment jsdom
  */
 import React from "react";
-import { describe, it, expect, afterEach } from "vitest";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
-import AuthProvider from "../../Login/AuthContent";          // ← wrap with provider
-import ProtectedAdminRoute from "../../Login/ProtectedAdminRoute";
 
-///////////////////////////////////////////////////////////////////////////
-// shared helper
-///////////////////////////////////////////////////////////////////////////
-const renderWithAuth = (
-  ui,
-  { route = "/adminPage", token = null, isAdmin = false } = {}
-) => {
-  // reset storage for each render
-  localStorage.clear();
-  if (token) {
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("isAdmin", String(isAdmin));       // ← flag the user as admin
-  }
+vi.mock("react-router-dom", () => ({
+  Navigate: ({ to }) => <div>navigate-{to}</div>,
+  Outlet: () => <div>outlet</div>,
+}));
 
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      <AuthProvider>{ui}</AuthProvider>                     {/* must be inside router */}
-    </MemoryRouter>
-  );
-};
+vi.mock("../../providers/AuthContext.jsx", () => ({
+  useAuth: vi.fn(),
+}));
 
-///////////////////////////////////////////////////////////////////////////
-// tests
-///////////////////////////////////////////////////////////////////////////
-describe("ProtectedAdminRoute", () => {
-  afterEach(() => {
-    cleanup();
-    localStorage.clear();
+
+import { useAuth } from "../../providers/AuthContext.jsx";
+import ProtectedAdminRoute from "../../routes/ProtectedAdminRoute.jsx";
+
+/* -------------------------------------------------------------
+ * Tests
+ * ----------------------------------------------------------- */
+describe("ProtectedAdminRoute — minimal logic test", () => {
+  it("renders nothing if not authenticated", () => {
+    useAuth.mockReturnValue({
+      isAuthenticated: false,
+      isAdmin: false,
+    });
+
+    const { container } = render(<ProtectedAdminRoute />);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("redirects to /login if no token is found", () => {
-    renderWithAuth(
-      <Routes>
-        <Route path="/adminPage" element={<ProtectedAdminRoute />}>
-          <Route index element={<h1>Admin Panel</h1>} />
-        </Route>
-        <Route path="/login" element={<h1>Login Page</h1>} />
-      </Routes>
-    );
+  it("renders Outlet when authenticated + admin", () => {
+    useAuth.mockReturnValue({
+      isAuthenticated: true,
+      isAdmin: true,
+    });
 
-    expect(screen.getByText("Login Page")).toBeInTheDocument();
+    render(<ProtectedAdminRoute />);
+    expect(screen.getByText("outlet")).toBeInTheDocument();
   });
 
-  it("renders child route when token *and* admin flag are present", () => {
-    renderWithAuth(
-      <Routes>
-        <Route path="/adminPage" element={<ProtectedAdminRoute />}>
-          <Route index element={<h1>Admin Panel</h1>} />
-        </Route>
-        <Route path="/login" element={<h1>Login Page</h1>} />
-      </Routes>,
-      { token: "fake-admin-token", isAdmin: true }           // ← valid admin session
-    );
+  it("redirects to / when authenticated but NOT admin", () => {
+    useAuth.mockReturnValue({
+      isAuthenticated: true,
+      isAdmin: false,
+    });
 
-    expect(screen.getByText("Admin Panel")).toBeInTheDocument();
+    render(<ProtectedAdminRoute />);
+    expect(screen.getByText("navigate-/")).toBeInTheDocument();
   });
 });
-
- import React from "react";
- import { describe, it, expect, beforeEach } from "vitest";
- import { MemoryRouter, Routes, Route } from "react-router-dom";
- import { render, screen } from "@testing-library/react";
- import ProtectedAdminRoute from "../../Login/ProtectedAdminRoute"; // adjust path as needed
- 
- describe("ProtectedAdminRoute", () => {
-   beforeEach(() => {
-     localStorage.clear();
-   });
- 
-   it("redirects to /login if no token is found", () => {
-     render(
-       <MemoryRouter initialEntries={["/admin"]}>
-         <Routes>
-           <Route path="/admin" element={<ProtectedAdminRoute />}>
-             <Route index element={<h1>Admin Panel</h1>} />
-           </Route>
-           <Route path="/login" element={<h1>Login Page</h1>} />
-         </Routes>
-       </MemoryRouter>
-     );
- 
-     expect(screen.getByText("Login Page")).toBeInTheDocument();
-   });
- 
-   it("renders child route when token is present", () => {
-     localStorage.setItem("accessToken", "fake-admin-token");
- 
-     render(
-       <MemoryRouter initialEntries={["/admin"]}>
-         <Routes>
-           <Route path="/admin" element={<ProtectedAdminRoute />}>
-             <Route index element={<h1>Admin Panel</h1>} />
-           </Route>
-           <Route path="/login" element={<h1>Login Page</h1>} />
-         </Routes>
-       </MemoryRouter>
-     );
- 
-     expect(screen.getByText("Admin Panel")).toBeInTheDocument();
-   });
- });

@@ -1,46 +1,152 @@
+/**
+ * @vitest-environment jsdom
+ */
 import React from "react";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import Community from "../../pages/Community";
-import { useAuth } from "../../Login/AuthContent";
+import "@testing-library/jest-dom";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
-vi.mock("../../Login/AuthContent", () => ({
-  useAuth: vi.fn(),
+import Community from "../../pages/Community";
+
+/* ------------------ MOCK AUTH CONTEXT ------------------ */
+vi.mock("../../providers/AuthContext", () => ({
+  useAuth: () => ({
+    token: "mock-token",
+    user: { username: "asya" }
+  }),
 }));
 
-describe("Community Page", () => {
+/* ------------------ MOCK LANGUAGE CONTEXT ------------------ */
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback ?? key,
+    isRTL: false,
+    language: "en",
+    availableLanguages: [
+      { code: "en", name: "English", flag: "🇬🇧" },
+      { code: "tr", name: "Türkçe", flag: "🇹🇷" },
+    ],
+    changeLanguage: vi.fn(),
+  }),
+}));
+
+/* ------------------ MOCK THEME CONTEXT (THE FIX) ------------------ */
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    theme: "light",
+    currentTheme: {
+      text: "#000",
+      background: "#fff",
+      border: "#ddd",
+      secondary: "#4caf50",
+    },
+    availableThemes: [
+      { code: "light", icon: "🌞" },
+      { code: "dark", icon: "🌙" },
+    ],
+    changeTheme: vi.fn(),
+  }),
+}));
+
+/* ------------------ MOCK usePosts HOOK ------------------ */
+const mockFetchPosts = vi.fn();
+const mockToggleLike = vi.fn();
+const mockToggleDislike = vi.fn();
+const mockSavePost = vi.fn();
+const mockUnsavePost = vi.fn();
+const mockFetchSavedPosts = vi.fn();
+
+vi.mock("../../hooks/usePosts", () => ({
+  usePosts: () => ({
+    posts: [
+      {
+        id: 1,
+        text: "Hello community!",
+        creator_username: "asya",
+        creator_profile_image: "",
+        date: new Date().toISOString(),
+        like_count: 10,
+        dislike_count: 1,
+        is_user_liked: false,
+        is_user_disliked: false,
+      },
+    ],
+    postsLoading: false,
+    createPost: vi.fn(),
+    createLoading: false,
+    toggleLike: mockToggleLike,
+    toggleDislike: mockToggleDislike,
+    savedPosts: [],
+    savedPostIds: new Set(),
+    savePost: mockSavePost,
+    unsavePost: mockUnsavePost,
+    fetchSavedPosts: mockFetchSavedPosts,
+    fetchPosts: mockFetchPosts,
+    postsResponse: { next: null, previous: null, count: 1 },
+    setPostsResponse: vi.fn(),
+  }),
+}));
+
+/* ------------------ MOCK useComments HOOK ------------------ */
+vi.mock("../../hooks/useComments", () => ({
+  useComments: () => ({
+    postComments: {},
+    commentInputs: {},
+    commentLoading: false,
+    fetchComments: vi.fn(),
+    createComment: vi.fn(),
+    reportComment: vi.fn(),
+    updateCommentInput: vi.fn(),
+  }),
+}));
+
+/* ------------------ SUPPRESS TOASTS ------------------ */
+vi.mock("../../utils/toast", () => ({
+  showToast: vi.fn(),
+}));
+
+/* ===========================================================
+   TESTS
+   =========================================================== */
+
+describe("<Community />", () => {
+
   beforeEach(() => {
-    useAuth.mockReturnValue({ token: "mock-token" });
+    vi.clearAllMocks();
   });
 
-  it("renders the Community heading and posts", async () => {
-    render(<Community />);
+  const renderPage = () =>
+    render(
+      <MemoryRouter>
+        <Community />
+      </MemoryRouter>
+    );
 
-    // Use role+name to target the heading
-    const heading = screen.getByRole("heading", { name: "Community" });
-    expect(heading).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(screen.getByText("My Zero Waste Journey")).toBeInTheDocument();
-      expect(screen.getByText("Composting Tips")).toBeInTheDocument();
-    });
+  it("renders the Community page title", () => {
+    renderPage();
+    expect(screen.getByText("Community")).toBeInTheDocument();
   });
 
-  it("shows loading state initially", () => {
-    render(<Community />);
-    expect(screen.getByRole("heading", { name: "Community" })).toBeInTheDocument();
-    expect(document.querySelector("[aria-busy='true']")).toBeInTheDocument(); // fallback if no region
+  it("calls fetchPosts on mount", () => {
+    renderPage();
+    expect(mockFetchPosts).toHaveBeenCalled();
+  });
+
+  it("renders a post card", () => {
+    renderPage();
+    expect(screen.getByText("Hello community!")).toBeInTheDocument();
+    expect(screen.getByText("asya")).toBeInTheDocument();
   });
 
 
-  it("opens the Create Post modal", () => {
-    render(<Community />);
+  it("toggles saved posts mode", () => {
+    renderPage();
 
-    // Use role instead of just text
-    const createButton = screen.getByRole("button", { name: "Create Post" });
-    fireEvent.click(createButton);
+    const btn = screen.getByRole("button", { name: /show saved posts/i });
+    fireEvent.click(btn);
 
-    // Now assert modal title
-    expect(screen.getByRole("heading", { name: "Create Post" })).toBeInTheDocument();
+    expect(mockFetchSavedPosts).toHaveBeenCalled();
   });
+
 });

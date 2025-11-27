@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { colors } from '../utils/theme';
 import { wasteService, achievementService, profileService, API_URL, profilePublicService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { launchImageLibrary, Asset } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../utils/storage';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useAppNavigation } from '../hooks/useNavigation';
 
 const chartConfig = {
   backgroundGradientFrom: '#eafbe6',
@@ -21,12 +23,13 @@ const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 // Main profile component that handles the user data display
 const ProfileMain: React.FC = () => {
   const { userData, fetchUserData, logout } = useAuth();
+  const { navigateToScreen } = useAppNavigation();
   const [wasteData, setWasteData] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [profileImageLoadError, setProfileImageLoadError] = useState(false);
+  const [_refreshing, setRefreshing] = useState(false);
+  const [_profileImageLoadError, setProfileImageLoadError] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [bio, setBio] = useState<string>('');
   const [editingBio, setEditingBio] = useState(false);
@@ -48,25 +51,25 @@ const ProfileMain: React.FC = () => {
     return url;
   };
 
-  const fetchBio = async () => {
-    if (!userData?.username) return;
+  const fetchBio = useCallback(async () => {
+    if (!userData?.username) {return;}
     try {
       const data = await profilePublicService.getUserBio(userData.username);
       setBio(data.bio || '');
     } catch (err) {
       console.warn('Error fetching bio');
     }
-  };
+  }, [userData?.username]);
 
   const fetchData = async () => {
     try {
       const [wasteResponse, challengesResponse] = await Promise.all([
         wasteService.getUserWastes(),
-        achievementService.getUserAchievements()
+        achievementService.getUserAchievements(),
       ]);
-      
+
       // Handle waste data
-      if (wasteResponse.message === "User wastes retrieved successfully") {
+      if (wasteResponse.message === 'User wastes retrieved successfully') {
         setWasteData(wasteResponse.data);
       }
 
@@ -76,7 +79,7 @@ const ProfileMain: React.FC = () => {
           id: challenge.challenge,
           title: 'Challenge Achievement',
           description: `Joined challenge on ${new Date(challenge.joined_date).toLocaleDateString()}`,
-          date_earned: challenge.joined_date
+          date_earned: challenge.joined_date,
         })));
       }
     } catch (error) {
@@ -87,17 +90,10 @@ const ProfileMain: React.FC = () => {
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchUserData(); // Refresh user data including profile picture
-    await fetchData();
-    await fetchBio();
-  };
-
   useEffect(() => {
     fetchData();
     fetchBio();
-  }, [userData]); // Add userData as dependency to refresh when it changes
+  }, [fetchBio]); // fetchBio already depends on userData?.username
 
   // Prepare data for BarChart - handle the specific waste data structure
   const screenWidth = Dimensions.get('window').width - 40;
@@ -107,14 +103,14 @@ const ProfileMain: React.FC = () => {
 
   const profileImageSource = (() => {
     console.log('Current userData state:', JSON.stringify(userData, null, 2));
-    
+
     // Always try to load the profile picture if we have a username
     if (userData?.username) {
       if (!authToken) {
         console.warn('Auth token not yet loaded, using placeholder');
         return PROFILE_PLACEHOLDER;
       }
-      
+
       const source = {
         uri: getProfilePictureUrl(userData.username),
         headers: {
@@ -125,70 +121,66 @@ const ProfileMain: React.FC = () => {
       console.log('Using profile image source:', JSON.stringify(source, null, 2));
       return source;
     }
-    
+
     console.log('No username available, using placeholder');
     return PROFILE_PLACEHOLDER;
   })();
-  
+
   console.log('Profile image source:', profileImageSource);
 
   // Handle selecting and uploading a new profile picture
-  const handleChoosePhoto = () => {
-    if (uploading) return;
-    launchImageLibrary({ 
-      mediaType: 'photo', 
-      quality: 0.8,
-      includeBase64: false,
-    }, async (response) => {
-      if (response.didCancel) {
+  const handleChoosePhoto = async () => {
+    if (uploading) {return;}
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled) {
         console.log('User cancelled image picker');
         return;
       }
-      if (response.errorCode) {
-        console.error('ImagePicker Error:', response.errorCode, response.errorMessage);
-        Alert.alert('Image Picker Error', response.errorMessage || 'Unknown error');
-        return;
-      }
-      
-      const asset: Asset | undefined = response.assets && response.assets[0];
+
+      const asset = result.assets[0];
       if (!asset?.uri) {
         console.error('No image URI available');
         Alert.alert('Error', 'Could not obtain image URI');
         return;
       }
 
-      try {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append('image', {
-          uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
-          type: asset.type || 'image/jpeg',
-          name: asset.fileName || `profile_${Date.now()}.jpg`,
-        } as any);
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('image', {
+        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
+        type: 'image/jpeg',
+        name: `profile_${Date.now()}.jpg`,
+      } as any);
 
-        const uploadResponse = await profileService.uploadProfilePicture(formData);
-        console.log('Upload response:', JSON.stringify(uploadResponse, null, 2));
-        
-        // Force reload user data
-        await fetchUserData();
-        console.log('User data refreshed after upload');
-        
-        // Force a re-render by updating state
-        setUploading(false); // This will trigger a re-render
-        
-        await fetchData();
-        Alert.alert('Success', 'Profile picture updated');
-      } catch (error: any) {
-        console.error('Upload error details:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-        });
-        Alert.alert('Error', 'Could not upload profile picture');
-      } finally {
-        setUploading(false);
-      }
-    });
+      const uploadResponse = await profileService.uploadProfilePicture(formData);
+      console.log('Upload response:', JSON.stringify(uploadResponse, null, 2));
+
+      // Force reload user data
+      await fetchUserData();
+      console.log('User data refreshed after upload');
+
+      // Force a re-render by updating state
+      setUploading(false); // This will trigger a re-render
+
+      await fetchData();
+      Alert.alert('Success', 'Profile picture updated');
+    } catch (error: any) {
+      console.error('Upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      Alert.alert('Error', 'Could not upload profile picture');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -203,8 +195,8 @@ const ProfileMain: React.FC = () => {
     <View style={styles.mainContainer}>
       {/* Profile Picture */}
       <TouchableOpacity style={styles.profilePicWrapper} onPress={handleChoosePhoto} disabled={uploading}>
-        <Image 
-          source={profileImageSource} 
+        <Image
+          source={profileImageSource}
           style={styles.profilePic}
           onError={(error) => {
             console.error('Profile image loading error:', error.nativeEvent);
@@ -335,17 +327,15 @@ export const ProfileScreen: React.FC = () => {
   }, [fetchUserData]);
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={{ alignItems: 'center', paddingVertical: 24 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <ScreenWrapper
+      title="Profile"
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      testID="profile-screen"
+      accessibilityLabel="User profile screen with personal information and statistics"
     >
-      <View style={styles.container}>
-        <ProfileMain />
-      </View>
-    </ScrollView>
+      <ProfileMain />
+    </ScreenWrapper>
   );
 };
 
@@ -537,4 +527,4 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#228B22',
   },
-}); 
+});
