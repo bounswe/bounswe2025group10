@@ -23,26 +23,67 @@ For detailed information, please refer to [Software Requirement Specifications](
 
 For detailed information on project requirements, design diagrams, and meeting notes, please refer to our [Project Wiki](https://github.com/bounswe/bounswe2025group10/wiki).
 
-## 🐳 Docker Usage
 
-This project supports Docker for consistent development and deployment environments.
+## 🚀 Quick Start
 
-### 🚀 Quick Start
+### Prerequisites
+- Node.js (v18 or later)
+- npm (v8 or later)
+- Docker (optional, for running the application in a container)
 
-1. **Build and run the application:**
-   ```bash
-   docker-compose up --build
-   ```
-
-2. **Stop the containers:**
+### **Backend**
+1. **Stop the containers:**
+   In a terminal:
    ```bash
    docker-compose down
    ```
 
-3. **Rebuild without cache (if needed):**
+2. **Build the backend:**
+   Inside the backend folder run this command:
    ```bash
-   docker-compose build --no-cache
+   docker-compose up --build
    ```
+
+3. **Backend deployed:**
+   Now the backend is deployed at http://localhost:8000.
+
+### Frontend
+To start the development server, run:
+```
+npm run dev
+```
+This will start the application in development mode and open it in your default web browser.
+The application will be available at `http://localhost:5173` by default.
+
+### Building the Application
+To build the application for production, run:
+```
+npm run build
+```
+
+This will create a `dist` directory with the production build of the application.
+
+## Docker
+To run the application in a Docker container, you can use the provided `Dockerfile`. This file is set up to build and run the application in a lightweight container.
+### Building the Docker Image
+To build the Docker image, run:
+```
+docker build -t zero-waste-frontend .
+```
+### Running the Docker Container
+To run the Docker container, use the following command:
+```
+docker run -p 80:80 zero-waste-frontend
+```
+This will start the application in a container and map port 80 of the container to port 80 of your host machine.
+You can then access the application in your web browser at `http://localhost`.
+
+### Using local backend or domain
+The default settings uses our prod backend on zerowaste.ink. If you would like to use the local backend you deployed switch line 13 in Dockerfile in the zero-waste folder into
+```
+RUN npm run build
+```
+
 
 ### ⚡️  Running Mobile App 
 
