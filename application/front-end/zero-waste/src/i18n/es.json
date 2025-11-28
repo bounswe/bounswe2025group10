@@ -13,9 +13,9 @@
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
     "admin": "Administrador",
-    "recycling": "Centros de Reciclaje",
-    "invite": "Invitar a un Amigo"
-
+    "recyclingCenters": "Centros de Reciclaje",
+    "statistics": "Estadísticas",
+    "inviteFriend": "Invitar a un Amigo"
   },
   "common": {
     "language": "Idioma",
@@ -34,6 +34,7 @@
     "create": "Crear",
     "creating": "Creando...",
     "adding": "Agregando...",
+    "itemsPerPage": "Elementos por página",
     "reset": "Restablecer",
     "report": "Reportar",
     "reporting": "Reportando...",
@@ -47,7 +48,10 @@
     "enterReason": "Ingrese la razón...",
     "description": "Descripción",
     "enterDescription": "Ingrese la descripción...",
-    "loginRequired": "Por favor inicie sesión para reportar"
+    "loginRequired": "Por favor inicie sesión para reportar",
+    "notifications": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "noNotifications": "No hay notificaciones"
   },
   "leaderboard": {
     "title": "🌿 Los 10 mejores campeones de cero residuos",
@@ -62,8 +66,6 @@
   },
   "community": {
     "title": "Comunidad",
-    "mostRecent": "Más recientes",
-    "mostLiked": "Más gustados",
     "showAll": "Todas las publicaciones",
     "showSaved": "Mostrar guardados",
     "createPost": "Crear publicación",
@@ -307,18 +309,42 @@
       "cable": "Cable",
       "it_equipment": "Equipo Informático"
     }
-  },   
+  },
   "invite": {
-  "title": "Invitar a un Amigo",
-  "subtitle": "Envía un enlace de invitación a tu amigo por correo electrónico.",
-  "emailLabel": "Correo del Amigo",
-  "send": "Enviar Invitación",
-  "sending": "Enviando...",
-  "errors": {
-    "noEmail": "Por favor ingrese un correo.",
-    "failed": "Error al enviar la invitación."
+    "title": "Invitar a un Amigo",
+    "subtitle": "Envía un enlace de invitación a tu amigo por correo electrónico.",
+    "emailLabel": "Correo del Amigo",
+    "send": "Enviar Invitación",
+    "sending": "Enviando...",
+    "errors": {
+      "noEmail": "Por favor ingrese un correo.",
+      "failed": "Error al enviar la invitación."
+    }
+  },
+  "statistics": {
+    "title": "Estadísticas",
+    "subtitle": "Ver tu progreso de reciclaje y estadísticas de la comunidad",
+    "wasteProgress": "Tu Progreso",
+    "noWasteData": "Aún no hay datos de residuos. ¡Comienza a registrar tus esfuerzos de reciclaje!",
+    "wasteByType": "Residuos por Tipo",
+    "wasteDistribution": "Distribución de Residuos",
+    "summary": "Resumen",
+    "wasteType": "Tipo de Residuo",
+    "quantity": "Cantidad (g)",
+    "totalWasteLogged": "Has registrado un total de",
+    "grams": "gramos",
+    "ofWaste": "de residuos",
+    "topType": "Tu tipo más reciclado es",
+    "communityStats": "Estadísticas de la Comunidad",
+    "totalPosts": "Total de Publicaciones",
+    "totalTips": "Total de Consejos",
+    "activeChallenges": "Desafíos Activos",
+    "environmentalImpact": "Impacto Ambiental",
+    "impactDescription": "¡Al reciclar tus residuos, has tenido un impacto positivo en el medio ambiente!",
+    "co2Saved": "CO₂ Ahorrado",
+    "treesEquivalent": "Equivalente en Árboles",
+    "energySaved": "Energía Ahorrada",
+    "wasteEncouragement": "¡Trabajo increíble! Cada artículo que reciclas ayuda a reducir la contaminación y conservar los recursos naturales. ¡Sigue con el gran esfuerzo!",
+    "communityEncouragement": "¡Gracias por ser un miembro activo de nuestra comunidad! Juntos, estamos construyendo un futuro sostenible e inspirando a otros a marcar la diferencia."
   }
-}
-
-
 }

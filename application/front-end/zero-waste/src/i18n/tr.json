@@ -13,9 +13,9 @@
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
     "admin": "Yönetici",
-    "recycling": "Geri Dönüşüm Merkezleri",
-    "invite": "Arkadaş Davet Et"
-
+    "recyclingCenters": "Geri Dönüşüm Merkezleri",
+    "statistics": "İstatistikler",
+    "inviteFriend": "Arkadaş Davet Et"
   },
   "common": {
     "language": "Dil",
@@ -34,6 +34,7 @@
     "create": "Oluştur",
     "creating": "Oluşturuluyor...",
     "adding": "Ekleniyor...",
+    "itemsPerPage": "Sayfa başına öğe",
     "reset": "Sıfırla",
     "report": "Bildir",
     "reporting": "Bildiriliyor...",
@@ -47,7 +48,10 @@
     "enterReason": "Sebep girin...",
     "description": "Açıklama",
     "enterDescription": "Açıklama girin...",
-    "loginRequired": "Bildirmek için lütfen giriş yapın"
+    "loginRequired": "Bildirmek için lütfen giriş yapın",
+    "notifications": "Bildirimler",
+    "markAllRead": "Tümünü okundu işaretle",
+    "noNotifications": "Bildirim yok"
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",
@@ -62,8 +66,6 @@
   },
   "community": {
     "title": "Topluluk",
-    "mostRecent": "En Yeni",
-    "mostLiked": "En Beğenilen",
     "showAll": "Tüm Gönderiler",
     "showSaved": "Kaydedilenler",
     "createPost": "Gönderi Oluştur",
@@ -227,7 +229,8 @@
       "oilFats": "Yağ ve Katı Yağlar",
       "organic": "Organik"
     },
-    "pointsLabel": "puan"
+    "pointsLabel": "puan",
+    "quantity": "Miktar"
   },
   "profile": {
     "achievements": "Başarılar",
@@ -308,17 +311,42 @@
       "cable": "Kablo",
       "it_equipment": "Bilgisayar Ekipmanı"
     }
-  },  
+  },
   "invite": {
-  "title": "Arkadaş Davet Et",
-  "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
-  "emailLabel": "Arkadaşının E-postası",
-  "send": "Davetiye Gönder",
-  "sending": "Gönderiliyor...",
-  "errors": {
-    "noEmail": "Lütfen bir e-posta adresi girin.",
-    "failed": "Davet gönderilirken bir hata oluştu."
+    "title": "Arkadaş Davet Et",
+    "subtitle": "Bir arkadaşına e-posta ile davet bağlantısı gönder.",
+    "emailLabel": "Arkadaşının E-postası",
+    "send": "Davetiye Gönder",
+    "sending": "Gönderiliyor...",
+    "errors": {
+      "noEmail": "Lütfen bir e-posta adresi girin.",
+      "failed": "Davet gönderilirken bir hata oluştu."
+    }
+  },
+  "statistics": {
+    "title": "İstatistikler",
+    "subtitle": "Atık geri dönüşüm ilerlemenizi ve topluluk bilgilerinizi görüntüleyin",
+    "wasteProgress": "Atık İlerlemeniz",
+    "noWasteData": "Henüz atık verisi yok. Geri dönüşüm çabalarınızı kaydetmeye başlayın!",
+    "wasteByType": "Türe Göre Atık",
+    "wasteDistribution": "Atık Dağılımı",
+    "summary": "Özet",
+    "wasteType": "Atık Türü",
+    "quantity": "Miktar (g)",
+    "totalWasteLogged": "Toplam",
+    "grams": "gram",
+    "ofWaste": "atık kaydettiniz",
+    "topType": "En çok geri dönüştürdüğünüz tür",
+    "communityStats": "Topluluk İstatistikleri",
+    "totalPosts": "Toplam Gönderi",
+    "totalTips": "Toplam İpucu",
+    "activeChallenges": "Aktif Meydan Okumalar",
+    "environmentalImpact": "Çevresel Etki",
+    "impactDescription": "Atıklarınızı geri dönüştürerek çevre üzerinde olumlu bir etki yarattınız!",
+    "co2Saved": "Tasarruf Edilen CO₂",
+    "treesEquivalent": "Ağaç Eşdeğeri",
+    "energySaved": "Tasarruf Edilen Enerji",
+    "wasteEncouragement": "Harika iş! Geri dönüştürdüğünüz her öğe kirliliği azaltmaya ve doğal kaynakları korumaya yardımcı oluyor. Harika çalışmanıza devam edin!",
+    "communityEncouragement": "Topluluğumuzun aktif bir üyesi olduğunuz için teşekkür ederiz! Birlikte sürdürülebilir bir gelecek inşa ediyor ve başkalarına ilham veriyoruz."
   }
-}
-
 }

@@ -5,6 +5,16 @@
   "nav": {
     "home": "Accueil",
     "community": "Communauté",
+    "totalPosts": "Total des Publications",
+    "totalTips": "Total des Conseils",
+    "activeChallenges": "Défis Actifs",
+    "environmentalImpact": "Impact Environnemental",
+    "impactDescription": "En recyclant vos déchets, vous avez eu un impact positif sur l'environnement!",
+    "co2Saved": "CO₂ Économisé",
+    "treesEquivalent": "Équivalent Arbres",
+    "energySaved": "Énergie Économisée",
+    "wasteEncouragement": "Excellent travail! Chaque article que vous recyclez aide à réduire la pollution et à préserver les ressources naturelles. Continuez vos efforts formidables!",
+    "communityEncouragement": "Merci d'être un membre actif de notre communauté! Ensemble, nous construisons un avenir durable et inspirons les autres à faire la différence.",
     "challenges": "Défis",
     "tips": "Conseils",
     "achievements": "Réalisations",
@@ -13,9 +23,9 @@
     "login": "Se Connecter",
     "signup": "S'inscrire",
     "admin": "Administrateur",
-    "recycling": "Centres de Recyclage",
-    "invite": "Inviter un Ami"
-
+    "recyclingCenters": "Centres de Recyclage",
+    "statistics": "Statistiques",
+    "inviteFriend": "Inviter un Ami"
   },
   "common": {
     "language": "Langue",
@@ -34,6 +44,7 @@
     "create": "Créer",
     "creating": "Création...",
     "adding": "Ajout...",
+    "itemsPerPage": "Éléments par page",
     "reset": "Réinitialiser",
     "report": "Signaler",
     "reporting": "Signalement...",
@@ -47,7 +58,10 @@
     "enterReason": "Entrez la raison...",
     "description": "Description",
     "enterDescription": "Entrez la description...",
-    "loginRequired": "Veuillez vous connecter pour signaler"
+    "loginRequired": "Veuillez vous connecter pour signaler",
+    "notifications": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Pas de notifications"
   },
   "leaderboard": {
     "title": "🌿 Top 10 des champions zéro déchet",
@@ -62,8 +76,6 @@
   },
   "community": {
     "title": "Communauté",
-    "mostRecent": "Plus récents",
-    "mostLiked": "Plus aimés",
     "showAll": "Toutes les publications",
     "showSaved": "Afficher les enregistrés",
     "createPost": "Créer une publication",
@@ -227,7 +239,8 @@
       "oilFats": "Huiles et Graisses",
       "organic": "Organique"
     },
-    "pointsLabel": "points"
+    "pointsLabel": "points",
+    "quantity": "Quantité"
   },
   "profile": {
     "achievements": "Réalisations",
@@ -309,16 +322,14 @@
     }
   },
   "invite": {
-  "title": "Inviter un Ami",
-  "subtitle": "Envoyez un lien d’invitation à votre ami par e-mail.",
-  "emailLabel": "Email de l’Ami",
-  "send": "Envoyer l’Invitation",
-  "sending": "Envoi...",
-  "errors": {
-    "noEmail": "Veuillez entrer une adresse e-mail.",
-    "failed": "Échec de l’envoi de l’invitation."
+    "title": "Inviter un Ami",
+    "subtitle": "Envoyez un lien d’invitation à votre ami par e-mail.",
+    "emailLabel": "Email de l’Ami",
+    "send": "Envoyer l’Invitation",
+    "sending": "Envoi...",
+    "errors": {
+      "noEmail": "Veuillez entrer une adresse e-mail.",
+      "failed": "Échec de l’envoi de l’invitation."
+    }
   }
-}
-
-
 }

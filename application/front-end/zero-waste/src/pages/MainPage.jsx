@@ -31,7 +31,7 @@ const WASTE_POINTS = {
 
 export default function MainPage() {
   const { currentTheme } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [data, setData] = useState([]);
   const [sustainabilityTips, setSustainabilityTips] = useState([]);
   const [showPointsInfo, setShowPointsInfo] = useState(false);
@@ -66,10 +66,26 @@ export default function MainPage() {
     }
   }, []);
 
+  // Create translated chart data that updates when language or data changes
+  const translatedChartData = useMemo(() => {
+    return data.map((item) => {
+      // Map backend waste types to translation keys
+      let typeKey = item.type.toLowerCase().replace('&', '');
+      // Special case for oil&fats -> oilFats
+      if (typeKey === 'oilfats') {
+        typeKey = 'oilFats';
+      }
+      return {
+        ...item,
+        type: t(`mainPage.wasteTypes.${typeKey}`) || item.type,
+      };
+    });
+  }, [data, language, t]);
+
   useEffect(() => {
     const fetchTips = async () => {
       try {
-        const response = await tipsService.getRecentTips();
+        const response = await tipsService.getRecentTips(language);
         setSustainabilityTips(response.data);
       } catch (error) {
         console.error("Failed to fetch tips:", error);
@@ -78,7 +94,7 @@ export default function MainPage() {
 
     fetchTips();
     fetchWasteData();
-  }, [fetchWasteData]);
+  }, [fetchWasteData, language]);
 
   const handleAddWaste = useCallback(async ({ waste_type, amount }) => {
     setIsLoading(true);
@@ -249,7 +265,7 @@ export default function MainPage() {
             </h2>
             <div className="w-full h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <BarChart data={translatedChartData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={currentTheme.border}
@@ -267,21 +283,34 @@ export default function MainPage() {
                     tick={{ fill: currentTheme.text, fontSize: 11 }}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: currentTheme.background,
-                      border: `1px solid ${currentTheme.border}`,
-                      borderRadius: '0.5rem',
-                      color: currentTheme.text
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div
+                            className="px-3 py-2 rounded-lg shadow-lg"
+                            style={{
+                              backgroundColor: currentTheme.background,
+                              border: `2px solid ${currentTheme.secondary}`,
+                              color: currentTheme.text
+                            }}
+                          >
+                            <p className="font-semibold text-sm mb-1">{payload[0].payload.type}</p>
+                            <p className="text-xs" style={{ color: currentTheme.secondary }}>
+                              {t('mainPage.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
-                  <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                    {Array.isArray(data) && data.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={currentTheme.secondary}
-                        opacity={0.7 + (index * 0.05)}
-                      />
-                    ))}
+                  <Bar dataKey="quantity">
+                    {translatedChartData.map((entry, index) => {
+                      // Get color from theme chartColors
+                      const typeKey = entry.type.toLowerCase().replace(/\s+/g, '').replace('&', '');
+                      const color = currentTheme.chartColors?.[typeKey] || currentTheme.secondary;
+                      return <Cell key={index} fill={color} />;
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
