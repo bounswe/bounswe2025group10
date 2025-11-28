@@ -2,9 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert, Switch, Modal,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import api, { challengeService } from '../services/api';
+import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
+import { challengeService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 
 interface Challenge {
   id: number;
@@ -25,6 +28,8 @@ interface UserChallenge {
 }
 
 export const ChallengesScreen = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [enrolledChallenges, setEnrolledChallenges] = useState<UserChallenge[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,12 +45,12 @@ export const ChallengesScreen = () => {
     if (!refreshing) {setLoading(true);}
     try {
       const [challengesResponse, enrolledResponse] = await Promise.all([
-        api.get('/api/challenges/'),
-        api.get('/api/challenges/enrolled/')
+        challengeService.getChallenges(),
+        challengeService.getEnrolledChallenges()
       ]);
       
-      const allChallenges = challengesResponse.data;
-      const enrolled = enrolledResponse.data;
+      const allChallenges = challengesResponse;
+      const enrolled = enrolledResponse;
       
       // Debug the structure first
       console.log('Raw enrolled response:', enrolled);
@@ -83,7 +88,7 @@ export const ChallengesScreen = () => {
       return;
     }
     try {
-      await api.post('/api/challenges/', {
+      await challengeService.createChallenge({
         title,
         description,
         target_amount: parseFloat(targetAmount),
@@ -103,7 +108,7 @@ export const ChallengesScreen = () => {
 
   const joinChallenge = async (challengeId: number) => {
     try {
-      await api.post('/api/challenges/participate/', { challenge: challengeId });
+      await challengeService.joinChallenge(challengeId);
       fetchChallenges();
       Alert.alert('Success', 'Successfully joined the challenge!');
     } catch (error: any) {
@@ -116,7 +121,7 @@ export const ChallengesScreen = () => {
       // Find the UserChallenge record to delete
       const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge.id === challengeId);
       if (enrolledChallenge) {
-        await api.delete(`/api/challenges/participate/${enrolledChallenge.id}/`);
+        await challengeService.leaveChallenge(enrolledChallenge.id);
         fetchChallenges();
         Alert.alert('Success', 'Successfully left the challenge!');
       }
@@ -181,58 +186,62 @@ export const ChallengesScreen = () => {
     if (!item) {
       return null;
     }
-    
+
     // Safety checks for progress values
     const currentProgress = item.current_progress || 0;
     const targetAmount = item.target_amount || 0;
-    
-    const progressPercentage = targetAmount > 0 
+
+    const progressPercentage = targetAmount > 0
       ? Math.min((currentProgress / targetAmount) * 100, 100)
       : 0;
 
     return (
-      <View style={styles.challengeCard}>
+      <View style={[styles.challengeCard, { backgroundColor: colors.backgroundSecondary }]}>
         <View style={styles.challengeHeader}>
-          <Text style={styles.challengeTitle}>{item.title || 'Untitled Challenge'}</Text>
-          <Text style={styles.challengeDescription}>{item.description || 'No description available'}</Text>
+          <Text style={[styles.challengeTitle, { color: colors.textPrimary }]}>{item.title || 'Untitled Challenge'}</Text>
+          <Text style={[styles.challengeDescription, { color: colors.textSecondary }]}>{item.description || 'No description available'}</Text>
         </View>
-        
+
         <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
+          <View style={[styles.progressBar, { backgroundColor: colors.lightGray }]}>
+            <View
               style={[
-                styles.progressFill, 
-                { width: `${progressPercentage}%` }
-              ]} 
+                styles.progressFill,
+                { width: `${progressPercentage}%`, backgroundColor: colors.primary }
+              ]}
             />
           </View>
-          <Text style={styles.progressText}>
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
             {currentProgress.toFixed(2)}/{targetAmount}
           </Text>
         </View>
 
         <View style={styles.challengeFooter}>
           <View style={styles.challengeInfo}>
-            <Text style={styles.challengeType}>
-              {item.is_public === true ? '🌍 Public' : '🔒 Private'}
+            <Text style={[styles.challengeType, { color: colors.textSecondary }]}>
+              {item.is_public === true ? '🌍 ' + t('challenges.join') : '🔒 ' + t('challenges.leave')}
             </Text>
           </View>
-          
+
           <TouchableOpacity
             style={[
               styles.actionButton,
-              item.is_enrolled === true ? styles.leaveButton : styles.joinButton
+              item.is_enrolled === true
+                ? [styles.leaveButton, { backgroundColor: colors.lightGray }]
+                : [styles.joinButton, { backgroundColor: colors.primary }]
             ]}
             onPress={() => item.is_enrolled === true
-              ? leaveChallenge(item.id) 
+              ? leaveChallenge(item.id)
               : joinChallenge(item.id)
             }
           >
             <Text style={[
               styles.actionButtonText,
-              item.is_enrolled === true ? styles.leaveButtonText : styles.joinButtonText
+              item.is_enrolled === true
+                ? [styles.leaveButtonText, { color: colors.textSecondary }]
+                : [styles.joinButtonText, { color: colors.textOnPrimary }]
             ]}>
-              {item.is_enrolled === true ? 'Already Joined' : 'Join Challenge'}
+              {item.is_enrolled === true ? t('challenges.completed') : t('challenges.join')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -241,16 +250,16 @@ export const ChallengesScreen = () => {
   };
 
   return (
-    <View style={styles.screenContainer}>
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Challenges</Text>
-      </View>
-      
+    <ScreenWrapper
+      title={t('challenges.title')}
+      scrollable={false}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       {/* Header Controls */}
       <View style={styles.headerControls}>
         <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>Show Enrolled Only</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('challenges.myChallenges')}</Text>
           <Switch
             value={showEnrolledOnly}
             onValueChange={setShowEnrolledOnly}
@@ -259,13 +268,13 @@ export const ChallengesScreen = () => {
           />
         </View>
       </View>
-      
+
       <View style={styles.createButtonContainer}>
         <TouchableOpacity
-          style={styles.createButton}
+          style={[styles.createButton, { backgroundColor: colors.primary }]}
           onPress={() => setShowCreateModal(true)}
         >
-          <Text style={styles.createButtonText}>Create Challenge</Text>
+          <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>{t('challenges.createChallenge')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -279,8 +288,6 @@ export const ChallengesScreen = () => {
           renderItem={renderChallengeCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
         />
       )}
 
@@ -290,29 +297,30 @@ export const ChallengesScreen = () => {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create New Challenge</Text>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.lightGray }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('challenges.createChallenge')}</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowCreateModal(false)}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
             <View style={styles.modalContent}>
               {/* Description text */}
-              <Text style={styles.modalDescription}>
-                Fill out the fields below to add a new sustainability challenge.
+              <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+                {t('challenges.description')}
               </Text>
 
               {/* Title */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Title</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('challenges.challengeName')}</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Enter challenge title"
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.lightGray, color: colors.textPrimary }]}
+                  placeholder={t('challenges.challengeName')}
+                  placeholderTextColor={colors.textSecondary}
                   value={title}
                   onChangeText={setTitle}
                 />
@@ -320,10 +328,11 @@ export const ChallengesScreen = () => {
 
               {/* Description */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Description</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('challenges.description')}</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Enter challenge description"
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.lightGray, color: colors.textPrimary }]}
+                  placeholder={t('challenges.description')}
+                  placeholderTextColor={colors.textSecondary}
                   value={description}
                   onChangeText={setDescription}
                   multiline
@@ -333,19 +342,20 @@ export const ChallengesScreen = () => {
 
               {/* Target Amount */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Target Amount</Text>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('challenges.targetAmount')}</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Enter target amount"
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.lightGray, color: colors.textPrimary }]}
+                  placeholder={t('challenges.targetAmount')}
+                  placeholderTextColor={colors.textSecondary}
                   value={targetAmount}
                   onChangeText={setTargetAmount}
                   keyboardType="numeric"
                 />
               </View>
-              
+
               {/* Public Toggle */}
               <View style={styles.publicToggle}>
-                <Text style={styles.publicLabel}>Make challenge public</Text>
+                <Text style={[styles.publicLabel, { color: colors.textPrimary }]}>{t('challenges.join')}</Text>
                 <Switch
                   value={isPublic}
                   onValueChange={setIsPublic}
@@ -357,43 +367,28 @@ export const ChallengesScreen = () => {
               {/* Action buttons */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { borderColor: colors.primary, backgroundColor: colors.background }]}
                   onPress={() => setShowCreateModal(false)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.primary }]}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[styles.submitButton, { backgroundColor: colors.primary }]}
                   onPress={createChallenge}
                 >
-                  <Text style={styles.submitButtonText}>Create</Text>
+                  <Text style={[styles.submitButtonText, { color: colors.textOnPrimary }]}>{t('common.submit')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
-  titleContainer: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
   headerControls: {
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
   toggleContainer: {
@@ -403,37 +398,37 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     ...typography.body,
-    color: colors.darkGray,
+    color: defaultColors.darkGray,
   },
   createButtonContainer: {
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },
   createButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   createButtonText: {
     ...typography.button,
-    color: colors.white,
+    color: defaultColors.white,
     fontWeight: '600',
   },
   listContainer: {
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
   },
   loader: {
     marginTop: spacing.xl,
   },
   challengeCard: {
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: 12,
     padding: spacing.md,
     marginBottom: spacing.md,
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -445,12 +440,12 @@ const styles = StyleSheet.create({
   challengeTitle: {
     ...typography.h3,
     fontWeight: 'bold',
-    color: colors.darkGray,
+    color: defaultColors.darkGray,
     marginBottom: spacing.xs,
   },
   challengeDescription: {
     ...typography.body,
-    color: colors.gray,
+    color: defaultColors.gray,
     lineHeight: 20,
   },
   progressContainer: {
@@ -458,19 +453,19 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: spacing.xs,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     borderRadius: 4,
   },
   progressText: {
     ...typography.caption,
-    color: colors.gray,
+    color: defaultColors.gray,
     textAlign: 'right',
   },
   challengeFooter: {
@@ -483,35 +478,37 @@ const styles = StyleSheet.create({
   },
   challengeType: {
     ...typography.caption,
-    color: colors.gray,
+    color: defaultColors.gray,
   },
   actionButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
     minWidth: 120,
+    minHeight: MIN_TOUCH_TARGET,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   joinButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
   },
   leaveButton: {
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
   },
   actionButtonText: {
     ...typography.button,
     fontWeight: '600',
   },
   joinButtonText: {
-    color: colors.white,
+    color: defaultColors.white,
   },
   leaveButtonText: {
-    color: colors.gray,
+    color: defaultColors.gray,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -519,11 +516,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
+    borderBottomColor: defaultColors.lightGray,
   },
   modalTitle: {
     ...typography.h2,
-    color: colors.darkGray,
+    color: defaultColors.darkGray,
     fontWeight: 'bold',
   },
   closeButton: {
@@ -531,7 +528,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     ...typography.h2,
-    color: colors.gray,
+    color: defaultColors.gray,
   },
   modalContent: {
     flex: 1,
@@ -539,7 +536,7 @@ const styles = StyleSheet.create({
   },
   modalDescription: {
     ...typography.body,
-    color: colors.gray,
+    color: defaultColors.gray,
     marginBottom: spacing.lg,
     lineHeight: 20,
   },
@@ -549,7 +546,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.darkGray,
+    color: defaultColors.darkGray,
     marginBottom: spacing.sm,
   },
   input: {
@@ -569,7 +566,7 @@ const styles = StyleSheet.create({
   },
   publicLabel: {
     ...typography.body,
-    color: colors.darkGray,
+    color: defaultColors.darkGray,
     flex: 1,
   },
   buttonContainer: {
@@ -583,24 +580,27 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.white,
+    borderColor: defaultColors.primary,
+    backgroundColor: defaultColors.white,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cancelButtonText: {
     ...typography.button,
-    color: colors.primary,
+    color: defaultColors.primary,
     fontWeight: '600',
   },
   submitButton: {
     ...commonStyles.button,
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     marginTop: 0,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   submitButtonText: {
     ...commonStyles.buttonText,
-    color: colors.white,
+    color: defaultColors.white,
     fontWeight: '600',
   },
 });

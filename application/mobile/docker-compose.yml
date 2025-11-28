@@ -1,0 +1,130 @@
+# Zero Waste Challenge Mobile App - Docker Compose Configuration
+# Use this file to build and test the mobile app in a containerized environment
+
+services:
+  # Development server (Metro bundler)
+  dev:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8081:8081"   # Metro bundler
+      - "19000:19000" # Expo DevTools
+      - "19001:19001" # Expo DevTools
+      - "19002:19002" # Expo web
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+    env_file:
+      - .env
+    command: npm start
+
+  # Run tests
+  test:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    command: npm test
+
+  # Run tests with coverage
+  test-coverage:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./coverage:/app/coverage
+    env_file:
+      - .env
+    command: npm run test:coverage
+
+  # Lint the codebase
+  lint:
+    build:
+      context: .
+      target: test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run lint
+
+  # Build Android APK (local build using EAS)
+  build-android:
+    build:
+      context: .
+      target: build-apk
+    volumes:
+      - ./build-output:/app/build-output
+    env_file:
+      - .env
+    environment:
+      - EXPO_NO_TELEMETRY=1
+      - CI=1
+    command: >
+      sh -c "
+        echo 'Building Android APK...' &&
+        npx expo prebuild --platform android --clean &&
+        cd android &&
+        ./gradlew assembleRelease &&
+        cp app/build/outputs/apk/release/app-release.apk /app/build-output/ &&
+        echo 'APK built successfully! Check build-output/app-release.apk'
+      "
+
+  # Build Android APK (debug variant - faster)
+  build-android-debug:
+    build:
+      context: .
+      target: build-apk
+    volumes:
+      - ./build-output:/app/build-output
+    env_file:
+      - .env
+    environment:
+      - EXPO_NO_TELEMETRY=1
+      - CI=1
+    command: >
+      sh -c "
+        echo 'Building Android Debug APK...' &&
+        npx expo prebuild --platform android --clean &&
+        cd android &&
+        ./gradlew assembleDebug &&
+        cp app/build/outputs/apk/debug/app-debug.apk /app/build-output/ &&
+        echo 'Debug APK built successfully! Check build-output/app-debug.apk'
+      "
+
+  # Export web build (quick verification without Android SDK)
+  build-web:
+    build:
+      context: .
+      target: build-web
+    volumes:
+      - ./dist:/app/dist
+    env_file:
+      - .env
+    command: npx expo export --platform web --output-dir /app/dist
+
+  # Verify the build environment
+  verify:
+    build:
+      context: .
+      target: build-apk
+    env_file:
+      - .env
+    command: >
+      sh -c "
+        echo '=== Build Environment Verification ===' &&
+        echo 'Node version:' && node --version &&
+        echo 'NPM version:' && npm --version &&
+        echo 'Java version:' && java --version &&
+        echo 'Android SDK:' && echo \$ANDROID_HOME &&
+        echo 'Installed packages:' && npm list --depth=0 &&
+        echo '=== All checks passed ==='
+      "

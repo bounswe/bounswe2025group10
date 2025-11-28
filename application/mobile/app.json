@@ -14,15 +14,17 @@
       "**/*"
     ],
     "updates": {
-      "enabled": false,
+      "enabled": true,
       "fallbackToCacheTimeout": 0
     },
     "android": {
       "package": "com.zerowastechallenge.mobile",
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "supportsRTL": true
     },
     "ios": {
-      "bundleIdentifier": "com.zerowastechallenge.mobile"
+      "bundleIdentifier": "com.zerowastechallenge.mobile",
+      "supportsRTL": true
     }
   }
 }

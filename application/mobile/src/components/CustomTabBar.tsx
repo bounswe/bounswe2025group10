@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {useTranslation} from 'react-i18next';
+import {colors, spacing, typography} from '../utils/theme';
+import {MIN_TOUCH_TARGET} from '../utils/accessibility';
 
 interface CustomTabBarProps {
   activeTab?: string;
@@ -13,19 +16,22 @@ const iconMap: Record<string, any> = {
   Profile: require('../assets/profile.png'),
 };
 
-export const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab = 'Tips' }) => {
+export const CustomTabBar: React.FC<CustomTabBarProps> = ({
+  activeTab = 'Tips',
+}) => {
   const navigation = useNavigation();
+  const {t} = useTranslation();
 
   const tabs = [
-    { key: 'Home', label: 'Home', screen: 'MainTabs' },
-    { key: 'Community', label: 'Community', screen: 'MainTabs' },
-    { key: 'Challenges', label: 'Challenges', screen: 'MainTabs' },
-    { key: 'Profile', label: 'Profile', screen: 'MainTabs' },
+    {key: 'Home', label: t('home.title'), screen: 'MainTabs'},
+    {key: 'Community', label: t('community.title'), screen: 'MainTabs'},
+    {key: 'Challenges', label: t('challenges.title'), screen: 'MainTabs'},
+    {key: 'Profile', label: t('profile.title'), screen: 'MainTabs'},
   ];
 
   const handleTabPress = (tab: any) => {
     if (tab.screen === 'MainTabs') {
-      navigation.navigate('MainTabs', { screen: tab.key });
+      navigation.navigate('MainTabs', {screen: tab.key});
     } else {
       navigation.navigate(tab.screen);
     }
@@ -33,15 +39,14 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab = 'Tips' }
 
   return (
     <View style={styles.tabBar}>
-      {tabs.map((tab) => {
+      {tabs.map(tab => {
         const isActive = activeTab === tab.key;
         return (
           <TouchableOpacity
             key={tab.key}
             style={styles.tabButton}
             onPress={() => handleTabPress(tab)}
-            accessibilityLabel={`${tab.label} tab`}
-          >
+            accessibilityLabel={`${tab.label} tab`}>
             <Image
               source={iconMap[tab.key]}
               style={{
@@ -52,10 +57,11 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab = 'Tips' }
               resizeMode="contain"
               accessibilityLabel={`${tab.label} tab`}
             />
-            <Text style={[
-              styles.tabLabel,
-              { color: isActive ? '#228B22' : 'gray' }
-            ]}>
+            <Text
+              style={[
+                styles.tabLabel,
+                {color: isActive ? colors.primary : colors.textSecondary},
+              ]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -68,23 +74,25 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ activeTab = 'Tips' }
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    height: 60,
-    paddingBottom: 8,
-    paddingTop: 8,
+    borderTopColor: colors.lightGray,
+    minHeight: 60,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
     justifyContent: 'space-around',
     alignItems: 'center',
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
   },
   tabLabel: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 2,

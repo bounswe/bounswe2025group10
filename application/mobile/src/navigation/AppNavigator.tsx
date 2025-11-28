@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -16,10 +16,12 @@ import { UserModeration } from '../screens/UserModeration';
 import { ChallengeModeration } from '../screens/ChallengeModeration';
 import { CommentModeration } from '../screens/CommentModeration';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
 import { Image } from 'react-native';
 import { SCREEN_NAMES } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -31,73 +33,79 @@ const iconMap: Record<string, any> = {
   Profile: require('../assets/profile.png'),
 };
 
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarIcon: ({ size, focused }) => (
-        <Image
-          source={iconMap[route.name]}
-          style={{ 
-            width: size, 
-            height: size,
-            opacity: focused ? 1 : 0.6,
-          }}
-          resizeMode="contain"
-          accessibilityLabel={`${route.name} tab`}
-        />
-      ),
-      tabBarActiveTintColor: '#228B22',
-      tabBarInactiveTintColor: 'gray',
-      tabBarStyle: {
-        backgroundColor: 'white',
-        borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
-        height: 60,
-        paddingBottom: 8,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontWeight: '600',
-      },
-      tabBarAccessibilityLabel: `${route.name} tab`,
-    })}
-  >
-    <Tab.Screen 
-      name={SCREEN_NAMES.HOME} 
-      component={HomeScreen} 
-      options={{ 
-        tabBarLabel: 'Home',
+const MainTabs = () => {
+  const { t } = useTranslation();
+  const { colors, isDarkMode } = useTheme();
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ size, focused }) => (
+          <Image
+            source={iconMap[route.name]}
+            style={{
+              width: size,
+              height: size,
+              opacity: focused ? 1 : 0.6,
+              tintColor: focused ? colors.primary : colors.textSecondary,
+            }}
+            resizeMode="contain"
+            accessibilityLabel={`${route.name} tab`}
+          />
+        ),
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.lightGray,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        tabBarAccessibilityLabel: `${route.name} tab`,
+      })}
+    >
+      <Tab.Screen 
+        name={SCREEN_NAMES.HOME} 
+        component={HomeScreen} 
+        options={{ 
+          tabBarLabel: t('home.title'),
         tabBarAccessibilityLabel: 'Home tab',
       }} 
     />
-    <Tab.Screen 
-      name={SCREEN_NAMES.COMMUNITY} 
-      component={CommunityScreen} 
-      options={{ 
-        tabBarLabel: 'Community',
-        tabBarAccessibilityLabel: 'Community tab',
-      }} 
-    />
-    <Tab.Screen 
-      name={SCREEN_NAMES.CHALLENGES} 
-      component={ChallengesScreen} 
-      options={{ 
-        tabBarLabel: 'Challenges',
-        tabBarAccessibilityLabel: 'Challenges tab',
-      }} 
-    />
-    <Tab.Screen 
-      name={SCREEN_NAMES.PROFILE} 
-      component={ProfileScreen} 
-      options={{ 
-        tabBarLabel: 'Profile',
-        tabBarAccessibilityLabel: 'Profile tab',
-      }} 
-    />
-  </Tab.Navigator>
-);
+      <Tab.Screen 
+        name={SCREEN_NAMES.COMMUNITY} 
+        component={CommunityScreen} 
+        options={{ 
+          tabBarLabel: t('community.title'),
+          tabBarAccessibilityLabel: 'Community tab',
+        }} 
+      />
+      <Tab.Screen 
+        name={SCREEN_NAMES.CHALLENGES} 
+        component={ChallengesScreen} 
+        options={{ 
+          tabBarLabel: t('challenges.title'),
+          tabBarAccessibilityLabel: 'Challenges tab',
+        }} 
+      />
+      <Tab.Screen 
+        name={SCREEN_NAMES.PROFILE} 
+        component={ProfileScreen} 
+        options={{ 
+          tabBarLabel: t('profile.title'),
+          tabBarAccessibilityLabel: 'Profile tab',
+        }} 
+      />
+    </Tab.Navigator>
+  );
+};
 
 const AuthStack = () => (
   <RootStack.Navigator 
@@ -128,9 +136,35 @@ const AuthStack = () => (
 
 export const AppNavigator = () => {
   const { isAuthenticated, isAdmin } = useAuth();
+  const { colors, isDarkMode } = useTheme();
+
+  // Custom navigation themes
+  const customLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.background,
+      text: colors.textPrimary,
+      border: colors.lightGray,
+    },
+  };
+
+  const customDarkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.background,
+      text: colors.textPrimary,
+      border: colors.lightGray,
+    },
+  };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={isDarkMode ? customDarkTheme : customLightTheme}>
       {isAuthenticated ? (
         <RootStack.Navigator 
           screenOptions={{ 

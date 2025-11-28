@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,32 +8,38 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../../utils/theme';
-import { authService } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import {colors, spacing, typography, commonStyles} from '../../utils/theme';
+import {useRTL} from '../../hooks/useRTL';
+import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
+import {authService} from '../../services/api';
+import {useAuth} from '../../context/AuthContext';
 import axios from 'axios';
+import {useTranslation} from 'react-i18next';
 
 interface LoginScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
+  const {t} = useTranslation();
+  const {textStyle} = useRTL();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const {login} = useAuth();
 
   // Quote state
   const [jokeSetup, setJokeSetup] = useState('');
   const [jokePunchline, setJokePunchline] = useState('');
 
   useEffect(() => {
-    axios.get('https://official-joke-api.appspot.com/random_joke')
+    axios
+      .get('https://official-joke-api.appspot.com/random_joke')
       .then(res => {
         setJokeSetup(res.data.setup);
         setJokePunchline(res.data.punchline);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('Joke API error:', err);
         setJokeSetup('Welcome to the app!');
         setJokePunchline('');
@@ -42,7 +48,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.allFieldsRequired'));
       return;
     }
 
@@ -51,12 +57,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       console.log('Attempting login with email:', email);
 
       // First try to get the token
-      const response = await authService.login({ email, password });
+      const response = await authService.login({email, password});
       console.log('Login response received:', response);
 
       if (!response || !response.token) {
         console.error('Invalid response format:', response);
-        Alert.alert('Error', 'Invalid server response');
+        Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
@@ -67,7 +73,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       console.log('Context login result:', loginResult);
 
       if (!loginResult) {
-        Alert.alert('Error', 'Failed to complete login process');
+        Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
@@ -75,7 +81,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     } catch (error: any) {
       console.error('Login error:', error);
 
-      let errorMessage = 'An error occurred during login';
+      let errorMessage = t('auth.invalidCredentials');
 
       if (error.response) {
         // The request was made and the server responded with a status code
@@ -84,18 +90,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           status: error.response.status,
           data: error.response.data,
         });
-        errorMessage = error.response.data?.error || error.response.data?.message || errorMessage;
+        errorMessage =
+          error.response.data?.error ||
+          error.response.data?.message ||
+          errorMessage;
       } else if (error.request) {
         // The request was made but no response was received
         console.error('No response received:', error.request);
-        errorMessage = 'No response from server. Please check your internet connection.';
+        errorMessage =
+          'No response from server. Please check your internet connection.';
       } else {
         // Something happened in setting up the request that triggered an Error
         console.error('Request setup error:', error.message);
         errorMessage = error.message || errorMessage;
       }
 
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -103,12 +113,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+      <Text style={[styles.title, textStyle]}>{t('auth.login')}</Text>
+      <Text style={[styles.subtitle, textStyle]}>{jokeSetup || ''}</Text>
 
       <TextInput
-        style={styles.input}
-        placeholder="Email"
+        style={[styles.input, textStyle]}
+        placeholder={t('auth.email')}
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -116,8 +127,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       />
 
       <TextInput
-        style={styles.input}
-        placeholder="Password"
+        style={[styles.input, textStyle]}
+        placeholder={t('auth.password')}
+        placeholderTextColor={colors.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -126,29 +138,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleLogin}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.textOnPrimary} />
         ) : (
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>{t('auth.login')}</Text>
         )}
       </TouchableOpacity>
 
       {/* Random joke section */}
       {jokeSetup ? (
         <View style={styles.jokeContainer}>
-          <Text style={styles.jokeSetup}>{jokeSetup}</Text>
-          {jokePunchline ? <Text style={styles.jokePunchline}>{jokePunchline}</Text> : null}
+          <Text style={[styles.jokeSetup, textStyle]}>{jokeSetup}</Text>
+          {jokePunchline ? (
+            <Text style={[styles.jokePunchline, textStyle]}>{jokePunchline}</Text>
+          ) : null}
         </View>
       ) : null}
 
       <TouchableOpacity
         style={styles.signupLink}
-        onPress={() => navigation.navigate('Signup')}
-      >
-        <Text style={styles.signupText}>
-          Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
+        onPress={() => navigation.navigate('Signup')}>
+        <Text style={[styles.signupText, textStyle]}>
+          {t('auth.dontHaveAccount')} <Text style={styles.signupTextBold}>{t('auth.signup')}</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -162,12 +174,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h1,
-    color: colors.primary,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginBottom: spacing.xl,
   },
   input: {
@@ -185,10 +197,12 @@ const styles = StyleSheet.create({
   signupLink: {
     marginTop: spacing.md,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   signupText: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   signupTextBold: {
     color: colors.primary,
@@ -201,7 +215,7 @@ const styles = StyleSheet.create({
   },
   jokeSetup: {
     fontStyle: 'italic',
-    color: colors.gray,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   jokePunchline: {

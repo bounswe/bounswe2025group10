@@ -11,11 +11,13 @@ import {
   Modal,
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ReportItem {
   id: number;
@@ -36,6 +38,7 @@ interface ReportItem {
 }
 
 export const AdminPanel: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
@@ -307,6 +310,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   approveButton: {
     backgroundColor: colors.success,
@@ -361,6 +366,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   retryButtonText: {
     ...typography.button,
@@ -372,6 +380,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoutButtonText: {
     ...typography.button,

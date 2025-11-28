@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,17 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../../utils/theme';
-import { authService } from '../../services/api';
+import {colors, spacing, typography, commonStyles} from '../../utils/theme';
+import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
+import {authService} from '../../services/api';
+import {useTranslation} from 'react-i18next';
 
 interface SignupScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
 }
 
-export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
+export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
+  const {t} = useTranslation();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,21 +27,21 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
   const handleSignup = async () => {
     console.log('Signup button pressed', email, username, password);
     if (!email || !username || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.allFieldsRequired'));
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+      Alert.alert(t('common.error'), t('auth.passwordTooShort'));
       return;
     }
 
     try {
       setLoading(true);
-      const response = await authService.signup({ email, username, password });
+      const response = await authService.signup({email, username, password});
 
       if (response.message === 'User created successfully.') {
-        Alert.alert('Success', 'Account created successfully! Please login.', [
+        Alert.alert(t('common.success'), t('auth.signupSuccess'), [
           {
             text: 'OK',
             onPress: () => navigation.navigate('Login'),
@@ -48,8 +51,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
     } catch (error: any) {
       console.log('Signup error:', error.response?.data, error.message, error);
       Alert.alert(
-        'Error',
-        error.response?.data?.error || 'An error occurred during signup'
+        t('common.error'),
+        error.response?.data?.error || t('auth.invalidCredentials'),
       );
     } finally {
       setLoading(false);
@@ -58,12 +61,13 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up to get started</Text>
+      <Text style={styles.title}>{t('auth.signup')}</Text>
+      <Text style={styles.subtitle}>{t('auth.signup')}</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('auth.email')}
+        placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -72,7 +76,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Username"
+        placeholder={t('auth.username')}
+        placeholderTextColor={colors.textSecondary}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
@@ -80,7 +85,8 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder={t('auth.password')}
+        placeholderTextColor={colors.textSecondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -89,21 +95,19 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
-        disabled={loading}
-      >
+        disabled={loading}>
         {loading ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.textOnPrimary} />
         ) : (
-          <Text style={styles.buttonText}>Sign Up</Text>
+          <Text style={styles.buttonText}>{t('auth.signup')}</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.loginLink}
-        onPress={() => navigation.navigate('Login')}
-      >
+        onPress={() => navigation.navigate('Login')}>
         <Text style={styles.loginText}>
-          Already have an account? <Text style={styles.loginTextBold}>Login</Text>
+          {t('auth.alreadyHaveAccount')} <Text style={styles.loginTextBold}>{t('auth.login')}</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -117,12 +121,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h1,
-    color: colors.primary,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
     marginBottom: spacing.xl,
   },
   input: {
@@ -140,10 +144,12 @@ const styles = StyleSheet.create({
   loginLink: {
     marginTop: spacing.md,
     alignItems: 'center',
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
   loginText: {
     ...typography.body,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   loginTextBold: {
     color: colors.primary,

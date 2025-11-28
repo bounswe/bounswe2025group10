@@ -77,3 +77,7 @@ yarn-error.log
 # Environment variables
 .env
 .env.local
+
+# Docker build outputs
+build-output/
+dist/
