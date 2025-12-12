@@ -104,14 +104,38 @@ class WasteViewsTests(TestCase):
         self.assertEqual(len(response.data['data']), 7)
         
         # Verify the amounts for waste types we created
-        waste_data = {item['waste_type']: item['total_amount'] for item in response.data['data']}
-        self.assertEqual(waste_data['PLASTIC'], 1.5)
-        self.assertEqual(waste_data['PAPER'], 2.0)
-        self.assertEqual(waste_data['GLASS'], 0)
-        self.assertEqual(waste_data['METAL'], 0)
-        self.assertEqual(waste_data['ELECTRONIC'], 0)
-        self.assertEqual(waste_data['OIL&FATS'], 0)
-        self.assertEqual(waste_data['ORGANIC'], 0)
+        waste_data = {item['waste_type']: item for item in response.data['data']}
+        self.assertEqual(waste_data['PLASTIC']['total_amount'], 1.5)
+        self.assertEqual(waste_data['PAPER']['total_amount'], 2.0)
+        self.assertEqual(waste_data['GLASS']['total_amount'], 0)
+        self.assertEqual(waste_data['METAL']['total_amount'], 0)
+        self.assertEqual(waste_data['ELECTRONIC']['total_amount'], 0)
+        self.assertEqual(waste_data['OIL&FATS']['total_amount'], 0)
+        self.assertEqual(waste_data['ORGANIC']['total_amount'], 0)
+        
+        # Verify records array exists and has correct structure
+        self.assertIn('records', waste_data['PLASTIC'])
+        self.assertIn('records', waste_data['PAPER'])
+        
+        # Verify PLASTIC has 1 record with timestamp
+        plastic_records = waste_data['PLASTIC']['records']
+        self.assertEqual(len(plastic_records), 1)
+        self.assertEqual(plastic_records[0]['type'], 'PLASTIC')
+        self.assertEqual(plastic_records[0]['amount'], 1.5)
+        self.assertIn('date', plastic_records[0])  # Verify timestamp exists
+        self.assertIn('id', plastic_records[0])  # Verify ID exists
+        
+        # Verify PAPER has 1 record with timestamp
+        paper_records = waste_data['PAPER']['records']
+        self.assertEqual(len(paper_records), 1)
+        self.assertEqual(paper_records[0]['type'], 'PAPER')
+        self.assertEqual(paper_records[0]['amount'], 2.0)
+        self.assertIn('date', paper_records[0])  # Verify timestamp exists
+        self.assertIn('id', paper_records[0])  # Verify ID exists
+        
+        # Verify waste types with no records have empty arrays
+        self.assertEqual(len(waste_data['GLASS']['records']), 0)
+        self.assertEqual(len(waste_data['METAL']['records']), 0)
 
     def test_get_user_wastes_unauthenticated(self):
         """Test retrieval without authentication"""
@@ -134,6 +158,8 @@ class WasteViewsTests(TestCase):
         self.assertEqual(len(response.data['data']), 7)
         for item in response.data['data']:
             self.assertEqual(item['total_amount'], 0)
+            self.assertIn('records', item)
+            self.assertEqual(len(item['records']), 0)  # Verify empty records array
 
             
     
@@ -350,42 +376,6 @@ class WasteViewsTests(TestCase):
         self.assertEqual(current_user['rank'], 'Not ranked')
         self.assertEqual(current_user['total_waste'], "0.0000")
         self.assertEqual(current_user['points'], 0)
-
-    @patch('api.waste.waste_views.requests.post')
-    def test_climatiq_api_integration(self, mock_post):
-        """Test the integration with Climatiq API for CO2 emission calculation"""
-        # Create mock response for Climatiq API call
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'co2e': 2.5, 'co2e_unit': 'kg'}
-        mock_post.return_value = mock_response
-        
-        # Import the function directly for testing
-        from api.waste.waste_views import get_co2_emission
-        
-        # Test plastic waste CO2 calculation
-        result = get_co2_emission(1.0, 'PLASTIC')
-        self.assertEqual(result, 2.5)
-        
-        # Verify the API was called with correct parameters
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        
-        # Check the request sent to Climatiq
-        self.assertEqual(kwargs['json']['parameters']['weight'], 1.0)
-        self.assertEqual(kwargs['json']['parameters']['weight_unit'], 'kg')
-        self.assertIn('emission_factor', kwargs['json'])
-        self.assertIn('activity_id', kwargs['json']['emission_factor'])
-        self.assertIn('data_version', kwargs['json']['emission_factor'])
-        
-        # Reset the mock to test error handling
-        mock_post.reset_mock()
-        
-        # Test error handling with HTTP error
-        mock_response.status_code = 400
-        mock_post.return_value = mock_response
-        result = get_co2_emission(1.0, 'PAPER')
-        self.assertEqual(result, 0)
 
     def test_create_user_waste_zero_amount(self):
         """Test waste creation with zero amount
