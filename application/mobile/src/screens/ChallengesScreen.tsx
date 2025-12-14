@@ -39,6 +39,7 @@ export const ChallengesScreen = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   const fetchChallenges = useCallback(async () => {
@@ -83,7 +84,7 @@ export const ChallengesScreen = () => {
   }, [fetchChallenges]);
 
   const createChallenge = async () => {
-    if (!title || !description || !targetAmount) {
+    if (!title || !description || !targetAmount || !deadline) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -93,6 +94,7 @@ export const ChallengesScreen = () => {
         description,
         target_amount: parseFloat(targetAmount),
         is_public: isPublic,
+        deadline,
       });
       setTitle('');
       setDescription('');
@@ -351,6 +353,18 @@ export const ChallengesScreen = () => {
                   value={targetAmount}
                   onChangeText={setTargetAmount}
                   keyboardType="numeric"
+                />
+              </View>
+
+              {/* Deadline */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('challenges.endDate')}</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.lightGray, color: colors.textPrimary }]}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textSecondary}
+                  value={deadline}
+                  onChangeText={setDeadline}
                 />
               </View>
 
