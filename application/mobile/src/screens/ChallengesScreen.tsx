@@ -119,9 +119,9 @@ export const ChallengesScreen = () => {
   const leaveChallenge = async (challengeId: number) => {
     try {
       // Find the UserChallenge record to delete
-      const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge.id === challengeId);
+      const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge === challengeId);
       if (enrolledChallenge) {
-        await challengeService.leaveChallenge(enrolledChallenge.id);
+        await challengeService.leaveChallenge(enrolledChallenge.challenge);
         fetchChallenges();
         Alert.alert('Success', 'Successfully left the challenge!');
       }
@@ -219,7 +219,7 @@ export const ChallengesScreen = () => {
         <View style={styles.challengeFooter}>
           <View style={styles.challengeInfo}>
             <Text style={[styles.challengeType, { color: colors.textSecondary }]}>
-              {item.is_public === true ? '🌍 ' + t('challenges.join') : '🔒 ' + t('challenges.leave')}
+              {item.is_public === true ? '🌍 Public' : '🔒 Private'}
             </Text>
           </View>
 
@@ -231,9 +231,10 @@ export const ChallengesScreen = () => {
                 : [styles.joinButton, { backgroundColor: colors.primary }]
             ]}
             onPress={() => item.is_enrolled === true
-              ? leaveChallenge(item.id)
+              ? null
               : joinChallenge(item.id)
             }
+            disabled={item.is_enrolled === true}
           >
             <Text style={[
               styles.actionButtonText,
@@ -241,7 +242,7 @@ export const ChallengesScreen = () => {
                 ? [styles.leaveButtonText, { color: colors.textSecondary }]
                 : [styles.joinButtonText, { color: colors.textOnPrimary }]
             ]}>
-              {item.is_enrolled === true ? t('challenges.completed') : t('challenges.join')}
+              {item.is_enrolled === true ? 'Already Joined' : t('challenges.join')}
             </Text>
           </TouchableOpacity>
         </View>
