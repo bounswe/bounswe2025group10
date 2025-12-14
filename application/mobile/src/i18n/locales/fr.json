@@ -106,6 +106,7 @@
     "targetAmount": "Montant cible",
     "startDate": "Date de début",
     "endDate": "Date de fin",
+    "public": "Rendre le défi public",
     "join": "Rejoindre",
     "leave": "Quitter",
     "progress": "Progrès",

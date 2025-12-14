@@ -106,6 +106,7 @@
     "targetAmount": "Hedef Miktar",
     "startDate": "Başlangıç Tarihi",
     "endDate": "Bitiş Tarihi",
+    "public": "Meydan okumayı herkese açık yap",
     "join": "Katıl",
     "leave": "Ayrıl",
     "progress": "İlerleme",

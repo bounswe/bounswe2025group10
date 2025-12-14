@@ -106,6 +106,7 @@
     "targetAmount": "Target Amount",
     "startDate": "Start Date",
     "endDate": "End Date",
+    "public": "Make challenge public",
     "join": "Join",
     "leave": "Leave",
     "progress": "Progress",

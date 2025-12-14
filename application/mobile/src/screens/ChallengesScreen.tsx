@@ -356,7 +356,7 @@ export const ChallengesScreen = () => {
 
               {/* Public Toggle */}
               <View style={styles.publicToggle}>
-                <Text style={[styles.publicLabel, { color: colors.textPrimary }]}>{t('challenges.join')}</Text>
+                <Text style={[styles.publicLabel, { color: colors.textPrimary }]}>{t('challenges.public')}</Text>
                 <Switch
                   value={isPublic}
                   onValueChange={setIsPublic}
