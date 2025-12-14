@@ -1,42 +1,42 @@
-# tests/test_activity_events.py
 import uuid
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from django.test import override_settings
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from api.models import ActivityEvent, Visibility
 
-User = get_user_model()  # Get the user model
+User = get_user_model()
+
 
 def make_event(**kwargs) -> ActivityEvent:
-    """
-    Helper to create ActivityEvent objects with sensible defaults.
-    """
+    """Helper to create ActivityEvent objects with sensible defaults."""
     now = timezone.now()
-    defaults = dict(
-        as2_json={"type": "Create", "actor": "u:alice", "object": {"type": "Note", "id": "n:1"}},
-        actor_id="u:alice",
-        type="Create",
-        object_type="Note",
-        object_id=f"note:{uuid.uuid4()}",
-        community_id=None,
-        published_at=now,
-        visibility=Visibility.PUBLIC,
-        summary="hello world",
-    )
+    defaults = {
+        "as2_json": {"type": "Create", "actor": "u:alice", "object": {"type": "Note", "id": "n:1"}},
+        "actor_id": "u:alice",
+        "type": "Create",
+        "object_type": "Note",
+        "object_id": f"note:{uuid.uuid4()}",
+        "community_id": None,
+        "published_at": now,
+        "visibility": Visibility.PUBLIC,
+        "summary": "hello world",
+    }
     defaults.update(kwargs)
     return ActivityEvent.objects.create(**defaults)
 
 
 class ActivityEventViewSetTests(APITestCase):
+    """Test suite for ActivityEvent ViewSet."""
+
     @classmethod
     def setUpTestData(cls):
+        """Set up test data for all tests."""
         # Times for range queries
         cls.t0 = timezone.now() - timedelta(days=2)
         cls.t1 = timezone.now() - timedelta(days=1)
@@ -78,15 +78,14 @@ class ActivityEventViewSetTests(APITestCase):
         make_event(object_id="note:extra3", actor_id="u:dave", summary="random chatter")
 
         # Test user
-        cls.user = get_user_model().objects.create_user(
-            username="tester", email="tester@example.com", password="pass1234"
+        cls.user = User.objects.create_user(
+            username="tester",
+            email="tester@example.com",
+            password="pass1234"
         )
 
-    def url_list(self):
-        return reverse("activity-event-list")
-
-    @classmethod
     def setUp(self):
+        """Set up test fixtures for each test."""
         # Create admin user
         self.admin_user = User.objects.create_superuser(
             username="admin218948",
@@ -96,53 +95,54 @@ class ActivityEventViewSetTests(APITestCase):
         # Authenticate as admin
         self.client.force_authenticate(user=self.admin_user)
 
+    def url_list(self):
+        """Get the URL for the activity event list endpoint."""
+        return reverse("activity-event-list")
+
     def test_admin_can_access(self):
+        """Test that admin can access the activity events endpoint."""
         response = self.client.get("/api/activity-events/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    # -------------------- VISIBILITY RULES --------------------
-
-
     def test_list_authenticated_sees_all_visibilities(self):
-        """
-        Expected behavior:
-          - Authenticated client sees PUBLIC, UNLISTED, FOLLOWERS, DIRECT
-          (Tweak if your rule differs.)
-        """
+        """Test that authenticated client sees all visibility types."""
         self.client.login(username="tester", password="pass1234")
-        res = self.client.get(self.url_list())
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url_list())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
+        data = response.data.get("results", response.data.get("items", response.data))
         object_ids = {item["object_id"] for item in data}
 
         for oid in ["note:public", "note:unlisted", "note:followers", "note:direct"]:
             self.assertIn(oid, object_ids)
 
-    # -------------------- FILTERS --------------------
-
     def test_filter_by_actor_id(self):
-        res = self.client.get(self.url_list(), {"actor_id": "u:alice"})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test filtering activity events by actor ID."""
+        response = self.client.get(self.url_list(), {"actor_id": "u:alice"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
+        data = response.data.get("results", response.data.get("items", response.data))
         self.assertTrue(len(data) > 0)
         self.assertTrue(all(item["actor_id"] == "u:alice" for item in data))
 
     def test_filter_by_type(self):
-        res = self.client.get(self.url_list(), {"type": "Like"})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test filtering activity events by type."""
+        response = self.client.get(self.url_list(), {"type": "Like"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
+        data = response.data.get("results", response.data.get("items", response.data))
         self.assertTrue(len(data) > 0)
         self.assertTrue(all(item["type"] == "Like" for item in data))
 
     def test_filter_by_time_range(self):
-        # published_at__gte should exclude t0; include t1 and later
-        res = self.client.get(self.url_list(), {"published_at__gte": (self.t1 - timedelta(seconds=1)).isoformat()})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test filtering activity events by time range."""
+        response = self.client.get(
+            self.url_list(),
+            {"published_at__gte": (self.t1 - timedelta(seconds=1)).isoformat()}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
+        data = response.data.get("results", response.data.get("items", response.data))
         # All returned items should be >= t1-1s
         for item in data:
             self.assertGreaterEqual(
@@ -151,27 +151,25 @@ class ActivityEventViewSetTests(APITestCase):
             )
 
     def test_search_summary(self):
-        # DRF SearchFilter uses ?search=
-        res = self.client.get(self.url_list(), {"search": "deploy"})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test searching activity events by summary."""
+        response = self.client.get(self.url_list(), {"search": "deploy"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
-        # At least the "public post deploy log" or "deployment summary alpha" should appear
+        data = response.data.get("results", response.data.get("items", response.data))
         summaries = " | ".join([item.get("summary", "") for item in data])
         self.assertIn("deploy", summaries.lower())
 
     def test_ordering_by_published_at_asc(self):
-        res = self.client.get(self.url_list(), {"ordering": "published_at"})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test ordering activity events by published_at ascending."""
+        response = self.client.get(self.url_list(), {"ordering": "published_at"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data = res.data.get("results", res.data.get("items", res.data))
+        data = response.data.get("results", response.data.get("items", response.data))
         dates = [
             timezone.datetime.fromisoformat(item["published_at"].replace("Z", "+00:00"))
             for item in data
         ]
         self.assertEqual(dates, sorted(dates))
-
-    # -------------------- PAGINATION --------------------
 
     @override_settings(REST_FRAMEWORK={
         "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -183,29 +181,25 @@ class ActivityEventViewSetTests(APITestCase):
         ],
     })
     def test_pagination_page_size_and_navigation(self):
-        """
-        With PAGE_SIZE=2, first page should have 2 items, and 'next' should exist.
-        """
+        """Test pagination with PAGE_SIZE=2."""
         url = self.url_list()
-        res1 = self.client.get(url)
-        self.assertEqual(res1.status_code, status.HTTP_200_OK)
-        if "@context" in res1.data:  # AS2 response
-           self.assertIn("totalItems", res1.data)
-           self.assertIn("items", res1.data)
+        response1 = self.client.get(url)
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+
+        if "@context" in response1.data:  # AS2 response
+            self.assertIn("totalItems", response1.data)
+            self.assertIn("items", response1.data)
         else:  # paginated DRF response
-           self.assertIn("count", res1.data)
-           self.assertIn("results", res1.data)
+            self.assertIn("count", response1.data)
+            self.assertIn("results", response1.data)
 
         # Fetch page 2
-        res2 = self.client.get(url, {"page": 2})
-        self.assertEqual(res2.status_code, status.HTTP_200_OK)
-        self.assertIn("totalItems", res2.data)
-        self.assertGreaterEqual(len(res2.data["items"]), 1)
-
-    # -------------------- AS2 COLLECTION SHAPE (non-paginated) --------------------
+        response2 = self.client.get(url, {"page": 2})
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertIn("totalItems", response2.data)
+        self.assertGreaterEqual(len(response2.data["items"]), 1)
 
     @override_settings(REST_FRAMEWORK={
-        # disable default pagination to test AS2 envelope from custom list()
         "DEFAULT_PAGINATION_CLASS": None,
         "DEFAULT_FILTER_BACKENDS": [
             "django_filters.rest_framework.DjangoFilterBackend",
@@ -214,34 +208,23 @@ class ActivityEventViewSetTests(APITestCase):
         ],
     })
     def test_as2_collection_envelope_when_not_paginated(self):
-        """
-        If your list() returns AS2 envelope when pagination is disabled:
-          - @context
-          - type: Collection (or OrderedCollection)
-          - totalItems
-          - items (or orderedItems)
-        """
-        res = self.client.get(self.url_list())
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test AS2 collection envelope when pagination is disabled."""
+        response = self.client.get(self.url_list())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        body = res.data
+        body = response.data
         self.assertIn("@context", body)
         self.assertIn("type", body)
         self.assertIn("totalItems", body)
         self.assertTrue("items" in body or "orderedItems" in body)
-    # Test for specific user AS2 query
+
     def test_user_as2(self):
-        """
-        Test that a user's activity events are returned in AS2 format.
-        """
-        
-        res = self.client.get(self.url_list(), {"username": "alice"})
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        """Test that a user's activity events are returned in AS2 format."""
+        response = self.client.get(self.url_list(), {"username": "alice"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        body = res.data
+        body = response.data
         self.assertIn("@context", body)
         self.assertIn("type", body)
         self.assertIn("totalItems", body)
         self.assertTrue("items" in body or "orderedItems" in body)
-
-    
