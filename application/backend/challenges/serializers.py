@@ -50,10 +50,16 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
         if UserChallenge.objects.filter(user=user, challenge=challenge).exists():
             raise serializers.ValidationError("You are already participating in this challenge.")
         
-        # Check if the user has reached the maximum number of challenges (3)
-        current_challenge_count = UserChallenge.objects.filter(user=user).count()
-        if current_challenge_count >= 3:
-            raise serializers.ValidationError("You can only participate in a maximum of 3 challenges at a time.")
+        # Check if the user has reached the maximum number of active (incomplete) challenges (3)
+        from django.db.models import F, Q
+        active_challenge_count = UserChallenge.objects.filter(
+            user=user
+        ).filter(
+            Q(challenge__target_amount__isnull=True) |
+            Q(challenge__current_progress__lt=F('challenge__target_amount'))
+        ).count()
+        if active_challenge_count >= 3:
+            raise serializers.ValidationError("You can only participate in a maximum of 3 active challenges at a time.")
         
         return data
     
