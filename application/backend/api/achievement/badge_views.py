@@ -266,6 +266,7 @@ def get_user_badge_summary(request, user_id=None):
     tags=['Badges']
 )
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_all_badges(request):
     """
     Get all available badges in the system.
@@ -391,7 +392,7 @@ def get_leaderboard(request):
     """
     # Get users with badge counts
     users_with_badges = Users.objects.annotate(
-        badge_count=Count('userbadges')
+        badge_count=Count('user_badges')
     ).filter(
         badge_count__gt=0
     ).order_by('-badge_count')[:50]  # Top 50 users
