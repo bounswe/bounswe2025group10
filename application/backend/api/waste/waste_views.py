@@ -151,7 +151,7 @@ def create_user_waste(request):
 
 @extend_schema(
     summary="Get user's waste statistics",
-    description="Retrieve comprehensive waste disposal statistics for the authenticated user. Returns data grouped by waste type (PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC) with total amounts in kilograms for each category.",
+    description="Retrieve comprehensive waste disposal statistics for the authenticated user. Returns data grouped by waste type (PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC) with total amounts and individual waste records including creation timestamps.",
     responses={
         200: OpenApiResponse(
             response={
@@ -164,46 +164,65 @@ def create_user_waste(request):
                             'type': 'object',
                             'properties': {
                                 'waste_type': {'type': 'string', 'enum': ['PLASTIC', 'PAPER', 'GLASS', 'METAL', 'ELECTRONIC', 'OIL&FATS', 'ORGANIC']},
-                                'total_amount': {'type': 'number', 'format': 'float'}
+                                'total_amount': {'type': 'number', 'format': 'float'},
+                                'records': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'object',
+                                        'properties': {
+                                            'id': {'type': 'integer'},
+                                            'type': {'type': 'string'},
+                                            'amount': {'type': 'number', 'format': 'float'},
+                                            'date': {'type': 'string', 'format': 'date-time'}
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             },
-            description="User wastes retrieved successfully. Returns array of waste type objects with total amounts.",
+            description="User wastes retrieved successfully. Returns array of waste type objects with total amounts and individual records with timestamps.",
             examples=[
                 OpenApiExample(
-                    'Complete waste statistics',
+                    'Complete waste statistics with records',
                     value={
                         'message': 'User wastes retrieved successfully',
                         'data': [
                             {
                                 'waste_type': 'PLASTIC',
-                                'total_amount': 15.5
+                                'total_amount': 15.5,
+                                'records': [
+                                    {
+                                        'id': 1,
+                                        'type': 'PLASTIC',
+                                        'amount': 5.5,
+                                        'date': '2025-12-10T10:30:00Z'
+                                    },
+                                    {
+                                        'id': 2,
+                                        'type': 'PLASTIC',
+                                        'amount': 10.0,
+                                        'date': '2025-12-12T14:20:00Z'
+                                    }
+                                ]
                             },
                             {
                                 'waste_type': 'PAPER',
-                                'total_amount': 8.2
+                                'total_amount': 8.2,
+                                'records': [
+                                    {
+                                        'id': 3,
+                                        'type': 'PAPER',
+                                        'amount': 8.2,
+                                        'date': '2025-12-11T09:15:00Z'
+                                    }
+                                ]
                             },
                             {
                                 'waste_type': 'GLASS',
-                                'total_amount': 3.0
-                            },
-                            {
-                                'waste_type': 'METAL',
-                                'total_amount': 2.3
-                            },
-                            {
-                                'waste_type': 'ELECTRONIC',
-                                'total_amount': 0.5
-                            },
-                            {
-                                'waste_type': 'OIL&FATS',
-                                'total_amount': 1.2
-                            },
-                            {
-                                'waste_type': 'ORGANIC',
-                                'total_amount': 12.8
+                                'total_amount': 0,
+                                'records': []
                             }
                         ]
                     },
@@ -214,13 +233,13 @@ def create_user_waste(request):
                     value={
                         'message': 'User wastes retrieved successfully',
                         'data': [
-                            {'waste_type': 'PLASTIC', 'total_amount': 0},
-                            {'waste_type': 'PAPER', 'total_amount': 0},
-                            {'waste_type': 'GLASS', 'total_amount': 0},
-                            {'waste_type': 'METAL', 'total_amount': 0},
-                            {'waste_type': 'ELECTRONIC', 'total_amount': 0},
-                            {'waste_type': 'OIL&FATS', 'total_amount': 0},
-                            {'waste_type': 'ORGANIC', 'total_amount': 0}
+                            {'waste_type': 'PLASTIC', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'PAPER', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'GLASS', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'METAL', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'ELECTRONIC', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'OIL&FATS', 'total_amount': 0, 'records': []},
+                            {'waste_type': 'ORGANIC', 'total_amount': 0, 'records': []}
                         ]
                     },
                     response_only=True
@@ -242,7 +261,7 @@ def get_user_wastes(request):
         Response with waste data grouped by type, including:
         - waste_type: The type of waste (PLASTIC, PAPER, GLASS, METAL, etc.)
         - total_amount: Total amount for this waste type
-        - records: List of individual waste records
+        - records: List of individual waste records with timestamps
     """
     try:
         # Get all waste types
@@ -259,11 +278,13 @@ def get_user_wastes(request):
             # Calculate total amount for this waste type
             total_amount = wastes.aggregate(total=Sum('amount'))['total'] or 0
 
-            # Serialize the waste records
+            # Serialize the waste records including created_at timestamp
+            waste_records = UserWasteSerializer(wastes, many=True).data
             
             response_data.append({
                 'waste_type': waste_type.type,
                 'total_amount': total_amount,
+                'records': waste_records
             })
 
         return Response({
