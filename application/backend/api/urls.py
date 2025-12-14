@@ -16,6 +16,7 @@ from .profile import profile_views
 from .profile import follow_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
+from .achievement import badge_views
 from .activities.views.activity_view import ActivityEventViewSet
 from .recycling_centers import recycling_views
 
@@ -178,6 +179,29 @@ urlpatterns = [
     
     # GET: Retrieve a specific user's achievements by username
     path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
+
+    # Badge System Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve all badges earned by authenticated user or specific user
+    path("api/badges/", badge_views.get_user_badges, name="get_user_badges"),
+    path("api/badges/<int:user_id>/", badge_views.get_user_badges, name="get_user_badges_by_id"),
+    
+    # GET: Get progress towards next badges for authenticated user
+    path("api/badges/progress/", badge_views.get_badge_progress, name="get_badge_progress"),
+    
+    # GET: Get complete badge summary (earned + progress)
+    path("api/badges/summary/", badge_views.get_user_badge_summary, name="get_user_badge_summary"),
+    path("api/badges/summary/<int:user_id>/", badge_views.get_user_badge_summary, name="get_user_badge_summary_by_id"),
+    
+    # GET: Get all available badges in the system
+    path("api/badges/all/", badge_views.get_all_badges, name="get_all_badges"),
+    
+    # POST: Manually trigger badge checking (for retroactive awarding)
+    path("api/badges/check/", badge_views.manually_check_badges, name="manually_check_badges"),
+    
+    # GET: Get badge leaderboard
+    path("api/badges/leaderboard/", badge_views.get_leaderboard, name="badge_leaderboard"),
 
     # Opentdb Trivia API Endpoints
     path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question'),

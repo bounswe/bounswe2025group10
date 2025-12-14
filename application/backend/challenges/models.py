@@ -10,6 +10,7 @@ class Challenge(models.Model):
     is_public = models.BooleanField(default=False)
     reward = models.ForeignKey(Achievements, models.DO_NOTHING, blank=True, null=True)
     creator = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)
+    deadline = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = 'Challenge'

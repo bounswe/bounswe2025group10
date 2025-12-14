@@ -13,7 +13,8 @@ class ChallengeSerializer(serializers.ModelSerializer):
             'current_progress', 
             'is_public', 
             'reward', 
-            'creator'
+            'creator',
+            'deadline'
             ]
 
     def create(self, validated_data):

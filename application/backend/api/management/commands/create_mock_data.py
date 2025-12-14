@@ -689,20 +689,23 @@ def generate_mock_data(
         for _ in range(total_logs):
             chosen_key = random.choices(keys, weights=weights, k=1)[0]
             w = wastes[idx_by_key.get(chosen_key, 0)]
-            amount = random.randint(1, 5)
+            # Amount in grams (100g to 5000g = 0.1kg to 5kg)
+            amount = random.randint(100, 5000)
             uw = UserWastes(user=user, waste=w, amount=amount)
             uw.save()
             user_wastes.append(uw)
 
-        # Compute totals from wastes
+        # Compute totals from wastes (amount is in grams, convert to kg for CO2)
         totals_points = 0
         totals_co2 = 0.0
         for uw in UserWastes.objects.filter(user=user):
             k = key_by_id.get(uw.waste_id)
             if not k:
                 continue
-            totals_points += POINTS_PER_TYPE.get(k, 1) * uw.amount
-            totals_co2 += CO2_PER_TYPE.get(k, 0.05) * uw.amount
+            # Convert grams to kg for calculations
+            amount_kg = uw.amount / 1000.0
+            totals_points += POINTS_PER_TYPE.get(k, 1) * amount_kg
+            totals_co2 += CO2_PER_TYPE.get(k, 0.05) * amount_kg
         user.total_points = totals_points
         user.total_co2 = round(totals_co2, 3)
         user.save()
@@ -1014,8 +1017,8 @@ def generate_mock_data(
         num_suspicious = random.randint(1, 3)
         for _ in range(num_suspicious):
             waste_type = random.choice(wastes)
-            # Suspicious entries tend to have unusually high amounts
-            amount = random.uniform(100, 500)  # Much higher than normal
+            # Suspicious entries tend to have unusually high amounts (10-50kg in grams)
+            amount = random.uniform(10000, 50000)
             suspicious = SuspiciousWaste.objects.create(
                 user=user,
                 waste=waste_type,

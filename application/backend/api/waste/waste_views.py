@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 import requests
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
+from notifications.utils import send_notification, send_bulk_notifications
 
 
 # Point coefficients for different waste types
@@ -110,8 +111,9 @@ def create_user_waste(request):
 
                     # fetch all users that are participating in the challenge
                     users_in_challenge = UserChallenge.objects.filter(challenge=challenge).values_list('user', flat=True)
-                    for user in users_in_challenge:
-                        user_instance = Users.objects.get(id=user)
+                    participants = Users.objects.filter(id__in=users_in_challenge)
+                    
+                    for user_instance in participants:
 
                         # assert that challenge.reward exists
                         if challenge.reward is None:
@@ -121,6 +123,12 @@ def create_user_waste(request):
                         if not UserAchievements.objects.filter(user=user_instance, achievement=challenge.reward).exists():
                             # Create achievement for the user
                             UserAchievements.objects.create(user=user_instance, achievement=challenge.reward, earned_at=timezone.now())
+                    
+                    # Send notifications to all participants about challenge completion
+                    send_bulk_notifications(
+                        participants,
+                        f"🎉 Challenge '{challenge.title}' completed! You've earned the achievement '{challenge.reward.title}'!"
+                    )
 
                     challenge.save()
 
