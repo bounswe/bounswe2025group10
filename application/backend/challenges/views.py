@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from django.db.models import Q, F
 from .models import Challenge, UserChallenge
 from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
+from notifications.utils import send_notification, send_bulk_notifications
 
 @extend_schema(
     tags=['Challenges'],
@@ -205,6 +206,25 @@ class ChallengeParticipationView(generics.CreateAPIView):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    
+    def perform_create(self, serializer):
+        """Override to send notification after joining challenge"""
+        user_challenge = serializer.save()
+        challenge = user_challenge.challenge
+        
+        # Send notification to user
+        deadline_info = f" Deadline: {challenge.deadline.strftime('%B %d, %Y at %I:%M %p')}" if challenge.deadline else ""
+        send_notification(
+            user_challenge.user,
+            f"You've joined the challenge '{challenge.title}'! Target: {challenge.target_amount} kg.{deadline_info}"
+        )
+        
+        # Notify challenge creator if it's not the same user
+        if challenge.creator and challenge.creator != user_challenge.user:
+            send_notification(
+                challenge.creator,
+                f"{user_challenge.user.username} has joined your challenge '{challenge.title}'!"
+            )
 
 
 @extend_schema(
