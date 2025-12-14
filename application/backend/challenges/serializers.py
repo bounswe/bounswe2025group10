@@ -15,7 +15,17 @@ class ChallengeSerializer(serializers.ModelSerializer):
             'reward', 
             'creator',
             'deadline'
-            ]
+        ]
+
+    def validate(self, data):
+        # Make deadline required
+        if not data.get('deadline'):
+            raise serializers.ValidationError({"deadline": "This field is required."})
+        # Optionally, you can check deadline is in the future
+        from django.utils import timezone
+        if data['deadline'] <= timezone.now():
+            raise serializers.ValidationError({"deadline": "Deadline must be in the future."})
+        return data
 
     def create(self, validated_data):
         if not validated_data.get('reward'):
@@ -25,7 +35,6 @@ class ChallengeSerializer(serializers.ModelSerializer):
             description = f"Given for completing '{title}' challenge."
             reward = Achievements.objects.create(title=title, description=description)
             validated_data['reward'] = reward
-
         return super().create(validated_data)
         
 
@@ -38,7 +47,9 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
         '''
         Ensure that the challenge is public and the user is not already participating.
         Also enforce the 3 challenge limit per user.
+        Enforce deadline: cannot join after deadline.
         '''
+        from django.utils import timezone
         user = self.context['request'].user
         challenge = data['challenge']
 
@@ -49,7 +60,11 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
         # Check if the user is already participating in the challenge
         if UserChallenge.objects.filter(user=user, challenge=challenge).exists():
             raise serializers.ValidationError("You are already participating in this challenge.")
-        
+
+        # Enforce deadline: cannot join after deadline
+        if challenge.deadline and challenge.deadline <= timezone.now():
+            raise serializers.ValidationError("You cannot join this challenge because the deadline has passed.")
+
         # Check if the user has reached the maximum number of active (incomplete) challenges (3)
         from django.db.models import F, Q
         active_challenge_count = UserChallenge.objects.filter(
@@ -66,9 +81,13 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         '''
         Automatically set the user and joined_date when creating a new participation record.
+        Enforce deadline: cannot complete after deadline.
         '''
+        from django.utils import timezone
+        challenge = validated_data['challenge']
+        if challenge.deadline and challenge.deadline <= timezone.now():
+            raise serializers.ValidationError("You cannot join or complete this challenge because the deadline has passed.")
         user = self.context['request'].user
         validated_data['user'] = user
         validated_data['joined_date'] = timezone.now()
-        
         return UserChallenge.objects.create(**validated_data)

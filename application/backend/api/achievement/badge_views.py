@@ -11,12 +11,19 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 from api.models import Users, Badges, UserBadges
 from api.achievement.badge_serializer import (
-    BadgeSerializer, UserBadgeSerializer, UserBadgeSummarySerializer
+    BadgeSerializer,
+    AllBadgesResponseSerializer,
+    GetBadgeProgressResponseSerializer,
+    GetUserBadgeSummaryResponseSerializer,
+    GetUserBadgesResponseSerializer,
+    LeaderboardResponseSerializer,
+    ManualCheckBadgesResponseSerializer,
 )
 from api.utils.badge_system import (
     check_and_award_badges, get_user_progress_towards_next_badge,
     get_user_badges_by_category
 )
+
 
 
 @extend_schema(
@@ -33,6 +40,30 @@ from api.utils.badge_system import (
     ],
     responses={
         200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'user_id': {'type': 'integer'},
+                    'username': {'type': 'string'},
+                    'total_badges': {'type': 'integer'},
+                    'badges_by_category': {
+                        'type': 'object',
+                        'additionalProperties': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'id': {'type': 'integer'},
+                                    'category': {'type': 'string'},
+                                    'level': {'type': 'integer'},
+                                    'criteria_value': {'type': 'number', 'format': 'float'},
+                                    'earned_at': {'type': 'string', 'format': 'date-time'}
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             description="Badges retrieved successfully",
             examples=[
                 OpenApiExample(
@@ -98,30 +129,34 @@ def get_user_badges(request, user_id=None):
     description="Get the authenticated user's progress towards the next badge in each category. Shows current progress and what's needed for the next level.",
     responses={
         200: OpenApiResponse(
-            description="Progress retrieved successfully",
-            examples=[
-                OpenApiExample(
-                    'Success Response',
-                    value={
-                        'user_id': 1,
-                        'username': 'john_doe',
-                        'progress': {
-                            'PLASTIC': {
-                                'current_level': 1,
-                                'current_progress': 1500.0,
-                                'next_badge_requirement': 5000.0,
-                                'percentage': 30.0
-                            },
-                            'CONTRIBUTIONS': {
-                                'current_level': 0,
-                                'current_progress': 3,
-                                'next_badge_requirement': 5,
-                                'percentage': 60.0
+            response={
+                'type': 'object',
+                'properties': {
+                    'user_id': {'type': 'integer'},
+                    'username': {'type': 'string'},
+                    'progress': {
+                        'type': 'object',
+                        'additionalProperties': {
+                            'type': 'object',
+                            'properties': {
+                                'current_value': {'type': 'number', 'format': 'float'},
+                                'required_value': {'type': ['number', 'null'], 'format': 'float'},
+                                'percentage': {'type': 'number', 'format': 'float'},
+                                'next_badge': {
+                                    'type': ['object', 'null'],
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'category': {'type': 'string'},
+                                        'level': {'type': 'integer'}
+                                    }
+                                },
+                                'all_earned': {'type': 'boolean'}
                             }
                         }
                     }
-                )
-            ]
+                }
+            },
+            description="Progress retrieved successfully",
         ),
         401: OpenApiResponse(description="Unauthorized - authentication required")
     },
@@ -157,36 +192,51 @@ def get_badge_progress(request):
     ],
     responses={
         200: OpenApiResponse(
-            description="Badge summary retrieved successfully",
-            examples=[
-                OpenApiExample(
-                    'Success Response',
-                    value={
-                        'user_id': 1,
-                        'username': 'john_doe',
-                        'total_badges': 5,
-                        'badges_by_category': {
-                            'PLASTIC': [
-                                {
-                                    'id': 1,
-                                    'category': 'PLASTIC',
-                                    'level': 1,
-                                    'criteria_value': 1000.0,
-                                    'earned_at': '2024-12-13T10:30:00Z'
+            response={
+                'type': 'object',
+                'properties': {
+                    'user_id': {'type': 'integer'},
+                    'username': {'type': 'string'},
+                    'total_badges': {'type': 'integer'},
+                    'badges_by_category': {
+                        'type': 'object',
+                        'additionalProperties': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'id': {'type': 'integer'},
+                                    'category': {'type': 'string'},
+                                    'level': {'type': 'integer'},
+                                    'criteria_value': {'type': 'number', 'format': 'float'},
+                                    'earned_at': {'type': 'string', 'format': 'date-time'}
                                 }
-                            ]
-                        },
-                        'progress': {
-                            'PLASTIC': {
-                                'current_level': 1,
-                                'current_progress': 1500.0,
-                                'next_badge_requirement': 5000.0,
-                                'percentage': 30.0
+                            }
+                        }
+                    },
+                    'progress': {
+                        'type': 'object',
+                        'additionalProperties': {
+                            'type': 'object',
+                            'properties': {
+                                'current_value': {'type': 'number', 'format': 'float'},
+                                'required_value': {'type': ['number', 'null'], 'format': 'float'},
+                                'percentage': {'type': 'number', 'format': 'float'},
+                                'next_badge': {
+                                    'type': ['object', 'null'],
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'category': {'type': 'string'},
+                                        'level': {'type': 'integer'}
+                                    }
+                                },
+                                'all_earned': {'type': 'boolean'}
                             }
                         }
                     }
-                )
-            ]
+                }
+            },
+            description="Badge summary retrieved successfully",
         ),
         401: OpenApiResponse(description="Unauthorized - authentication required"),
         404: OpenApiResponse(description="User not found")
@@ -232,6 +282,27 @@ def get_user_badge_summary(request, user_id=None):
     ],
     responses={
         200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'count': {'type': 'integer'},
+                    'badges': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'category': {'type': 'string'},
+                                'category_display': {'type': 'string'},
+                                'level': {'type': 'integer'},
+                                'level_display': {'type': 'string'},
+                                'criteria_value': {'type': 'number', 'format': 'float'},
+                                'description': {'type': 'string'}
+                            }
+                        }
+                    }
+                }
+            },
             description="Badges retrieved successfully",
             examples=[
                 OpenApiExample(
@@ -290,8 +361,32 @@ def get_all_badges(request):
 @extend_schema(
     summary="Manually check and award badges",
     description="Manually trigger badge checking for the authenticated user. Useful for retroactively awarding badges after manual data corrections or debugging. Returns newly awarded badges.",
+    request=None,
     responses={
         200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'user_id': {'type': 'integer'},
+                    'username': {'type': 'string'},
+                    'newly_awarded_count': {'type': 'integer'},
+                    'newly_awarded_badges': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'category': {'type': 'string'},
+                                'category_display': {'type': 'string'},
+                                'level': {'type': 'integer'},
+                                'level_display': {'type': 'string'},
+                                'criteria_value': {'type': 'number', 'format': 'float'},
+                                'description': {'type': 'string'}
+                            }
+                        }
+                    }
+                }
+            },
             description="Badge check completed successfully",
             examples=[
                 OpenApiExample(
@@ -351,6 +446,23 @@ def manually_check_badges(request):
     description="Retrieve the badge leaderboard showing top 50 users with the most badges. Users with zero badges are excluded.",
     responses={
         200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'leaderboard': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'user_id': {'type': 'integer'},
+                                'username': {'type': 'string'},
+                                'profile_image_url': {'type': ['string', 'null']},
+                                'badge_count': {'type': 'integer'}
+                            }
+                        }
+                    }
+                }
+            },
             description="Leaderboard retrieved successfully",
             examples=[
                 OpenApiExample(
