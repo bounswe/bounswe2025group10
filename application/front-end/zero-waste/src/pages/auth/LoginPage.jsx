@@ -86,6 +86,8 @@ export default function LoginPage() {
             Don’t have an account?{" "}
             <Link to="/signup" className="link-success fw-semibold">
               Sign up
+            </Link>{" "}or <Link to="/recover" className="link-success fw-semibold">
+              Recover a deleted account
             </Link>
           </p>
         </div>
