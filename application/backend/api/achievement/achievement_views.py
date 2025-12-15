@@ -7,10 +7,11 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 from ..models import Users, UserAchievements
 from .achievement_serializer import UserAchievementSerializer
+from api.profile.privacy_utils import can_view_waste_stats
 
 @extend_schema(
     summary="Get user achievements",
-    description="Retrieve all achievements earned by a user. If username is provided, returns that user's achievements. Otherwise, returns authenticated user's achievements.",
+    description="Retrieve all achievements earned by a user. If username is provided, returns that user's achievements (subject to privacy/anonymity). Otherwise, returns authenticated user's achievements.",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -45,7 +46,18 @@ from .achievement_serializer import UserAchievementSerializer
                             ]
                         }
                     }
-                )
+                ),
+                OpenApiExample(
+                    'Hidden Response',
+                    value={
+                        'message': 'User achievements retrieved successfully',
+                        'data': {
+                            'username': 'private_user',
+                            'achievements': []
+                        }
+                    },
+                    response_only=True
+                ),
             ]
         ),
         404: OpenApiResponse(description="User not found"),
@@ -71,6 +83,16 @@ def get_user_achievements(request, username=None):
             user = get_object_or_404(Users, username=username)
         else:
             user = request.user
+
+        # Respect privacy/anonymity when requesting another user's achievements
+        if user.id != request.user.id and not can_view_waste_stats(request.user, user):
+            return Response({
+                'message': 'User achievements retrieved successfully',
+                'data': {
+                    'username': user.username,
+                    'achievements': []
+                }
+            }, status=status.HTTP_200_OK)
             
         # Get all achievements for the user
         user_achievements = UserAchievements.objects.filter(user=user).order_by('-earned_at')

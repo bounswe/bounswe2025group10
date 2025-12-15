@@ -296,6 +296,21 @@ class BadgeViewTests(BadgeSystemTests):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user_id'], self.user2.id)
         self.assertEqual(response.data['total_badges'], 1)
+
+    def test_get_user_badges_by_id_hidden_when_private(self):
+        """Badges should be hidden when target user's waste stats are private."""
+        self.user2.waste_stats_privacy = "private"
+        self.user2.save(update_fields=["waste_stats_privacy"])
+        UserBadges.objects.create(user=self.user2, badge=self.plastic_bronze)
+
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('get_user_badges_by_id', kwargs={'user_id': self.user2.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user_id'], self.user2.id)
+        self.assertEqual(response.data['total_badges'], 0)
+        self.assertEqual(response.data['badges_by_category'], {})
     
     def test_get_user_badges_unauthenticated(self):
         """Test getting badges without authentication"""

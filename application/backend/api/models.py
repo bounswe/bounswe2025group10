@@ -453,6 +453,7 @@ class AccountDeletionRequest(models.Model):
     requested_at = models.DateTimeField()
     delete_after = models.DateTimeField()
     canceled_at = models.DateTimeField(null=True, blank=True)
+    cancel_token_hash = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         db_table = 'AccountDeletionRequest'

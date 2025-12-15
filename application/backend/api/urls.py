@@ -42,6 +42,8 @@ urlpatterns = [
     path('api/profile/privacy/', profile_views.profile_privacy_settings, name='profile-privacy-settings'),
     # Account deletion request (authenticated user)
     path('api/profile/delete-request/', profile_views.AccountDeletionRequestView.as_view(), name='account-deletion-request'),
+    # Account deletion cancel (token-based, works for deactivated accounts)
+    path('api/profile/delete-request/cancel/', profile_views.AccountDeletionCancelByTokenView.as_view(), name='account-deletion-cancel-token'),
     
     # Follow/Unfollow Endpoints
     # ----------------------------------------

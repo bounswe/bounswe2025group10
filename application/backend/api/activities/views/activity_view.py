@@ -2,6 +2,7 @@
 from rest_framework import viewsets, permissions, filters, decorators, response, status
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample, OpenApiResponse
 from ...models import ActivityEvent
 from ..serializers.activity_serializer import ActivityEventSerializer
 
@@ -39,6 +40,34 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
     ordering = ["-published_at"]
 
     @decorators.action(methods=["get"], detail=False, url_path="recent")
+    @extend_schema(
+        summary="Recent activity events (AS2)",
+        description=(
+            "Returns recent ActivityEvent items as an ActivityStreams 2.0 OrderedCollection.\n\n"
+            "Note: `type` is domain-specific (e.g. `create-waste`, `like-post`, `delete-comment`) rather than generic `Create`."
+        ),
+        parameters=[
+            OpenApiParameter(name="limit", type=int, location=OpenApiParameter.QUERY, required=False, description="Max items (default 20, max 200)"),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=ActivityEventSerializer(many=True),
+                examples=[
+                    OpenApiExample(
+                        "AS2 OrderedCollection",
+                        value={
+                            "@context": "https://www.w3.org/ns/activitystreams",
+                            "type": "OrderedCollection",
+                            "totalItems": 1,
+                            "items": [],
+                        },
+                        response_only=True,
+                    )
+                ],
+            )
+        },
+        tags=["Activity"],
+    )
     def recent(self, request):
         """
         Shortcut: /activity-events/recent/?limit=50
@@ -94,3 +123,38 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
             "items": serializer.data,
         }
         return response.Response(data)
+
+
+# Provide explicit schema docs for list/retrieve/create/update/delete on the ViewSet.
+ActivityEventViewSet = extend_schema_view(
+    list=extend_schema(
+        summary="List activity events (AS2)",
+        description=(
+            "Lists ActivityEvent rows as an ActivityStreams 2.0 Collection/OrderedCollection.\n\n"
+            "Filter with query params (actor_id, type, object_type, object_id, visibility, published_at__gte/lte).\n"
+            "Note: `type` is domain-specific (e.g. `create-waste`, `like-post`, `delete-comment`)."
+        ),
+        tags=["Activity"],
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve an activity event",
+        tags=["Activity"],
+    ),
+    create=extend_schema(
+        summary="Create an activity event",
+        description="Admin-only. Creates an ActivityEvent row; `type` should be domain-specific (e.g. `create-waste`).",
+        tags=["Activity"],
+    ),
+    update=extend_schema(
+        summary="Update an activity event",
+        tags=["Activity"],
+    ),
+    partial_update=extend_schema(
+        summary="Partially update an activity event",
+        tags=["Activity"],
+    ),
+    destroy=extend_schema(
+        summary="Delete an activity event",
+        tags=["Activity"],
+    ),
+)(ActivityEventViewSet)

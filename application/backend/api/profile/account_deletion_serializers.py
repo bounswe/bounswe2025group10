@@ -1,9 +1,14 @@
 from rest_framework import serializers
 
 
+class AccountDeletionCancelByTokenRequestSerializer(serializers.Serializer):
+    cancel_token = serializers.CharField()
+
+
 class AccountDeletionRequestPostDataSerializer(serializers.Serializer):
     requested_at = serializers.DateTimeField()
     delete_after = serializers.DateTimeField()
+    cancel_token = serializers.CharField()
 
 
 class AccountDeletionRequestPostResponseSerializer(serializers.Serializer):
@@ -24,4 +29,4 @@ class AccountDeletionRequestStatusResponseSerializer(serializers.Serializer):
 
 class AccountDeletionCancelResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
-
+    status = serializers.ChoiceField(choices=["canceled", "deleted"])
