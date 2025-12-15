@@ -22,6 +22,9 @@ from .activities.views.activity_view import ActivityEventViewSet
 from .recycling_centers import recycling_views
 from . import statistics_views
 
+# Import notificaion views for notification endpoints
+from notifications.views import NotificationListView, NotificationMarkReadView, NotificationMarkAllReadView
+
 # URL patterns for all API endpoints
 urlpatterns = [
     # Authentication and User Management Endpoints
