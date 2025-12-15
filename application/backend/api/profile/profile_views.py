@@ -13,7 +13,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 
 from api.models import Users
-from .privacy_utils import can_view_profile_field, VALID_PRIVACY_VALUES
+from .privacy_utils import can_view_profile_field, can_view_waste_stats, VALID_PRIVACY_VALUES
 from api.account_deletion import request_account_deletion, cancel_account_deletion, get_account_deletion_request
 from .anonymity_utils import get_or_create_anonymous_identifier
 from .account_deletion_serializers import (
@@ -336,7 +336,7 @@ def profile_privacy_settings(request):
 
 @extend_schema(
     summary="Get user waste reduction statistics",
-    description="Retrieve a user's waste reduction statistics (points and total waste/CO2). Visibility is controlled by the user's waste_stats_privacy setting.",
+    description="Retrieve a user's waste reduction statistics (points and total waste/CO2). Visibility is controlled by the user's waste_stats_privacy setting and anonymization (anonymous users' waste stats are hidden from non-owners).",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -382,7 +382,7 @@ def user_waste_stats(request, username):
     except Users.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    can_view = can_view_profile_field(request.user, user, user.waste_stats_privacy)
+    can_view = can_view_waste_stats(request.user, user)
     return Response({
         'username': user.username,
         'total_waste': f"{user.total_co2:.4f}" if can_view else None,

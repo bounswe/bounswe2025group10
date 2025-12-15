@@ -196,6 +196,36 @@ class ActivitySignalTests(TransactionTestCase):
         self.assertIsNotNone(ev_delete, "Expected Delete event for user achievement delete")
         self.assertEqual(ev_delete.type, "delete-achievement")
 
+    def test_user_waste_and_achievement_not_logged_when_anonymous(self):
+        user = self.User.objects.create_user(email="pa1@example.com", password="pw", username="pa1")
+        user.is_anonymous = True
+        user.save(update_fields=["is_anonymous"])
+
+        waste = Waste.objects.create(type="PLASTIC")
+        user_waste = UserWastes.objects.create(user=user, waste=waste, amount=1.0, date=timezone.now())
+        ev_waste = latest_event_for(object_type="UserWaste", object_id=str(user_waste.pk))
+        self.assertIsNone(ev_waste, "Did not expect waste event for anonymous user")
+
+        achievement = Achievements.objects.create(title="A", description="B")
+        user_achievement = UserAchievements.objects.create(user=user, achievement=achievement, earned_at=timezone.now())
+        ev_ach = latest_event_for(object_type="UserAchievement", object_id=str(user_achievement.pk))
+        self.assertIsNone(ev_ach, "Did not expect achievement event for anonymous user")
+
+    def test_user_waste_and_achievement_not_logged_when_waste_stats_private(self):
+        user = self.User.objects.create_user(email="pp1@example.com", password="pw", username="pp1")
+        user.waste_stats_privacy = "private"
+        user.save(update_fields=["waste_stats_privacy"])
+
+        waste = Waste.objects.create(type="PLASTIC")
+        user_waste = UserWastes.objects.create(user=user, waste=waste, amount=1.0, date=timezone.now())
+        ev_waste = latest_event_for(object_type="UserWaste", object_id=str(user_waste.pk))
+        self.assertIsNone(ev_waste, "Did not expect waste event for private waste stats")
+
+        achievement = Achievements.objects.create(title="A2", description="B2")
+        user_achievement = UserAchievements.objects.create(user=user, achievement=achievement, earned_at=timezone.now())
+        ev_ach = latest_event_for(object_type="UserAchievement", object_id=str(user_achievement.pk))
+        self.assertIsNone(ev_ach, "Did not expect achievement event for private waste stats")
+
     def test_user_challenge_create_update_delete(self):
         """Test that user challenge creation and deletion log appropriate events."""
         if UserChallenge is None or Challenge is None:
