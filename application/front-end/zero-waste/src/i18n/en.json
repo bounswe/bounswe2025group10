@@ -49,7 +49,7 @@
     "enterReason": "Enter reason...",
     "description": "Description",
     "enterDescription": "Enter description...",
-    "loginRequired": "Please login to report",
+    "loginRequired": "Please login to perform this action",
     "notifications": "Notifications",
     "markAllRead": "Mark all as read",
     "noNotifications": "No notifications"
@@ -241,7 +241,15 @@
     "yourPosts": "Your Posts",
     "noPosts": "No posts yet.",
     "earned": "Earned",
-    "profileImageAlt": "Profile image"
+    "profileImageAlt": "Profile image",
+    "followers": "Followers",
+    "following": "Following",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "followed": "Followed successfully",
+    "unfollowed": "Unfollowed successfully",
+    "noFollowing": "You are not following anyone yet.",
+"noFollowers": "No followers yet."
   },
   "wasteHelper": {
     "title": "Add Waste",

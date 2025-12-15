@@ -7,6 +7,7 @@ import { useTheme } from "../../providers/ThemeContext";
 import { useLanguage } from "../../providers/LanguageContext";
 import { useAuth } from "../../providers/AuthContext";
 import { showToast } from "../../utils/toast";
+import { profileService } from "../../services/profileService";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const DEFAULT_PROFILE_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541";
@@ -17,6 +18,8 @@ export default function PublicProfile() {
   const { currentTheme } = useTheme();
   const { t } = useLanguage();
   const { token, username: currentUsername } = useAuth();
+
+  // State
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,20 +30,27 @@ export default function PublicProfile() {
   const [isReporting, setIsReporting] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // Fetch bio and avatar
+  // Follow State
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Fetch bio, avatar, and follow status
   useEffect(() => {
     const fetchPublicProfile = async () => {
       try {
         setLoading(true);
+        // Fetch Bio
         const bioRes = await fetch(`${API_BASE}/api/profile/${username}/bio/`);
         const bioData = await bioRes.json();
         setBio(bioData.bio || "");
-
+        
         // Store user ID for reporting
         if (bioData.user_id) {
           setUserId(bioData.user_id);
         }
 
+        // Fetch Picture
         try {
           const picRes = await fetch(`${API_BASE}/api/profile/${username}/picture/`);
           if (!picRes.ok) throw new Error("Image fetch failed");
@@ -50,6 +60,23 @@ export default function PublicProfile() {
           console.error("Failed to load profile picture:", err);
           setAvatarUrl(DEFAULT_PROFILE_IMAGE);
         }
+
+        // Fetch Follow Status
+        if (token) {
+          try {
+            const statusData = await profileService.getFollowStatus(username, token);
+            if (statusData && statusData.data) {
+              setIsFollowing(statusData.data.is_following);
+              setFollowStats({
+                followers: statusData.data.followers_count,
+                following: statusData.data.following_count
+              });
+            }
+          } catch (err) {
+            console.error("Failed to fetch follow status", err);
+          }
+        }
+
       } catch (err) {
         console.error("Failed to load public profile:", err);
         setBio(t('profile.noBio', "This user does not have a public bio."));
@@ -60,7 +87,7 @@ export default function PublicProfile() {
     };
 
     fetchPublicProfile();
-  }, [username, t]);
+  }, [username, token, t]);
 
   // Fetch achievements
   useEffect(() => {
@@ -84,6 +111,33 @@ export default function PublicProfile() {
     fetchAchievements();
   }, [username]);
 
+  // Handle Follow/Unfollow Click
+  const handleFollowToggle = async () => {
+    if (!token) {
+      showToast(t("common.loginRequired", "Please login to follow"), "error");
+      return;
+    }
+    
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await profileService.unfollowUser(username, token);
+        setIsFollowing(false);
+        setFollowStats(prev => ({ ...prev, followers: prev.followers - 1 }));
+        showToast(t("profile.unfollowed", "Unfollowed successfully"), "success");
+      } else {
+        await profileService.followUser(username, token);
+        setIsFollowing(true);
+        setFollowStats(prev => ({ ...prev, followers: prev.followers + 1 }));
+        showToast(t("profile.followed", "Followed successfully"), "success");
+      }
+    } catch (error) {
+      showToast(error.message, "error");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   // Report user function
   const handleReportUser = async () => {
     if (!token) {
@@ -103,8 +157,6 @@ export default function PublicProfile() {
 
     setIsReporting(true);
     try {
-      // Use the correct endpoint format: /api/<content_type>/<object_id>/report/
-      // Note: content_type should be lowercase model name "users"
       const response = await fetch(`${API_BASE}/api/users/${userId}/report/`, {
         method: "POST",
         headers: {
@@ -184,6 +236,42 @@ export default function PublicProfile() {
             </div>
 
             <h1 className="text-3xl font-bold mb-3" style={{ color: currentTheme.text }}>{username}</h1>
+
+            {/* Follow Stats */}
+            <div className="flex justify-center gap-6 mb-4 text-sm opacity-80" style={{ color: currentTheme.text }}>
+                <div>
+                    <span className="font-bold">{followStats.followers}</span> {t('profile.followers', 'Followers')}
+                </div>
+                <div>
+                    <span className="font-bold">{followStats.following}</span> {t('profile.following', 'Following')}
+                </div>
+            </div>
+
+            {/* Follow Button */}
+            {token && currentUsername !== username && (
+                <button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all mb-6 ${
+                        isFollowing 
+                        ? "border bg-transparent" 
+                        : "text-white shadow-md hover:shadow-lg"
+                    }`}
+                    style={{ 
+                        backgroundColor: isFollowing ? 'transparent' : currentTheme.secondary,
+                        borderColor: isFollowing ? currentTheme.border : 'transparent',
+                        color: isFollowing ? currentTheme.text : 'white',
+                        opacity: followLoading ? 0.7 : 1
+                    }}
+                >
+                    {followLoading 
+                        ? t('common.loading', 'Loading...') 
+                        : isFollowing 
+                            ? t('profile.unfollow', 'Unfollow') 
+                            : t('profile.follow', 'Follow')
+                    }
+                </button>
+            )}
 
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
