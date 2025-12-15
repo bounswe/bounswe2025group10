@@ -40,6 +40,8 @@ urlpatterns = [
     path('api/profile/<str:username>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
     # Profile privacy settings (authenticated user)
     path('api/profile/privacy/', profile_views.profile_privacy_settings, name='profile-privacy-settings'),
+    # Account deletion request (authenticated user)
+    path('api/profile/delete-request/', profile_views.AccountDeletionRequestView.as_view(), name='account-deletion-request'),
     
     # Follow/Unfollow Endpoints
     # ----------------------------------------
