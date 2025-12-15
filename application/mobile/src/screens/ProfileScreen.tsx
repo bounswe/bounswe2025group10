@@ -88,6 +88,10 @@ const ProfileMain: React.FC = () => {
   const [followingList, setFollowingList] = useState<FollowUser[]>([]);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
+  
+  // Privacy settings state
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [loadingPrivacy, setLoadingPrivacy] = useState(false);
 
   // Load auth token once on mount
   useEffect(() => {
@@ -120,6 +124,33 @@ const ProfileMain: React.FC = () => {
       console.warn('Error fetching follow stats');
     }
   }, [userData?.username]);
+  
+  const fetchPrivacySettings = useCallback(async () => {
+    try {
+      const response = await profileService.getPrivacySettings();
+      if (response && response.data) {
+        setIsAnonymous(response.data.is_anonymous || false);
+      }
+    } catch (err) {
+      console.warn('Error fetching privacy settings:', err);
+    }
+  }, []);
+  
+  const updatePrivacySetting = async (value: boolean) => {
+    setLoadingPrivacy(true);
+    try {
+      await profileService.updatePrivacySettings({ is_anonymous: value });
+      setIsAnonymous(value);
+      Alert.alert(t('common.success'), t('profile.privacyUpdated'));
+    } catch (err) {
+      console.error('Error updating privacy settings:', err);
+      Alert.alert(t('common.error'), 'Failed to update privacy settings');
+      // Revert the change
+      setIsAnonymous(!value);
+    } finally {
+      setLoadingPrivacy(false);
+    }
+  };
 
   const handleOpenFollowers = async () => {
     if (!userData?.username) {return;}
@@ -197,7 +228,8 @@ const ProfileMain: React.FC = () => {
     fetchData();
     fetchBio();
     fetchFollowStats();
-  }, [fetchBio, fetchFollowStats]); // fetchBio and fetchFollowStats already depend on userData?.username
+    fetchPrivacySettings();
+  }, [fetchBio, fetchFollowStats, fetchPrivacySettings]); // fetchBio, fetchFollowStats, and fetchPrivacySettings already depend on userData?.username
 
   // Prepare data for BarChart - handle the specific waste data structure with translated labels
   const screenWidth = Dimensions.get('window').width - 40;
@@ -376,6 +408,30 @@ const ProfileMain: React.FC = () => {
             </Text>
             <Text style={[styles.languageArrow, { color: colors.primary }]}>▼</Text>
           </TouchableOpacity>
+        </View>
+        
+        {/* Privacy Settings Section */}
+        <View style={[styles.privacySection, { backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitleSmall, { color: colors.primary }]}>{t('profile.privacySettings')}</Text>
+          
+          {/* Anonymous Mode */}
+          <View style={styles.privacySettingRow}>
+            <View style={styles.privacySettingInfo}>
+              <Text style={[styles.privacySettingTitle, { color: colors.textPrimary }]}>
+                {t('profile.anonymousMode')}
+              </Text>
+              <Text style={[styles.privacySettingDesc, { color: colors.textSecondary }]}>
+                {t('profile.anonymousModeDesc')}
+              </Text>
+            </View>
+            <Switch
+              value={isAnonymous}
+              onValueChange={updatePrivacySetting}
+              trackColor={{ false: colors.lightGray, true: colors.primary }}
+              thumbColor={isAnonymous ? colors.white : colors.gray}
+              disabled={loadingPrivacy}
+            />
+          </View>
         </View>
       </View>
 
@@ -1156,5 +1212,36 @@ const styles = StyleSheet.create({
     fontSize: 20,
     opacity: 0.5,
     marginLeft: spacing.sm,
+  },
+  // Privacy settings styles
+  privacySection: {
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  sectionTitleSmall: {
+    ...typography.h3,
+    fontWeight: 'bold',
+    marginBottom: spacing.md,
+  },
+  privacySettingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+  },
+  privacySettingInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  privacySettingTitle: {
+    ...typography.body,
+    fontWeight: '600',
+    marginBottom: spacing.xs / 2,
+  },
+  privacySettingDesc: {
+    ...typography.caption,
+    lineHeight: 16,
   },
 });
