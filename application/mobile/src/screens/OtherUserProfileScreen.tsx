@@ -58,7 +58,7 @@ export const OtherUserProfileScreen: React.FC = () => {
         setFollowingCount(data.data.following_count || 0);
       }
     } catch (error) {
-      console.warn('Error fetching follow status:', error);
+      logger.warn('Error fetching follow status:', error);
     }
   }, [username]);
 

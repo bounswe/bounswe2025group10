@@ -118,7 +118,7 @@ const ProfileMain: React.FC = () => {
         setFollowingCount(data.data.following_count || 0);
       }
     } catch (err) {
-      console.warn('Error fetching follow stats');
+      logger.warn('Error fetching follow stats:', err);
     }
   }, [userData?.username]);
 
@@ -133,7 +133,7 @@ const ProfileMain: React.FC = () => {
         setFollowersCount(data.data.followers_count || data.data.followers.length);
       }
     } catch (err) {
-      console.warn('Error fetching followers:', err);
+      logger.warn('Error fetching followers:', err);
       Alert.alert(t('common.error', 'Error'), t('profile.failedToLoadFollowers', 'Failed to load followers'));
     } finally {
       setLoadingFollowers(false);
@@ -151,7 +151,7 @@ const ProfileMain: React.FC = () => {
         setFollowingCount(data.data.following_count || data.data.following.length);
       }
     } catch (err) {
-      console.warn('Error fetching following:', err);
+      logger.warn('Error fetching following:', err);
       Alert.alert(t('common.error', 'Error'), t('profile.failedToLoadFollowing', 'Failed to load following'));
     } finally {
       setLoadingFollowing(false);
