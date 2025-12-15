@@ -118,7 +118,6 @@ def upload_profile_picture(request):
         request.user.save(update_fields=['profile_image'])
         
         # Build absolute HTTPS URL for profile picture
-        from django.conf import settings
         profile_picture_url = None
         if request.user.profile_image:
             if request.user.profile_image.startswith(('http://', 'https://')):
