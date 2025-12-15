@@ -23,12 +23,13 @@ from api.utils.badge_system import (
     check_and_award_badges, get_user_progress_towards_next_badge,
     get_user_badges_by_category
 )
+from api.profile.privacy_utils import can_view_waste_stats
 
 
 
 @extend_schema(
     summary="Get user badges",
-    description="Retrieve all badges earned by a specific user or the authenticated user. Returns badges organized by category.",
+    description="Retrieve all badges earned by a specific user or the authenticated user (subject to privacy/anonymity). Returns badges organized by category.",
     parameters=[
         OpenApiParameter(
             name='user_id',
@@ -112,6 +113,14 @@ def get_user_badges(request, user_id=None):
         user = get_object_or_404(Users, id=user_id)
     else:
         user = request.user
+
+    if user.id != request.user.id and not can_view_waste_stats(request.user, user):
+        return Response({
+            'user_id': user.id,
+            'username': user.username,
+            'total_badges': 0,
+            'badges_by_category': {}
+        }, status=status.HTTP_200_OK)
     
     badges_by_category = get_user_badges_by_category(user)
     total_badges = sum(len(badges) for badges in badges_by_category.values())
@@ -253,6 +262,15 @@ def get_user_badge_summary(request, user_id=None):
         user = get_object_or_404(Users, id=user_id)
     else:
         user = request.user
+
+    if user.id != request.user.id and not can_view_waste_stats(request.user, user):
+        return Response({
+            'user_id': user.id,
+            'username': user.username,
+            'total_badges': 0,
+            'badges_by_category': {},
+            'progress': {},
+        }, status=status.HTTP_200_OK)
     
     badges_by_category = get_user_badges_by_category(user)
     progress = get_user_progress_towards_next_badge(user)

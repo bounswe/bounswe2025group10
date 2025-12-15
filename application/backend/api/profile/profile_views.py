@@ -13,13 +13,14 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 
 from api.models import Users
-from .privacy_utils import can_view_profile_field, VALID_PRIVACY_VALUES
-from api.account_deletion import request_account_deletion, cancel_account_deletion, get_account_deletion_request
+from .privacy_utils import can_view_profile_field, can_view_waste_stats, VALID_PRIVACY_VALUES
+from api.account_deletion import request_account_deletion, cancel_account_deletion, cancel_account_deletion_by_token, get_account_deletion_request
 from .anonymity_utils import get_or_create_anonymous_identifier
 from .account_deletion_serializers import (
     AccountDeletionRequestPostResponseSerializer,
     AccountDeletionRequestStatusResponseSerializer,
     AccountDeletionCancelResponseSerializer,
+    AccountDeletionCancelByTokenRequestSerializer,
 )
 
 @extend_schema(
@@ -336,7 +337,7 @@ def profile_privacy_settings(request):
 
 @extend_schema(
     summary="Get user waste reduction statistics",
-    description="Retrieve a user's waste reduction statistics (points and total waste/CO2). Visibility is controlled by the user's waste_stats_privacy setting.",
+    description="Retrieve a user's waste reduction statistics (points and total waste/CO2). Visibility is controlled by the user's waste_stats_privacy setting and anonymization (anonymous users' waste stats are hidden from non-owners).",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -382,7 +383,7 @@ def user_waste_stats(request, username):
     except Users.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    can_view = can_view_profile_field(request.user, user, user.waste_stats_privacy)
+    can_view = can_view_waste_stats(request.user, user)
     return Response({
         'username': user.username,
         'total_waste': f"{user.total_co2:.4f}" if can_view else None,
@@ -404,12 +405,13 @@ class AccountDeletionRequestView(generics.GenericAPIView):
         tags=['Profile']
     )
     def post(self, request):
-        req = request_account_deletion(request.user)
+        req, cancel_token = request_account_deletion(request.user)
         return Response({
             'message': 'Account deletion requested.',
             'data': {
                 'requested_at': req.requested_at.isoformat(),
                 'delete_after': req.delete_after.isoformat(),
+                'cancel_token': cancel_token,
             }
         }, status=status.HTTP_200_OK)
 
@@ -449,8 +451,32 @@ class AccountDeletionRequestView(generics.GenericAPIView):
         ok = cancel_account_deletion(request.user)
         if not ok:
             return Response({'error': 'No deletion request found.'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({'message': 'Account deletion request canceled.'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Account deletion request canceled.', 'status': 'canceled'}, status=status.HTTP_200_OK)
 
+
+class AccountDeletionCancelByTokenView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = AccountDeletionCancelByTokenRequestSerializer
+
+    @extend_schema(
+        summary="Cancel account deletion request (by token)",
+        description=(
+            "Cancels a pending account deletion request using the cancel token returned when requesting deletion. "
+            "This works even if the account was deactivated and can no longer authenticate."
+        ),
+        request=AccountDeletionCancelByTokenRequestSerializer,
+        responses={
+            200: AccountDeletionCancelResponseSerializer,
+        },
+        tags=['Profile']
+    )
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ok = cancel_account_deletion_by_token(serializer.validated_data['cancel_token'])
+        if not ok:
+            return Response({'message': 'Account already deleted.', 'status': 'deleted'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Account deletion request canceled.', 'status': 'canceled'}, status=status.HTTP_200_OK)
 
 @extend_schema(
     summary="Download user profile picture",

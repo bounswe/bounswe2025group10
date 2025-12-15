@@ -27,6 +27,17 @@ def uname(u):
 def snippet(txt, n=100):
     return (txt or "")[:n]
 
+def should_publish_waste_and_achievements(user) -> bool:
+    """
+    Waste stats and achievements should not be emitted when the user is anonymous
+    or has non-public waste stats.
+    """
+    if not user:
+        return False
+    if getattr(user, "is_anonymous", False):
+        return False
+    return getattr(user, "waste_stats_privacy", "public") == "public"
+
 # ============================
 # Users (Register / Update / Delete)
 # ============================
@@ -167,7 +178,7 @@ def post_like_create_or_update(sender, instance: PostLikes, created: bool, **kwa
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Like",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="PostLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} liked post {instance.post.pk}",
             visibility=Visibility.PUBLIC,
@@ -177,7 +188,7 @@ def post_like_create_or_update(sender, instance: PostLikes, created: bool, **kwa
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Update",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="PostLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} changed reaction on post {instance.post.pk} to {instance.reaction_type}",
             visibility=Visibility.PUBLIC,
@@ -188,7 +199,7 @@ def post_like_deleted(sender, instance: PostLikes, **kwargs):
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",
         actor_id=uname(instance.user),
-        object_type="Like",
+        object_type="PostLike",
         object_id=str(instance.pk),
         summary=f"User {uname(instance.user)} removed reaction on post {instance.post.pk}",
         visibility=Visibility.PUBLIC,
@@ -204,7 +215,7 @@ def tip_like_create_or_update(sender, instance: TipLikes, created: bool, **kwarg
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Like",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="TipLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} liked tip {instance.tip.pk}",
             visibility=Visibility.PUBLIC,
@@ -213,7 +224,7 @@ def tip_like_create_or_update(sender, instance: TipLikes, created: bool, **kwarg
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Update",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="TipLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} changed reaction on tip {instance.tip.pk} to {instance.reaction_type}",
             visibility=Visibility.PUBLIC,
@@ -224,7 +235,7 @@ def tip_like_deleted(sender, instance: TipLikes, **kwargs):
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",
         actor_id=uname(instance.user),
-        object_type="Like",
+        object_type="TipLike",
         object_id=str(instance.pk),
         summary=f"User {uname(instance.user)} removed reaction on tip {instance.tip.pk}",
         visibility=Visibility.PUBLIC,
@@ -279,6 +290,8 @@ def report_deleted(sender, instance: Report, **kwargs):
 def user_waste_created(sender, instance: UserWastes, created: bool, **kwargs):
     if not created:
         return
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Create",
         actor_id=uname(instance.user),
@@ -292,6 +305,8 @@ def user_waste_created(sender, instance: UserWastes, created: bool, **kwargs):
 def user_waste_updated(sender, instance: UserWastes, created: bool, **kwargs):
     if created:
         return
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Update",
         actor_id=uname(instance.user),
@@ -303,6 +318,8 @@ def user_waste_updated(sender, instance: UserWastes, created: bool, **kwargs):
 
 @receiver(post_delete, sender=UserWastes, dispatch_uid="as2_user_waste_delete")
 def user_waste_deleted(sender, instance: UserWastes, **kwargs):
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",
         actor_id=uname(instance.user),
@@ -320,6 +337,8 @@ def user_waste_deleted(sender, instance: UserWastes, **kwargs):
 def user_achievement_created(sender, instance: UserAchievements, created: bool, **kwargs):
     if not created:
         return
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     title_or_name = getattr(instance.achievement, "name", "") or getattr(instance.achievement, "title", "")
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Create",
@@ -334,6 +353,8 @@ def user_achievement_created(sender, instance: UserAchievements, created: bool, 
 def user_achievement_updated(sender, instance: UserAchievements, created: bool, **kwargs):
     if created:
         return
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     title_or_name = getattr(instance.achievement, "name", "") or getattr(instance.achievement, "title", "")
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Update",
@@ -346,6 +367,8 @@ def user_achievement_updated(sender, instance: UserAchievements, created: bool, 
 
 @receiver(post_delete, sender=UserAchievements, dispatch_uid="as2_user_achievement_delete")
 def user_achievement_deleted(sender, instance: UserAchievements, **kwargs):
+    if not should_publish_waste_and_achievements(instance.user):
+        return
     title_or_name = getattr(instance.achievement, "name", "") or getattr(instance.achievement, "title", "")
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",

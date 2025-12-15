@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
-from api.profile.privacy_utils import can_view_profile_field
+from api.profile.privacy_utils import can_view_waste_stats
 from api.profile.anonymity_utils import display_name_for_viewer, can_show_profile_image
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
@@ -309,7 +309,7 @@ def get_user_wastes(request):
 
 @extend_schema(
     summary="Get top users leaderboard",
-    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings) are omitted. If a user enabled anonymization, the `username` field will contain their anonymous identifier and their `profile_picture` will be null. If authenticated, also returns current user's stats and ranking.",
+    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings or anonymization) are omitted. If authenticated, also returns current user's stats and ranking.",
     responses={
         200: OpenApiResponse(
             response={
@@ -404,7 +404,7 @@ def get_top_users(request):
         top_users_data = []
         visible_rank = 1
         for user in all_users_with_waste:
-            if not can_view_profile_field(request.user, user, user.waste_stats_privacy):
+            if not can_view_waste_stats(request.user, user):
                 continue
 
             # Get the profile image URL with absolute URI

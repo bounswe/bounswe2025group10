@@ -99,6 +99,17 @@ class WasteStatsPrivacyTests(TestCase):
         self.assertIsNone(response.data['total_waste'])
         self.assertIsNone(response.data['points'])
 
+    def test_user_waste_stats_hidden_when_anonymous(self):
+        self.owner.is_anonymous = True
+        self.owner.waste_stats_privacy = 'public'
+        self.owner.save(update_fields=['is_anonymous', 'waste_stats_privacy'])
+
+        self.client.force_authenticate(user=self.other)
+        response = self.client.get(f'/api/profile/{self.owner.username}/waste-stats/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data['total_waste'])
+        self.assertIsNone(response.data['points'])
+
     def test_user_waste_stats_private_visible_to_owner(self):
         self.owner.waste_stats_privacy = 'private'
         self.owner.save(update_fields=['waste_stats_privacy'])

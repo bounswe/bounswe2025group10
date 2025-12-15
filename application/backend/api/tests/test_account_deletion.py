@@ -41,6 +41,7 @@ class AccountDeletionFlowTests(TestCase):
         response = self.client.post('/api/profile/delete-request/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('cancel_token', response.data['data'])
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
 
@@ -48,12 +49,16 @@ class AccountDeletionFlowTests(TestCase):
         self.assertIsNone(req.canceled_at)
         self.assertGreater(req.delete_after, req.requested_at)
 
-    def test_cancel_deletion_reactivates(self):
+    def test_cancel_deletion_reactivates_via_token(self):
         self.client.force_authenticate(user=self.user)
-        self.client.post('/api/profile/delete-request/')
+        resp = self.client.post('/api/profile/delete-request/')
+        cancel_token = resp.data['data']['cancel_token']
 
-        response = self.client.delete('/api/profile/delete-request/')
+        # Cancel without authentication (simulates JWT rejecting inactive accounts)
+        self.client.force_authenticate(user=None)
+        response = self.client.post('/api/profile/delete-request/cancel/', {'cancel_token': cancel_token}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'canceled')
 
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)

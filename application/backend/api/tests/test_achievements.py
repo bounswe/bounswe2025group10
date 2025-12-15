@@ -177,3 +177,31 @@ class AchievementViewsTests(TestCase):
         ]
 
         self.assertTrue(recycling_champ_positions[0] > 0)
+
+    def test_get_specific_user_achievements_hidden_when_private(self):
+        """Requesting another user's achievements should return empty when target is private."""
+        self.user2.waste_stats_privacy = "private"
+        self.user2.save(update_fields=["waste_stats_privacy"])
+
+        url = reverse('get_user_achievements_by_username', kwargs={'username': self.user2.username})
+        request = self.factory.get(url)
+        force_authenticate(request, user=self.user1)
+        response = get_user_achievements(request, username=self.user2.username)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['data']['username'], self.user2.username)
+        self.assertEqual(len(response.data['data']['achievements']), 0)
+
+    def test_get_specific_user_achievements_hidden_when_anonymous(self):
+        """Requesting another user's achievements should return empty when target is anonymous."""
+        self.user2.is_anonymous = True
+        self.user2.save(update_fields=["is_anonymous"])
+
+        url = reverse('get_user_achievements_by_username', kwargs={'username': self.user2.username})
+        request = self.factory.get(url)
+        force_authenticate(request, user=self.user1)
+        response = get_user_achievements(request, username=self.user2.username)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['data']['username'], self.user2.username)
+        self.assertEqual(len(response.data['data']['achievements']), 0)

@@ -93,7 +93,11 @@
     "failedToLoadFollowers": "Échec du chargement des abonnés.",
     "failedToLoadFollowing": "Échec du chargement des abonnements.",
     "loginToFollow": "Connectez-vous pour suivre des utilisateurs.",
-    "posts": "Publications"
+    "posts": "Publications",
+    "privacySettings": "Paramètres de confidentialité",
+    "anonymousMode": "Mode anonyme",
+    "anonymousModeDesc": "Apparaître comme anonyme dans les classements, publications et commentaires",
+    "privacyUpdated": "Paramètres de confidentialité mis à jour"
   },
   "community": {
     "title": "Communauté",

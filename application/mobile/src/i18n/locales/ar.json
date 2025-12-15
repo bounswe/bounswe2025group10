@@ -93,7 +93,11 @@
     "failedToLoadFollowers": "فشل تحميل المتابعين.",
     "failedToLoadFollowing": "فشل تحميل قائمة المتابَعين.",
     "loginToFollow": "سجل الدخول لمتابعة المستخدمين.",
-    "posts": "المنشورات"
+    "posts": "المنشورات",
+    "privacySettings": "إعدادات الخصوصية",
+    "anonymousMode": "الوضع المجهول",
+    "anonymousModeDesc": "الظهور كمجهول في لوحات المتصدرين والمنشورات والتعليقات",
+    "privacyUpdated": "تم تحديث إعدادات الخصوصية"
   },
   "community": {
     "title": "المجتمع",

@@ -42,8 +42,7 @@ class AnonymityTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         top = response.data['data']['top_users']
-        self.assertEqual(top[0]['username'], "anon_test_123")
-        self.assertIsNone(top[0]['profile_picture'])
+        self.assertEqual(len(top), 0)
 
     def test_post_serializer_anonymizes_creator_username(self):
         post = Posts.objects.create(creator=self.user, text="hello", date=timezone.now())

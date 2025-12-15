@@ -1,38 +1,47 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Tuple
 
 from django.db import transaction
 from django.utils import timezone
+import secrets
 
 
 DELETION_GRACE_PERIOD_DAYS = 30
 
 
-def request_account_deletion(user, now=None):
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def request_account_deletion(user, now=None) -> Tuple[object, str]:
     from api.models import AccountDeletionRequest
 
     now = now or timezone.now()
     delete_after = now + timedelta(days=DELETION_GRACE_PERIOD_DAYS)
+    cancel_token = secrets.token_urlsafe(32)
+    cancel_token_hash = _hash_token(cancel_token)
 
     with transaction.atomic():
         req, created = AccountDeletionRequest.objects.select_for_update().get_or_create(
             user=user,
-            defaults={'requested_at': now, 'delete_after': delete_after},
+            defaults={'requested_at': now, 'delete_after': delete_after, 'cancel_token_hash': cancel_token_hash},
         )
         if not created:
             if req.canceled_at is not None:
                 req.canceled_at = None
                 req.requested_at = now
                 req.delete_after = delete_after
-                req.save(update_fields=['canceled_at', 'requested_at', 'delete_after'])
+            req.cancel_token_hash = cancel_token_hash
+            req.save(update_fields=['canceled_at', 'requested_at', 'delete_after', 'cancel_token_hash'])
 
         if getattr(user, 'is_active', True):
             user.is_active = False
             user.save(update_fields=['is_active'])
 
-    return req
+    return req, cancel_token
 
 
 def cancel_account_deletion(user, now=None) -> bool:
@@ -47,6 +56,27 @@ def cancel_account_deletion(user, now=None) -> bool:
             req.canceled_at = now
             req.save(update_fields=['canceled_at'])
         if not getattr(user, 'is_active', True):
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+        return True
+
+
+def cancel_account_deletion_by_token(cancel_token: str, now=None) -> bool:
+    from api.models import AccountDeletionRequest
+
+    now = now or timezone.now()
+    token_hash = _hash_token(cancel_token)
+    with transaction.atomic():
+        req = AccountDeletionRequest.objects.select_for_update().select_related('user').filter(
+            cancel_token_hash=token_hash
+        ).first()
+        if not req:
+            return False
+        if req.canceled_at is None:
+            req.canceled_at = now
+            req.save(update_fields=['canceled_at'])
+        user = req.user
+        if user and not getattr(user, 'is_active', True):
             user.is_active = True
             user.save(update_fields=['is_active'])
         return True
@@ -125,4 +155,3 @@ def process_due_account_deletions(now: Optional[timezone.datetime] = None) -> in
             _delete_user_and_associated_data(user)
             deleted += 1
     return deleted
-

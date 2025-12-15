@@ -694,6 +694,22 @@ export const profileService = {
     const response = await api.get<FollowingResponse>(`/api/profile/${username}/following/`);
     return response.data;
   },
+  
+  // Get privacy settings
+  getPrivacySettings: async (): Promise<any> => {
+    const response = await api.get('/api/profile/privacy/');
+    return response.data;
+  },
+  
+  // Update privacy settings
+  updatePrivacySettings: async (settings: { 
+    is_anonymous?: boolean;
+    bio_privacy?: 'public' | 'followers' | 'private';
+    waste_stats_privacy?: 'public' | 'followers' | 'private';
+  }): Promise<any> => {
+    const response = await api.put('/api/profile/privacy/', settings);
+    return response.data;
+  },
 };
 
 // Public profile endpoints (no auth required)

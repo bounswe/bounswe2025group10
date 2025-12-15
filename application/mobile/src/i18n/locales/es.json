@@ -93,7 +93,11 @@
     "failedToLoadFollowers": "Error al cargar seguidores.",
     "failedToLoadFollowing": "Error al cargar lista de seguidos.",
     "loginToFollow": "Inicia sesión para seguir usuarios.",
-    "posts": "Publicaciones"
+    "posts": "Publicaciones",
+    "privacySettings": "Configuración de privacidad",
+    "anonymousMode": "Modo anónimo",
+    "anonymousModeDesc": "Aparecer como anónimo en tablas de clasificación, publicaciones y comentarios",
+    "privacyUpdated": "Configuración de privacidad actualizada"
   },
   "community": {
     "title": "Comunidad",

@@ -243,11 +243,11 @@ describe('ProfileScreen', () => {
   });
 
   it('should display chart with waste data', async () => {
-    const { getByTestId } = render(<ProfileScreen />);
+    const { getByText } = render(<ProfileScreen />);
 
     await waitFor(() => {
-      // Check that profile screen is rendered with waste history
-      expect(getByTestId('profile-screen')).toBeTruthy();
+      // Check that profile screen is rendered with waste history section
+      expect(getByText('Waste History')).toBeTruthy();
     });
   });
 });
