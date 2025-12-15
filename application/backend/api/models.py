@@ -53,6 +53,8 @@ class Users(AbstractUser):
     total_points = models.FloatField(default=0)
     total_co2 = models.FloatField(default=0)
     waste_stats_privacy = models.CharField(max_length=16, choices=PROFILE_PRIVACY_CHOICES, default='public')
+    is_anonymous = models.BooleanField(default=False)
+    anonymous_identifier = models.CharField(max_length=32, null=True, blank=True, unique=True)
 
     # Keep Django’s staff/superuser flags in sync if you need them
     is_staff = models.BooleanField(default=False)

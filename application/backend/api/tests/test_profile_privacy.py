@@ -33,18 +33,23 @@ class ProfilePrivacySettingsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['data']['bio_privacy'], 'public')
         self.assertEqual(response.data['data']['waste_stats_privacy'], 'public')
+        self.assertEqual(response.data['data']['is_anonymous'], False)
+        self.assertIsNone(response.data['data']['anonymous_identifier'])
 
     def test_privacy_settings_put_updates_values(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.put('/api/profile/privacy/', {
             'bio_privacy': 'private',
             'waste_stats_privacy': 'followers',
+            'is_anonymous': True,
         }, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user1.refresh_from_db()
         self.assertEqual(self.user1.bio_privacy, 'private')
         self.assertEqual(self.user1.waste_stats_privacy, 'followers')
+        self.assertEqual(self.user1.is_anonymous, True)
+        self.assertIsNotNone(self.user1.anonymous_identifier)
 
     def test_privacy_settings_put_invalid_value(self):
         self.client.force_authenticate(user=self.user1)
@@ -121,4 +126,3 @@ class WasteStatsPrivacyTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_waste'], f"{self.owner.total_co2:.4f}")
         self.assertAlmostEqual(response.data['points'], self.owner.total_points)
-

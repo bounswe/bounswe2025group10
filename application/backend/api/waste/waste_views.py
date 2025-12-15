@@ -6,6 +6,7 @@ from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
 from api.profile.privacy_utils import can_view_profile_field
+from api.profile.anonymity_utils import display_name_for_viewer, can_show_profile_image
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
@@ -308,7 +309,7 @@ def get_user_wastes(request):
 
 @extend_schema(
     summary="Get top users leaderboard",
-    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings) are omitted. If authenticated, also returns current user's stats and ranking.",
+    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings) are omitted. If a user enabled anonymization, the `username` field will contain their anonymous identifier and their `profile_picture` will be null. If authenticated, also returns current user's stats and ranking.",
     responses={
         200: OpenApiResponse(
             response={
@@ -408,7 +409,7 @@ def get_top_users(request):
 
             # Get the profile image URL with absolute URI
             profile_picture = None
-            if user.profile_image:
+            if can_show_profile_image(request.user, user) and user.profile_image:
                 if user.profile_image.startswith(('http://', 'https://')):
                     profile_picture = user.profile_image
                 else:
@@ -421,7 +422,7 @@ def get_top_users(request):
             
             top_users_data.append({
                 'rank': visible_rank,
-                'username': user.username,
+                'username': display_name_for_viewer(request.user, user),
                 'total_waste': f"{user.total_co2:.4f}",  # CO2 emission formatted to 4 decimals
                 'profile_picture': profile_picture,
                 'points': user.total_points,

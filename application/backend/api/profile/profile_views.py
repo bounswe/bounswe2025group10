@@ -15,6 +15,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 from api.models import Users
 from .privacy_utils import can_view_profile_field, VALID_PRIVACY_VALUES
 from api.account_deletion import request_account_deletion, cancel_account_deletion, get_account_deletion_request
+from .anonymity_utils import get_or_create_anonymous_identifier
 from .account_deletion_serializers import (
     AccountDeletionRequestPostResponseSerializer,
     AccountDeletionRequestStatusResponseSerializer,
@@ -244,6 +245,7 @@ def user_bio(request, username):
             'properties': {
                 'bio_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
                 'waste_stats_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+                'is_anonymous': {'type': 'boolean', 'description': 'When true, public leaderboards and posts/comments will show an anonymous identifier instead of username.'},
             }
         }
     },
@@ -258,6 +260,8 @@ def user_bio(request, username):
                         'properties': {
                             'bio_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
                             'waste_stats_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+                            'is_anonymous': {'type': 'boolean'},
+                            'anonymous_identifier': {'type': 'string', 'nullable': True},
                         }
                     }
                 }
@@ -266,14 +270,14 @@ def user_bio(request, username):
             examples=[
                 OpenApiExample(
                     'GET Response',
-                    value={'data': {'bio_privacy': 'public', 'waste_stats_privacy': 'public'}},
+                    value={'data': {'bio_privacy': 'public', 'waste_stats_privacy': 'public', 'is_anonymous': False, 'anonymous_identifier': None}},
                     response_only=True
                 ),
                 OpenApiExample(
                     'PUT Response',
                     value={
                         'message': 'Privacy settings updated successfully.',
-                        'data': {'bio_privacy': 'private', 'waste_stats_privacy': 'followers'}
+                        'data': {'bio_privacy': 'private', 'waste_stats_privacy': 'followers', 'is_anonymous': True, 'anonymous_identifier': 'anon_xxxxxxxx'}
                     },
                     response_only=True
                 ),
@@ -292,29 +296,40 @@ def profile_privacy_settings(request):
             'data': {
                 'bio_privacy': request.user.bio_privacy,
                 'waste_stats_privacy': request.user.waste_stats_privacy,
+                'is_anonymous': request.user.is_anonymous,
+                'anonymous_identifier': request.user.anonymous_identifier,
             }
         }, status=status.HTTP_200_OK)
 
     bio_privacy = request.data.get('bio_privacy', request.user.bio_privacy)
     waste_stats_privacy = request.data.get('waste_stats_privacy', request.user.waste_stats_privacy)
+    is_anonymous = request.data.get('is_anonymous', request.user.is_anonymous)
 
     invalid_fields = {}
     if bio_privacy not in VALID_PRIVACY_VALUES:
         invalid_fields['bio_privacy'] = 'Invalid privacy value.'
     if waste_stats_privacy not in VALID_PRIVACY_VALUES:
         invalid_fields['waste_stats_privacy'] = 'Invalid privacy value.'
+    if not isinstance(is_anonymous, bool):
+        invalid_fields['is_anonymous'] = 'Must be a boolean.'
     if invalid_fields:
         return Response({'error': invalid_fields}, status=status.HTTP_400_BAD_REQUEST)
 
     request.user.bio_privacy = bio_privacy
     request.user.waste_stats_privacy = waste_stats_privacy
-    request.user.save(update_fields=['bio_privacy', 'waste_stats_privacy'])
+    request.user.is_anonymous = is_anonymous
+    request.user.save(update_fields=['bio_privacy', 'waste_stats_privacy', 'is_anonymous'])
+
+    if request.user.is_anonymous and not request.user.anonymous_identifier:
+        get_or_create_anonymous_identifier(request.user)
 
     return Response({
         'message': 'Privacy settings updated successfully.',
         'data': {
             'bio_privacy': request.user.bio_privacy,
             'waste_stats_privacy': request.user.waste_stats_privacy,
+            'is_anonymous': request.user.is_anonymous,
+            'anonymous_identifier': request.user.anonymous_identifier,
         }
     }, status=status.HTTP_200_OK)
 

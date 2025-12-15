@@ -169,7 +169,7 @@ def create_post(request):
 
 @extend_schema(
     summary="Get all posts",
-    description="Retrieve all posts ordered by most recent first with pagination support.",
+    description="Retrieve all posts ordered by most recent first with pagination support. If a post creator enabled anonymization, `creator_username` will contain an anonymous identifier and `creator_profile_image` may be null.",
     parameters=[
         OpenApiParameter(
             name='page',
@@ -264,7 +264,7 @@ def get_all_posts(request):
 
 @extend_schema(
     summary="Get post details",
-    description="Retrieve detailed information about a specific post, including comments and user reaction if authenticated.",
+    description="Retrieve detailed information about a specific post, including comments and user reaction if authenticated. If a user enabled anonymization, username fields (`creator_username`/`author_username`) may contain an anonymous identifier and profile image fields may be null.",
     parameters=[
         OpenApiParameter(
             name='post_id',
@@ -290,7 +290,7 @@ def get_all_posts(request):
                             'date': {'type': 'string', 'format': 'date-time'},
                             'creator': {'type': 'integer'},
                             'creator_username': {'type': 'string'},
-                            'creator_profile_image': {'type': 'string'},
+                            'creator_profile_image': {'type': 'string', 'nullable': True},
                             'like_count': {'type': 'integer'},
                             'dislike_count': {'type': 'integer'},
                             'is_saved': {'type': 'boolean'},
@@ -307,7 +307,7 @@ def get_all_posts(request):
                                         'date': {'type': 'string', 'format': 'date-time'},
                                         'author': {'type': 'integer'},
                                         'author_username': {'type': 'string'},
-                                        'author_profile_image': {'type': 'string'}
+                                        'author_profile_image': {'type': 'string', 'nullable': True}
                                     }
                                 }
                             }
