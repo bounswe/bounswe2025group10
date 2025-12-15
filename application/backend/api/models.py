@@ -444,3 +444,16 @@ class ActivityEvent(models.Model):
         # Ensure AS2 payload always reflects the current row
         self.sync_as2_json()
         super().save(*args, **kwargs)
+
+
+class AccountDeletionRequest(models.Model):
+    user = models.OneToOneField('Users', on_delete=models.CASCADE, related_name='account_deletion_request')
+    requested_at = models.DateTimeField()
+    delete_after = models.DateTimeField()
+    canceled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'AccountDeletionRequest'
+
+    def __str__(self):
+        return f"AccountDeletionRequest(user={self.user_id}, delete_after={self.delete_after.isoformat()})"

@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import generics
 from django.conf import settings
 from django.http import FileResponse
 from datetime import datetime
@@ -13,6 +14,12 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 from api.models import Users
 from .privacy_utils import can_view_profile_field, VALID_PRIVACY_VALUES
+from api.account_deletion import request_account_deletion, cancel_account_deletion, get_account_deletion_request
+from .account_deletion_serializers import (
+    AccountDeletionRequestPostResponseSerializer,
+    AccountDeletionRequestStatusResponseSerializer,
+    AccountDeletionCancelResponseSerializer,
+)
 
 @extend_schema(
     summary="Upload profile picture",
@@ -366,6 +373,68 @@ def user_waste_stats(request, username):
         'total_waste': f"{user.total_co2:.4f}" if can_view else None,
         'points': user.total_points if can_view else None,
     }, status=status.HTTP_200_OK)
+
+
+class AccountDeletionRequestView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AccountDeletionRequestStatusResponseSerializer
+
+    @extend_schema(
+        summary="Request account deletion",
+        description="Create an account deletion request for the authenticated user. The system will permanently delete the account and associated data within 30 days of the request. The account is immediately deactivated.",
+        responses={
+            200: AccountDeletionRequestPostResponseSerializer,
+            401: OpenApiResponse(description="Unauthorized - authentication required"),
+        },
+        tags=['Profile']
+    )
+    def post(self, request):
+        req = request_account_deletion(request.user)
+        return Response({
+            'message': 'Account deletion requested.',
+            'data': {
+                'requested_at': req.requested_at.isoformat(),
+                'delete_after': req.delete_after.isoformat(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Get account deletion request status",
+        description="Get the authenticated user's current account deletion request (if any).",
+        responses={
+            200: AccountDeletionRequestStatusResponseSerializer,
+            401: OpenApiResponse(description="Unauthorized - authentication required"),
+        },
+        tags=['Profile']
+    )
+    def get(self, request):
+        req = get_account_deletion_request(request.user)
+        if not req:
+            return Response({'data': {'requested': False, 'requested_at': None, 'delete_after': None, 'canceled_at': None}}, status=status.HTTP_200_OK)
+        return Response({
+            'data': {
+                'requested': req.canceled_at is None,
+                'requested_at': req.requested_at.isoformat(),
+                'delete_after': req.delete_after.isoformat(),
+                'canceled_at': req.canceled_at.isoformat() if req.canceled_at else None,
+            }
+        }, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Cancel account deletion request",
+        description="Cancel a pending account deletion request for the authenticated user (reactivates the account).",
+        responses={
+            200: AccountDeletionCancelResponseSerializer,
+            404: OpenApiResponse(description="No deletion request found"),
+            401: OpenApiResponse(description="Unauthorized - authentication required"),
+        },
+        tags=['Profile']
+    )
+    def delete(self, request):
+        ok = cancel_account_deletion(request.user)
+        if not ok:
+            return Response({'error': 'No deletion request found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'Account deletion request canceled.'}, status=status.HTTP_200_OK)
 
 
 @extend_schema(
