@@ -22,8 +22,7 @@ interface Challenge {
 }
 
 interface UserChallenge {
-  id: number;
-  challenge: Challenge;
+  challenge: number; // challenge ID
   joined_date: string;
 }
 
@@ -152,7 +151,7 @@ export const ChallengesScreen = () => {
 
   const filteredChallenges = showEnrolledOnly 
     ? enrolledChallenges
-        .filter(uc => uc.challenge) // Filter out any null/undefined challenges
+        .filter(uc => challenges.some(c => c.id === uc.challenge)) // Filter out any null/undefined challenges
         .map(uc => {
           const challengeId = uc.challenge as unknown as number;
           console.log('Processing enrolled challenge ID:', challengeId);
@@ -291,6 +290,8 @@ export const ChallengesScreen = () => {
           renderItem={renderChallengeCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
 
