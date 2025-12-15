@@ -93,7 +93,11 @@
     "failedToLoadFollowers": "Takipçiler yüklenemedi.",
     "failedToLoadFollowing": "Takip edilenler yüklenemedi.",
     "loginToFollow": "Takip etmek için giriş yapın.",
-    "posts": "Gönderiler"
+    "posts": "Gönderiler",
+    "privacySettings": "Gizlilik Ayarları",
+    "anonymousMode": "Anonim Mod",
+    "anonymousModeDesc": "Liderlik tablolarında, gönderilerde ve yorumlarda anonim olarak görün",
+    "privacyUpdated": "Gizlilik ayarları güncellendi"
   },
   "community": {
     "title": "Topluluk",
