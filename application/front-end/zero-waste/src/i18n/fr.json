@@ -255,7 +255,9 @@
     "follow": "Suivre",
     "unfollow": "Ne plus suivre",
     "followed": "Suivi avec succès",
-    "unfollowed": "Abonnement annulé avec succès"
+    "unfollowed": "Abonnement annulé avec succès",
+    "noFollowing": "Vous ne suivez personne pour le moment.",
+"noFollowers": "Pas encore d'abonnés."
   },
   "wasteHelper": {
     "title": "Ajouter un Déchet",

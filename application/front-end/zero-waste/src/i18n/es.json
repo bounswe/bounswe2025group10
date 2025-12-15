@@ -244,7 +244,9 @@
     "follow": "Seguir",
     "unfollow": "Dejar de seguir",
     "followed": "Seguido exitosamente",
-    "unfollowed": "Dejado de seguir exitosamente"
+    "unfollowed": "Dejado de seguir exitosamente",
+    "noFollowing": "Aún no sigues a nadie.",
+"noFollowers": "Aún no hay seguidores."
   },
   "wasteHelper": {
     "title": "Agregar Residuo",

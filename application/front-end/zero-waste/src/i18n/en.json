@@ -247,7 +247,9 @@
     "follow": "Follow",
     "unfollow": "Unfollow",
     "followed": "Followed successfully",
-    "unfollowed": "Unfollowed successfully"
+    "unfollowed": "Unfollowed successfully",
+    "noFollowing": "You are not following anyone yet.",
+"noFollowers": "No followers yet."
   },
   "wasteHelper": {
     "title": "Add Waste",

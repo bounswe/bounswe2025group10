@@ -246,7 +246,9 @@
     "follow": "Takip Et",
     "unfollow": "Takibi Bırak",
     "followed": "Başarıyla takip edildi",
-    "unfollowed": "Takip başarıyla bırakıldı"
+    "unfollowed": "Takip başarıyla bırakıldı",
+    "noFollowing": "Henüz kimseyi takip etmiyorsunuz.",
+"noFollowers": "Henüz takipçi yok."
   },
   "wasteHelper": {
     "title": "Atık Ekle",
