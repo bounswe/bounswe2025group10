@@ -7,6 +7,7 @@ from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 
 from api.models import Users, Follow
+from .privacy_utils import can_view_profile_field
 
 
 def build_absolute_profile_image_url(request, profile_image):
@@ -187,7 +188,7 @@ def unfollow_user(request, username):
 
 @extend_schema(
     summary="Get user's followers",
-    description="Retrieve the complete list of users following a specific user. Returns follower details including username, profile image, bio, and the date they started following.",
+    description="Retrieve the complete list of users following a specific user. Follower bios are subject to each follower's bio privacy settings (bio may be null).",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -215,7 +216,7 @@ def unfollow_user(request, username):
                                         'id': {'type': 'integer'},
                                         'username': {'type': 'string'},
                                         'profile_image': {'type': 'string', 'nullable': True},
-                                        'bio': {'type': 'string', 'nullable': True},
+                                        'bio': {'type': 'string', 'nullable': True, 'description': 'Null when hidden by the follower’s bio privacy settings.'},
                                         'followed_at': {'type': 'string', 'format': 'date-time'}
                                     }
                                 }
@@ -312,7 +313,7 @@ def get_followers(request, username):
             'id': f.follower.id,
             'username': f.follower.username,
             'profile_image': build_absolute_profile_image_url(request, f.follower.profile_image),
-            'bio': f.follower.bio,
+            'bio': f.follower.bio if can_view_profile_field(request.user, f.follower, f.follower.bio_privacy) else None,
             'followed_at': f.created_at.isoformat()
         }
         for f in followers
@@ -329,7 +330,7 @@ def get_followers(request, username):
 
 @extend_schema(
     summary="Get user's following list",
-    description="Retrieve the complete list of users that a specific user is following. Returns details of followed users including username, profile image, bio, and the date the follow relationship was established.",
+    description="Retrieve the complete list of users that a specific user is following. Followed users' bios are subject to each user's bio privacy settings (bio may be null).",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -357,7 +358,7 @@ def get_followers(request, username):
                                         'id': {'type': 'integer'},
                                         'username': {'type': 'string'},
                                         'profile_image': {'type': 'string', 'nullable': True},
-                                        'bio': {'type': 'string', 'nullable': True},
+                                        'bio': {'type': 'string', 'nullable': True, 'description': 'Null when hidden by the followed user’s bio privacy settings.'},
                                         'followed_at': {'type': 'string', 'format': 'date-time'}
                                     }
                                 }
@@ -454,7 +455,7 @@ def get_following(request, username):
             'id': f.following.id,
             'username': f.following.username,
             'profile_image': build_absolute_profile_image_url(request, f.following.profile_image),
-            'bio': f.following.bio,
+            'bio': f.following.bio if can_view_profile_field(request.user, f.following, f.following.bio_privacy) else None,
             'followed_at': f.created_at.isoformat()
         }
         for f in following

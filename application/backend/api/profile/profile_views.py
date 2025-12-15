@@ -12,6 +12,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 
 
 from api.models import Users
+from .privacy_utils import can_view_profile_field, VALID_PRIVACY_VALUES
 
 @extend_schema(
     summary="Upload profile picture",
@@ -132,7 +133,7 @@ def upload_profile_picture(request):
 
 @extend_schema(
     summary="Get or update user bio",
-    description="GET: Retrieve user bio (public, no authentication required). PUT: Update own bio (must be authenticated and can only update own bio).",
+    description="GET: Retrieve user bio subject to the user's privacy settings (public/private/followers). PUT: Update own bio (must be authenticated and can only update own bio).",
     parameters=[
         OpenApiParameter(
             name='username',
@@ -168,7 +169,7 @@ def upload_profile_picture(request):
                 'type': 'object',
                 'properties': {
                     'username': {'type': 'string'},
-                    'bio': {'type': 'string', 'nullable': True},
+                    'bio': {'type': 'string', 'nullable': True, 'description': 'Null when hidden by privacy settings.'},
                     'message': {'type': 'string'}
                 }
             },
@@ -177,6 +178,11 @@ def upload_profile_picture(request):
                 OpenApiExample(
                     'GET Response',
                     value={'username': 'john_doe', 'bio': 'Passionate about zero waste living'},
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'GET Response (Hidden)',
+                    value={'username': 'john_doe', 'bio': None},
                     response_only=True
                 ),
                 OpenApiExample(
@@ -205,7 +211,8 @@ def user_bio(request, username):
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        return Response({'username': user.username, 'bio': user.bio}, status=status.HTTP_200_OK)
+        bio = user.bio if can_view_profile_field(request.user, user, user.bio_privacy) else None
+        return Response({'username': user.username, 'bio': bio}, status=status.HTTP_200_OK)
 
     # PUT
     if not request.user or not request.user.is_authenticated:
@@ -220,6 +227,145 @@ def user_bio(request, username):
     user.bio = new_bio
     user.save(update_fields=['bio'])
     return Response({'message': 'Bio updated successfully.', 'bio': user.bio}, status=status.HTTP_200_OK)
+
+@extend_schema(
+    summary="Get or update profile privacy settings",
+    description="Get or update the authenticated user's privacy settings for bio and waste reduction statistics.",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'bio_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+                'waste_stats_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+            }
+        }
+    },
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'bio_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+                            'waste_stats_privacy': {'type': 'string', 'enum': ['public', 'private', 'followers']},
+                        }
+                    }
+                }
+            },
+            description="Privacy settings retrieved/updated successfully",
+            examples=[
+                OpenApiExample(
+                    'GET Response',
+                    value={'data': {'bio_privacy': 'public', 'waste_stats_privacy': 'public'}},
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'PUT Response',
+                    value={
+                        'message': 'Privacy settings updated successfully.',
+                        'data': {'bio_privacy': 'private', 'waste_stats_privacy': 'followers'}
+                    },
+                    response_only=True
+                ),
+            ]
+        ),
+        400: OpenApiResponse(description="Bad request - invalid privacy value"),
+        401: OpenApiResponse(description="Unauthorized - authentication required"),
+    },
+    tags=['Profile']
+)
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def profile_privacy_settings(request):
+    if request.method == 'GET':
+        return Response({
+            'data': {
+                'bio_privacy': request.user.bio_privacy,
+                'waste_stats_privacy': request.user.waste_stats_privacy,
+            }
+        }, status=status.HTTP_200_OK)
+
+    bio_privacy = request.data.get('bio_privacy', request.user.bio_privacy)
+    waste_stats_privacy = request.data.get('waste_stats_privacy', request.user.waste_stats_privacy)
+
+    invalid_fields = {}
+    if bio_privacy not in VALID_PRIVACY_VALUES:
+        invalid_fields['bio_privacy'] = 'Invalid privacy value.'
+    if waste_stats_privacy not in VALID_PRIVACY_VALUES:
+        invalid_fields['waste_stats_privacy'] = 'Invalid privacy value.'
+    if invalid_fields:
+        return Response({'error': invalid_fields}, status=status.HTTP_400_BAD_REQUEST)
+
+    request.user.bio_privacy = bio_privacy
+    request.user.waste_stats_privacy = waste_stats_privacy
+    request.user.save(update_fields=['bio_privacy', 'waste_stats_privacy'])
+
+    return Response({
+        'message': 'Privacy settings updated successfully.',
+        'data': {
+            'bio_privacy': request.user.bio_privacy,
+            'waste_stats_privacy': request.user.waste_stats_privacy,
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    summary="Get user waste reduction statistics",
+    description="Retrieve a user's waste reduction statistics (points and total waste/CO2). Visibility is controlled by the user's waste_stats_privacy setting.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'username': {'type': 'string'},
+                    'total_waste': {'type': 'string', 'nullable': True, 'description': 'Null when hidden by privacy settings.'},
+                    'points': {'type': 'number', 'nullable': True, 'description': 'Null when hidden by privacy settings.'},
+                }
+            },
+            description="Waste statistics retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Public/Visible Response',
+                    value={'username': 'john_doe', 'total_waste': '12.3456', 'points': 150},
+                    response_only=True
+                ),
+                OpenApiExample(
+                    'Hidden Response',
+                    value={'username': 'john_doe', 'total_waste': None, 'points': None},
+                    response_only=True
+                ),
+            ]
+        ),
+        404: OpenApiResponse(description="User not found"),
+    },
+    tags=['Profile']
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def user_waste_stats(request, username):
+    try:
+        user = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    can_view = can_view_profile_field(request.user, user, user.waste_stats_privacy)
+    return Response({
+        'username': user.username,
+        'total_waste': f"{user.total_co2:.4f}" if can_view else None,
+        'points': user.total_points if can_view else None,
+    }, status=status.HTTP_200_OK)
 
 
 @extend_schema(

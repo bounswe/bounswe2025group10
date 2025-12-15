@@ -8,6 +8,25 @@ from ..models import Comments, Posts
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+def send_realtime_notification(user_id, message, notif_id, created_at):
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        f"user_{user_id}",
+        {
+            "type": "notify",
+            "data": {
+                "id": notif_id,
+                "message": message,
+                "created_at": created_at.isoformat(),
+                "read": False
+            }
+        }
+    )
+    
 @extend_schema(
     summary="Create a comment on a post",
     description="Create a new comment on a specific post. Requires authentication.",

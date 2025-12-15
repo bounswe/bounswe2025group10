@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
-from api.models import Users
+from api.models import Users, Follow
 from api.profile.profile_views import user_bio
 
 class UserBioTests(TestCase):
@@ -93,3 +93,51 @@ class UserBioTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Bio updated successfully.')
         self.assertEqual(response.data['bio'], 'Updated bio')
+
+    def test_get_bio_private_hidden_from_other_user(self):
+        """Private bio should be hidden from non-owners"""
+        self.user1.bio = "Secret bio"
+        self.user1.bio_privacy = "private"
+        self.user1.save(update_fields=['bio', 'bio_privacy'])
+
+        request = self.factory.get(f'/api/profile/{self.user1.username}/bio/')
+        force_authenticate(request, user=self.user2)
+        response = user_bio(request, username=self.user1.username)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], self.user1.username)
+        self.assertIsNone(response.data['bio'])
+
+    def test_get_bio_private_visible_to_owner(self):
+        """Private bio should be visible to the profile owner"""
+        self.user1.bio = "Secret bio"
+        self.user1.bio_privacy = "private"
+        self.user1.save(update_fields=['bio', 'bio_privacy'])
+
+        request = self.factory.get(f'/api/profile/{self.user1.username}/bio/')
+        force_authenticate(request, user=self.user1)
+        response = user_bio(request, username=self.user1.username)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['bio'], "Secret bio")
+
+    def test_get_bio_followers_only(self):
+        """Followers-only bio should be visible only to followers and the owner"""
+        self.user1.bio = "Followers bio"
+        self.user1.bio_privacy = "followers"
+        self.user1.save(update_fields=['bio', 'bio_privacy'])
+
+        # Not following yet -> hidden
+        request = self.factory.get(f'/api/profile/{self.user1.username}/bio/')
+        force_authenticate(request, user=self.user2)
+        response = user_bio(request, username=self.user1.username)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data['bio'])
+
+        # Become a follower -> visible
+        Follow.objects.create(follower=self.user2, following=self.user1)
+        request = self.factory.get(f'/api/profile/{self.user1.username}/bio/')
+        force_authenticate(request, user=self.user2)
+        response = user_bio(request, username=self.user1.username)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['bio'], "Followers bio")

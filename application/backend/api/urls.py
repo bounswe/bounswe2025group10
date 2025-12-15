@@ -34,8 +34,12 @@ urlpatterns = [
     path('api/profile/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
     # User profile update endpoint
     path('api/profile/<str:username>/bio/', profile_views.user_bio, name='user-bio'),
+    # User waste reduction statistics endpoint (respects privacy settings)
+    path('api/profile/<str:username>/waste-stats/', profile_views.user_waste_stats, name='user-waste-stats'),
     # Public profile picture retrieval endpoint
     path('api/profile/<str:username>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
+    # Profile privacy settings (authenticated user)
+    path('api/profile/privacy/', profile_views.profile_privacy_settings, name='profile-privacy-settings'),
     
     # Follow/Unfollow Endpoints
     # ----------------------------------------
@@ -224,4 +228,3 @@ urlpatterns = [
     # GET: Retrieve recycling centers by city and optionally by district
     path("api/recycling-centers/", recycling_views.get_recycling_centers, name="get_recycling_centers"),
 ]
-
