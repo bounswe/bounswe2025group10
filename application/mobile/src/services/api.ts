@@ -414,6 +414,36 @@ export const profileService = {
     const response = await api.put(`/api/profile/${username}/bio/`, { bio });
     return response.data;
   },
+  
+  // Follow a user
+  followUser: async (username: string): Promise<any> => {
+    const response = await api.post(`/api/profile/${username}/follow/`);
+    return response.data;
+  },
+  
+  // Unfollow a user
+  unfollowUser: async (username: string): Promise<any> => {
+    const response = await api.post(`/api/profile/${username}/unfollow/`);
+    return response.data;
+  },
+  
+  // Get follow status and counts for a user
+  getFollowStatus: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/follow-status/`);
+    return response.data;
+  },
+  
+  // Get list of followers
+  getFollowers: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/followers/`);
+    return response.data;
+  },
+  
+  // Get list of users being followed
+  getFollowing: async (username: string): Promise<any> => {
+    const response = await api.get(`/api/profile/${username}/following/`);
+    return response.data;
+  },
 };
 
 // Public profile endpoints (no auth required)
