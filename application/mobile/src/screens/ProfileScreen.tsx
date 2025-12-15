@@ -327,11 +327,18 @@ const ProfileMain: React.FC = () => {
             />
             <View style={{flexDirection:'row', marginTop: spacing.xs}}>
               <TouchableOpacity style={[styles.saveButton, {marginRight: spacing.sm, backgroundColor: colors.primary}]} onPress={async ()=>{
+                if (!userData?.username) {
+                  Alert.alert('Error', 'User data not available');
+                  return;
+                }
                 try{
-                  await profileService.updateBio(userData!.username,bioInput);
+                  await profileService.updateBio(userData.username, bioInput);
                   setBio(bioInput);
                   setEditingBio(false);
-                }catch(err){Alert.alert('Error','Could not update bio');}
+                }catch(err){
+                  logger.error('Error updating bio:', err);
+                  Alert.alert('Error','Could not update bio');
+                }
               }}>
                 <Text style={[styles.logoutButtonText, { color: colors.textOnPrimary }]}>{t('common.save')}</Text>
               </TouchableOpacity>

@@ -15,6 +15,7 @@ import './src/i18n'; // Initialize i18n
 import { initializeRTL, isRTL } from './src/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
+import { logger } from './src/utils/logger';
 
 const LANGUAGE_KEY = '@app_language';
 
@@ -32,10 +33,10 @@ const App = () => {
         const shouldBeRTL = isRTL(savedLanguage);
         const currentIsRTL = I18nManager.isRTL;
 
-        console.log('[App] Language:', savedLanguage, 'Should be RTL:', shouldBeRTL, 'Current RTL:', currentIsRTL);
+        logger.log('[App] Language:', savedLanguage, 'Should be RTL:', shouldBeRTL, 'Current RTL:', currentIsRTL);
 
         if (shouldBeRTL !== currentIsRTL) {
-          console.log('[App] RTL mismatch detected!');
+          logger.log('[App] RTL mismatch detected!');
           setRtlMismatch(true);
         }
       }
@@ -60,7 +61,7 @@ const App = () => {
       try {
         await Updates.reloadAsync();
       } catch (error) {
-        console.warn('Could not restart:', error);
+        logger.warn('Could not restart:', error);
         // If reload fails, just continue
         setRtlMismatch(false);
       }

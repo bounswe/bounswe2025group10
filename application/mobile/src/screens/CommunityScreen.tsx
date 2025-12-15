@@ -103,7 +103,7 @@ export const CommunityScreen = () => {
       } else {
         await postService.dislikePost(postId);
       }
-      // Update state optimistically
+      // Update state after successful API call
       setPosts(prevPosts =>
         prevPosts.map(post => {
           if (post.id !== postId) return post;

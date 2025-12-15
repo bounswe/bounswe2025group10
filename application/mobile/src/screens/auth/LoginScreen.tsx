@@ -34,17 +34,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const [jokePunchline, setJokePunchline] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     axios
-      .get('https://official-joke-api.appspot.com/random_joke')
+      .get('https://official-joke-api.appspot.com/random_joke', {
+        signal: controller.signal,
+        timeout: 5000, // 5 second timeout
+      })
       .then(res => {
-        setJokeSetup(res.data.setup);
-        setJokePunchline(res.data.punchline);
+        if (isMounted) {
+          setJokeSetup(res.data.setup);
+          setJokePunchline(res.data.punchline);
+        }
       })
       .catch(err => {
-        logger.error('Joke API error:', err);
-        setJokeSetup('Welcome to the app!');
-        setJokePunchline('');
+        if (isMounted && !axios.isCancel(err)) {
+          logger.error('Joke API error:', err);
+          setJokeSetup('Welcome to the app!');
+          setJokePunchline('');
+        }
       });
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, []);
 
   const handleLogin = async () => {

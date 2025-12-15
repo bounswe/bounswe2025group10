@@ -126,7 +126,7 @@ export const ChallengesScreen = () => {
       setTargetAmount('');
       setIsPublic(true);
       setShowCreateModal(false);
-      fetchChallenges();
+      await fetchChallenges();
       Alert.alert(t('common.success'), t('challenges.created'));
     } catch (error) {
       logger.error('Error creating challenge:', error);
@@ -137,7 +137,7 @@ export const ChallengesScreen = () => {
   const joinChallenge = async (challengeId: number) => {
     try {
       await challengeService.joinChallenge(challengeId);
-      fetchChallenges();
+      await fetchChallenges();
       Alert.alert(t('common.success'), t('challenges.joined'));
     } catch (error: unknown) {
       logger.error('Error joining challenge:', error);
@@ -151,7 +151,7 @@ export const ChallengesScreen = () => {
       const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge === challengeId);
       if (enrolledChallenge) {
         await challengeService.leaveChallenge(enrolledChallenge.challenge);
-        fetchChallenges();
+        await fetchChallenges();
         Alert.alert(t('common.success'), t('challenges.left'));
       }
     } catch (error: unknown) {
