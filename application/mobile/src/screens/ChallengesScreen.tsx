@@ -154,8 +154,9 @@ export const ChallengesScreen = () => {
       await challengeService.joinChallenge(challengeId);
       fetchChallenges();
       Alert.alert('Success', 'Successfully joined the challenge!');
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to join challenge');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } };
+      Alert.alert('Error', err.response?.data?.detail || 'Failed to join challenge');
     }
   };
 
@@ -168,8 +169,9 @@ export const ChallengesScreen = () => {
         fetchChallenges();
         Alert.alert('Success', 'Successfully left the challenge!');
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to leave challenge');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } };
+      Alert.alert('Error', err.response?.data?.detail || 'Failed to leave challenge');
     }
   };
 
@@ -180,8 +182,9 @@ export const ChallengesScreen = () => {
           try {
             await challengeService.deleteChallenge(id);
             fetchChallenges();
-          } catch (error:any) {
-            Alert.alert('Error', error.response?.data?.detail || 'Failed to delete');
+          } catch (error: unknown) {
+            const err = error as { response?: { data?: { detail?: string } } };
+            Alert.alert('Error', err.response?.data?.detail || 'Failed to delete');
           }
         } },
     ]);

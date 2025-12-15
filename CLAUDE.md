@@ -1,188 +1,187 @@
-# CLAUDE.md
+# IMPORTANT RULES
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+READ A LOT OF CODE BEFORE MAKING A DECISION AND STRICTLY OBEY TO API ENDPOINTS!!!
+TEST EVERY FEATURE!!!
+DONT LOOK AT ARCHIVE DIRECTORY AND DONT CHANGE ANY CODE IF ITS NOT UNDER MOBILE DIRECTORY!!!
+
 
 ## Project Overview
 
-Zero Waste Challenge - A gamified sustainability platform with Django REST backend and React Native mobile app. The main codebase is located in `/application/`.
+Zero Waste Challenge - A gamified sustainability platform. The mobile app is located in `/application/mobile/` and connects to the production backend at `https://zerowaste.ink`.
 
-## Directory Structure
+## Mobile Development Commands
 
-```
-/archive/application/
-├── backend/     # Django REST API (Python 3.10, Django 5.2)
-├── mobile/      # React Native app (TypeScript, React Native 0.79.2)
-├── front-end/   # Web frontend
-└── docs/        # Documentation
-```
-
-## Backend Development
-
-### Quick Start with Docker (Recommended)
 ```bash
-cd archive/application/backend
-docker-compose up --build
-# API runs at http://localhost:8000
-# MySQL at localhost:3306
-```
+cd application/mobile
 
-### Local Development
-```bash
-cd archive/application/backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
-```
-
-### Common Backend Commands
-```bash
-# Run tests
-python manage.py test
-
-# Run specific test file
-python manage.py test api.tests.test_login
-
-# Access Docker container
-docker exec -it <container_name> /bin/bash
-
-# Run migrations in Docker
-docker compose exec web python manage.py migrate
-
-# Deploy to production (preserves DB)
-./deploy_save_db.sh
-
-# Fresh deployment (destroys DB)
-./deploy_destroy_db.sh
-```
-
-### Backend Architecture
-
-**Django Apps:**
-- `api/` - Main API endpoints (auth, posts, comments, waste, tips, achievements, profile, reports)
-- `challenges/` - Challenge system
-- `project/` - Settings and URL configuration
-
-**API Endpoints Pattern:**
-```
-/login/, /signup/           - Authentication
-/api/posts/                 - CRUD for posts
-/api/posts/<id>/comments/   - Nested comments
-/api/waste/                 - Waste tracking
-/api/challenges/            - Challenge operations
-/api/achievements/          - Achievement system
-```
-
-**Authentication:** JWT tokens (Simple JWT) with Token and Session fallback. Tokens stored in headers as `Authorization: Bearer <token>`.
-
-**Testing:** Django TestCase with APIClient. Tests use in-memory SQLite. Test files in `api/tests/` and `challenges/tests.py`.
-
-## Mobile Development
-
-### Setup
-```bash
-cd archive/application/mobile
+# Install dependencies
 npm install
 
-# iOS only (first time)
-bundle install
-bundle exec pod install
-```
+# Start Metro bundler
+npm start
 
-### Running the App
-```bash
-# Terminal 1: Start backend
-cd archive/application/backend && docker-compose up --build
+# Run on platforms
+npm run android
+npm run ios
 
-# Terminal 2: Start Metro
-cd archive/application/mobile && npm start
+# Testing
+npm test                    # Run all tests
+npm test -- --watch         # Watch mode
+npm test -- --coverage      # Coverage report
+npm test -- path/to/file    # Run specific test file
 
-# Terminal 3: Run app
-npm run android  # or npm run ios
-```
-
-### Common Mobile Commands
-```bash
-# Run tests
-npm test
-
-# Lint code
+# Linting
 npm run lint
-
-# Build APK (Android)
-cd android && ./gradlew assembleRelease
 ```
 
-### Mobile Architecture
+## Mobile Architecture
 
-**Directory Structure:**
+### Entry Point and Providers
+`App.tsx` wraps the app with providers in this order:
+1. `SafeAreaProvider` - Safe area handling
+2. `ThemeProvider` - Dark/light theme
+3. `AuthProvider` - Authentication state
+4. `AppNavigator` - Navigation
+
+### Navigation Structure (`src/navigation/AppNavigator.tsx`)
+- **Unauthenticated**: Auth stack (Login, Signup)
+- **Authenticated (regular user)**: Bottom tabs (Home, Community, Challenges, Profile) + stack screens (Tips, Achievements, Leaderboard, OtherProfile)
+- **Authenticated (admin)**: Admin panel with moderation screens
+
+Screen names are defined in `src/hooks/useNavigation.ts` via `SCREEN_NAMES` constant.
+
+### State Management
+- **AuthContext** (`src/context/AuthContext.tsx`): Authentication state, login/logout, user data
+- **ThemeContext** (`src/context/ThemeContext.tsx`): Dark/light theme toggle
+- Token storage via AsyncStorage (`src/utils/storage.ts`)
+
+### API Services (`src/services/api.ts`)
+All backend communication goes through service objects. The base URL is configured via `.env` file (`API_URL`).
+
+```typescript
+import { authService, wasteService, postService, challengeService, tipService, achievementService, profileService, adminService } from '../services/api';
 ```
-src/
-├── context/     # AuthContext for global state
-├── navigation/  # React Navigation setup
-├── screens/     # Screen components
-│   └── auth/    # Login/Signup screens
-├── services/    # API services layer
-└── utils/       # Storage, theme utilities
+
+**Token handling**: JWT tokens are automatically attached via axios interceptors. Token refresh is handled automatically on 401 responses.
+
+### Internationalization (`src/i18n/`)
+Supports English, Turkish, Spanish, French, and Arabic (RTL). Use `useTranslation` hook:
+```typescript
+const { t } = useTranslation();
+// Usage: t('home.title'), t('common.loading')
 ```
 
-**Services:** All API calls go through service layer (`src/services/`):
-- `authService` - Authentication
-- `wasteService` - Waste tracking
-- `challengeService` - Challenges
-- `achievementService` - Achievements
-- `profileService` - User profiles
+Translation files are in `src/i18n/locales/`.
 
-**Navigation:** Bottom tabs (Home, Community, Challenges, Profile) with nested stack navigation for auth flow.
+## API Endpoints Reference
 
-**State Management:** React Context API with AuthContext. Token persistence via AsyncStorage.
+Backend: `https://zerowaste.ink`
 
-## Testing
+### Authentication
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/login/` | POST | No | Login with email/password, returns JWT tokens |
+| `/signup/` | POST | No | Create account |
+| `/me/` | GET | Yes | Get current user info |
+| `/jwt/refresh/` | POST | No | Refresh access token |
 
-### Backend Testing
+### Waste Tracking
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/waste/get/` | GET | Yes | Get user's waste totals by type |
+| `/api/waste/` | POST | Yes | Log waste (waste_type, amount in grams) |
+| `/api/waste/leaderboard/` | GET | Yes | Get waste leaderboard |
+
+Waste types: `PLASTIC`, `PAPER`, `GLASS`, `METAL`, `ELECTRONIC`, `OIL&FATS`, `ORGANIC`
+
+### Posts & Community
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/posts/all/` | GET | No | Get all posts (paginated) |
+| `/api/posts/create/` | POST | Yes | Create post (multipart: text, image) |
+| `/api/posts/{id}/like/` | POST | Yes | Like a post |
+| `/api/posts/{id}/dislike/` | POST | Yes | Dislike a post |
+| `/api/posts/{id}/comments/` | GET | No | Get post comments |
+| `/api/posts/{id}/comments/create/` | POST | Yes | Add comment |
+
+### Challenges
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/challenges/` | GET | No | List all challenges (paginated) |
+| `/api/challenges/` | POST | Yes | Create challenge |
+| `/api/challenges/enrolled/` | GET | Yes | Get user's enrolled challenges |
+| `/api/challenges/participate/` | POST | Yes | Join challenge |
+| `/api/challenges/{id}/delete/` | DELETE | Yes | Delete challenge |
+
+### Profile
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/profile/{username}/bio/` | GET | No | Get user bio |
+| `/api/profile/{username}/bio/` | PUT | Yes | Update bio |
+| `/api/profile/{username}/picture/` | GET | No | Get profile picture |
+| `/api/profile/profile-picture/` | POST | Yes | Upload profile picture (multipart) |
+| `/api/profile/{username}/waste-stats/` | GET | No | Get user's waste stats |
+| `/api/profile/{username}/follow/` | POST | Yes | Follow user |
+| `/api/profile/{username}/unfollow/` | POST | Yes | Unfollow user |
+
+### Tips
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/tips/get_recent_tips` | GET | No | Get recent tips |
+| `/api/tips/all` | GET | No | Get all tips |
+| `/api/tips/create/` | POST | Yes | Create tip |
+| `/api/tips/{id}/like/` | POST | Yes | Like tip |
+| `/api/tips/{id}/dislike/` | POST | Yes | Dislike tip |
+
+### Achievements & Badges
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/achievements/` | GET | Yes | Get user achievements |
+| `/api/badges/` | GET | Yes | Get user badges |
+| `/api/badges/leaderboard/` | GET | Yes | Badge leaderboard (top 50) |
+| `/api/badges/check/` | POST | Yes | Check for new badges |
+
+### Admin (requires admin auth)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/reports/` | GET | Get moderation reports |
+| `/api/admin/reports/{id}/moderate/` | POST | Moderate content |
+
+## Testing Conventions
+
+Tests are co-located in `__tests__` directories. Jest config is in `jest.config.js`.
+
 ```bash
-# Run all tests
-python manage.py test
+# Run a specific test
+npm test -- src/services/__tests__/api.test.ts
 
-# Run with verbose output
-python manage.py test --verbosity=2
-
-# Run specific app tests
-python manage.py test api.tests
-python manage.py test challenges
+# Run tests matching pattern
+npm test -- --testNamePattern="login"
 ```
 
-### Mobile Testing
-```bash
-# Run all tests
-npm test
+Key mocks are set up in `jest.setup.js`:
+- AsyncStorage
+- Navigation hooks
+- Axios
+- Expo modules
+- Chart components
 
-# Watch mode
-npm test -- --watch
+## Environment Configuration
 
-# Coverage report
-npm test -- --coverage
+Copy `.env.example` to `.env`:
+```
+API_URL=https://zerowaste.ink
+```
+
+For local backend development:
+```
+API_URL=http://localhost:8000
 ```
 
 ## Important Notes
 
-Do not change anything in archive/ or files that are not under application/mobile.
-
-**Environment URLs:**
-- Development Backend: `http://localhost:8000`
-- Production Backend: `https://134-209-253-215.sslip.io`
-- Mobile connects to backend via `src/services/api.ts` configuration
-
-**Database:** MySQL 8.0 in Docker. Settings in `backend/project/settings.py`. Test database uses SQLite.
-
-**File Uploads:** Media files stored in `/media/posts/<user_id>/`. Max size 5MB. Handled via MultiPartParser.
-
-**CORS:** Currently allows all origins in development (django-cors-headers). Update for production.
-
-**Authentication Flow:**
-1. Mobile app calls `/login/` or `/signup/`
-2. Backend returns JWT tokens
-3. Mobile stores token in AsyncStorage
-4. All subsequent requests include token in Authorization header
-5. Backend validates token via Simple JWT middleware
-
-**Deployment:** Uses Jenkins CI/CD pipeline. Deploy scripts in `backend/` directory handle production updates.
+- Do not modify files in `/archive/` directory
+- All API responses may be paginated with `{ count, next, previous, results }` format
+- Image uploads use FormData (multipart/form-data)
+- Profile pictures: use `getProfilePictureUrl(username)` helper
+- Post images: use `getPostImageUrl(imageUrl)` helper

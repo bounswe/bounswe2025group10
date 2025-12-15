@@ -114,7 +114,7 @@ export const TipsScreen: React.FC = () => {
       setIsCreating(false);
       await fetchTips();
       Alert.alert('Success', 'Tip created successfully!');
-    } catch (err: any) {
+    } catch {
       Alert.alert('Error', 'Failed to create tip');
     }
   };
@@ -124,7 +124,7 @@ export const TipsScreen: React.FC = () => {
     try {
       await tipService.likeTip(tipId);
       await fetchTips();
-    } catch (err: any) {
+    } catch {
       Alert.alert('Error', 'Failed to like tip');
     }
   };
@@ -134,7 +134,7 @@ export const TipsScreen: React.FC = () => {
     try {
       await tipService.dislikeTip(tipId);
       await fetchTips();
-    } catch (err: any) {
+    } catch {
       Alert.alert('Error', 'Failed to dislike tip');
     }
   };
@@ -152,7 +152,7 @@ export const TipsScreen: React.FC = () => {
       await tipService.reportTip(reportingId, reportReason, reportDescription.trim());
       closeReportModal();
       Alert.alert('Success', 'Report submitted successfully');
-    } catch (err: any) {
+    } catch {
       Alert.alert('Error', 'Failed to submit report');
     }
   };

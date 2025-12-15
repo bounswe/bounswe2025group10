@@ -280,10 +280,11 @@ export const HomeScreen: React.FC = () => {
       setUnitCount('');
       fetchWasteData();
       Alert.alert(t('common.success'), t('home.addWaste'));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: unknown }; message?: string };
       let message = 'Unknown error';
-      if (error.response?.data) {message = JSON.stringify(error.response.data);}
-      else if (error.message) {message = error.message;}
+      if (err.response?.data) {message = JSON.stringify(err.response.data);}
+      else if (err.message) {message = err.message;}
       Alert.alert(t('common.error'), `${message}`);
     }
   };
