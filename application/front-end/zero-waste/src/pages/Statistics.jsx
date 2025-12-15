@@ -18,6 +18,8 @@ import {
     Pie,
     Legend,
     ResponsiveContainer,
+    AreaChart, 
+    Area,      
 } from "recharts";
 
 export default function Statistics() {
@@ -25,6 +27,7 @@ export default function Statistics() {
     const { currentTheme } = useTheme();
     const { t, language } = useLanguage();
     const [wasteData, setWasteData] = useState([]);
+    const [timelineData, setTimelineData] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [communityStats, setCommunityStats] = useState(null);
 
@@ -56,25 +59,59 @@ export default function Statistics() {
                 if (!Array.isArray(backendData)) {
                     console.error("Waste data is not an array:", backendData);
                     setWasteData([]);
+                    setTimelineData([]);
                     return;
                 }
 
+                // 1. Process Categorical Data (Existing Logic)
                 const chartData = backendData.map((item) => ({
                     type: item.waste_type.charAt(0) + item.waste_type.slice(1).toLowerCase(),
                     quantity: item.total_amount,
                 }));
-
                 setWasteData(chartData);
+
+                // 2. Process Timeline Data (New Logic)
+                // Flatten all records from all categories into one array
+                const allRecords = backendData.flatMap(category => 
+                    category.records.map(record => ({
+                        date: record.date,
+                        amount: record.amount
+                    }))
+                );
+
+                // Group by Date (YYYY-MM-DD)
+                const groupedByDate = allRecords.reduce((acc, curr) => {
+                    const dateKey = new Date(curr.date).toISOString().split('T')[0];
+                    acc[dateKey] = (acc[dateKey] || 0) + curr.amount;
+                    return acc;
+                }, {});
+
+                // Convert to Array and Sort
+                const timeChartData = Object.keys(groupedByDate)
+                    .sort()
+                    .map(dateKey => ({
+                        rawDate: dateKey,
+                        // Format date for display (e.g., "15 Dec") based on language
+                        displayDate: new Date(dateKey).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
+                            day: 'numeric',
+                            month: 'short'
+                        }),
+                        amount: groupedByDate[dateKey]
+                    }));
+
+                setTimelineData(timeChartData);
+
             } catch (error) {
                 console.error("Failed to fetch waste data:", error);
                 setWasteData([]);
+                setTimelineData([]);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchWasteData();
-    }, [token]);
+    }, [token, language]); // Added language as dependency for date formatting
 
     // Translate waste types for display
     const translatedWasteData = useMemo(() => {
@@ -99,7 +136,6 @@ export default function Statistics() {
 
     const getWasteColor = (type) => {
         const key = type.toLowerCase().replace(/\s+/g, '').replace('&', '');
-        // Use theme chart colors if available, otherwise fall back to secondary color
         if (currentTheme.chartColors && currentTheme.chartColors[key]) {
             return currentTheme.chartColors[key];
         }
@@ -112,13 +148,12 @@ export default function Statistics() {
         : null;
 
     // Calculate environmental impact
-    // Assumptions: 1kg recycled waste saves ~2.5kg CO2, equivalent to 0.05 trees, saves ~5kWh energy
     const environmentalImpact = useMemo(() => {
         const wasteInKg = totalWaste / 1000;
         return {
-            co2Saved: (wasteInKg * 2.5).toFixed(2), // kg of CO2
-            treesEquivalent: (wasteInKg * 0.05).toFixed(2), // number of trees
-            energySaved: (wasteInKg * 5).toFixed(2), // kWh
+            co2Saved: (wasteInKg * 2.5).toFixed(2),
+            treesEquivalent: (wasteInKg * 0.05).toFixed(2),
+            energySaved: (wasteInKg * 5).toFixed(2),
         };
     }, [totalWaste]);
 
@@ -179,7 +214,6 @@ export default function Statistics() {
                                 {t('statistics.wasteProgress', 'Your Waste Progress')}
                             </h2>
 
-                            {/* Encouraging message for waste progress */}
                             <div
                                 className="mb-4 p-3 rounded-lg border-l-4"
                                 style={{
@@ -199,182 +233,234 @@ export default function Statistics() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="grid gap-6 lg:grid-cols-2">
-                                    {/* Bar Chart */}
+                                <div className="grid gap-6"> 
+                                    {/* --- Timeline Graph --- */}
                                     <div className="p-4 rounded-lg" style={{ backgroundColor: currentTheme.hover }}>
                                         <h3
                                             className="text-lg font-semibold mb-3"
                                             style={{ color: currentTheme.text }}
                                         >
-                                            {t('statistics.wasteByType', 'Waste by Type')}
+                                            {t('statistics.historyTitle', 'Recycling History')}
                                         </h3>
-                                        <ResponsiveContainer width="100%" height={300}>
-                                            <BarChart data={translatedWasteData}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={currentTheme.border} />
-                                                <XAxis
-                                                    dataKey="translatedType"
-                                                    angle={-15}
-                                                    textAnchor="end"
-                                                    height={80}
-                                                    interval={0}
-                                                    tick={{ fill: currentTheme.text, fontSize: 12 }}
-                                                />
-                                                <YAxis tick={{ fill: currentTheme.text }} />
-                                                <Tooltip
-                                                    content={({ active, payload }) => {
-                                                        if (active && payload && payload.length) {
-                                                            return (
-                                                                <div
-                                                                    className="px-3 py-2 rounded-lg shadow-lg"
-                                                                    style={{
-                                                                        backgroundColor: currentTheme.background,
-                                                                        border: `2px solid ${currentTheme.secondary}`,
-                                                                        color: currentTheme.text
-                                                                    }}
-                                                                >
-                                                                    <p className="font-semibold text-sm mb-1">{payload[0].payload.translatedType}</p>
-                                                                    <p className="text-xs" style={{ color: currentTheme.secondary }}>
-                                                                        {t('statistics.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    }}
-                                                />
-                                                <Bar dataKey="quantity">
-                                                    {translatedWasteData.map((entry, index) => (
-                                                        <Cell key={index} fill={getWasteColor(entry.type)} />
-                                                    ))}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
+                                        <div className="h-[300px] w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                    <defs>
+                                                        <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor={currentTheme.secondary} stopOpacity={0.8}/>
+                                                            <stop offset="95%" stopColor={currentTheme.secondary} stopOpacity={0}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <XAxis 
+                                                        dataKey="displayDate" 
+                                                        stroke={currentTheme.text} 
+                                                        tick={{ fill: currentTheme.text, fontSize: 12 }}
+                                                    />
+                                                    <YAxis 
+                                                        stroke={currentTheme.text}
+                                                        tick={{ fill: currentTheme.text, fontSize: 12 }}
+                                                    />
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={currentTheme.border} opacity={0.5} />
+                                                    <Tooltip 
+                                                        contentStyle={{
+                                                            backgroundColor: currentTheme.background,
+                                                            border: `2px solid ${currentTheme.secondary}`,
+                                                            borderRadius: '8px',
+                                                            color: currentTheme.text
+                                                        }}
+                                                        labelStyle={{ fontWeight: 'bold', color: currentTheme.text }}
+                                                    />
+                                                    <Area 
+                                                        type="monotone" 
+                                                        dataKey="amount" 
+                                                        name={t('statistics.quantity', 'Quantity')}
+                                                        unit="g"
+                                                        stroke={currentTheme.secondary} 
+                                                        fillOpacity={1} 
+                                                        fill="url(#colorAmount)" 
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
                                     </div>
 
-                                    {/* Pie Chart */}
-                                    <div className="p-4 rounded-lg" style={{ backgroundColor: currentTheme.hover }}>
-                                        <h3
-                                            className="text-lg font-semibold mb-3"
-                                            style={{ color: currentTheme.text }}
-                                        >
-                                            {t('statistics.wasteDistribution', 'Waste Distribution')}
-                                        </h3>
-                                        <ResponsiveContainer width="100%" height={300}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={translatedWasteData}
-                                                    dataKey="quantity"
-                                                    nameKey="translatedType"
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={55}
-                                                    outerRadius={100}
-                                                    labelLine={false}
-                                                    label={({ percent }) =>
-                                                        percent > 0 ? `${(percent * 100).toFixed(0)}%` : ""
-                                                    }
-                                                >
-                                                    {translatedWasteData.map((entry, index) => (
-                                                        <Cell key={index} fill={getWasteColor(entry.type)} />
-                                                    ))}
-                                                </Pie>
-                                                <Legend
-                                                    wrapperStyle={{ fontSize: "0.9rem", color: currentTheme.text }}
-                                                />
-                                                <Tooltip
-                                                    content={({ active, payload }) => {
-                                                        if (active && payload && payload.length) {
-                                                            return (
-                                                                <div
-                                                                    className="px-3 py-2 rounded-lg shadow-lg"
-                                                                    style={{
-                                                                        backgroundColor: currentTheme.background,
-                                                                        border: `2px solid ${currentTheme.secondary}`,
-                                                                        color: currentTheme.text
-                                                                    }}
-                                                                >
-                                                                    <p className="font-semibold text-sm mb-1">{payload[0].payload.translatedType}</p>
-                                                                    <p className="text-xs" style={{ color: currentTheme.secondary }}>
-                                                                        {t('statistics.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    }}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-
-                                    {/* Summary Table */}
-                                    <div className="lg:col-span-2">
+                                    <div className="grid gap-6 lg:grid-cols-2">
+                                        {/* Bar Chart */}
                                         <div className="p-4 rounded-lg" style={{ backgroundColor: currentTheme.hover }}>
                                             <h3
                                                 className="text-lg font-semibold mb-3"
                                                 style={{ color: currentTheme.text }}
                                             >
-                                                {t('statistics.summary', 'Summary')}
+                                                {t('statistics.wasteByType', 'Waste by Type')}
                                             </h3>
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full border-collapse border" style={{ borderColor: currentTheme.border }}>
-                                                    <thead>
-                                                        <tr
-                                                            className="border-b"
-                                                            style={{ borderColor: currentTheme.border }}
-                                                        >
-                                                            <th
-                                                                className="text-left py-2 px-4 border"
-                                                                style={{ color: currentTheme.text, borderColor: currentTheme.border }}
-                                                            >
-                                                                {t('statistics.wasteType', 'Waste Type')}
-                                                            </th>
-                                                            <th
-                                                                className="text-right py-2 px-4 border"
-                                                                style={{ color: currentTheme.text, borderColor: currentTheme.border, textAlign: 'right' }}
-                                                            >
-                                                                {t('statistics.quantity', 'Quantity (g)')}
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {translatedWasteData.map((item, i) => (
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <BarChart data={translatedWasteData}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={currentTheme.border} />
+                                                    <XAxis
+                                                        dataKey="translatedType"
+                                                        angle={-15}
+                                                        textAnchor="end"
+                                                        height={80}
+                                                        interval={0}
+                                                        tick={{ fill: currentTheme.text, fontSize: 12 }}
+                                                    />
+                                                    <YAxis tick={{ fill: currentTheme.text }} />
+                                                    <Tooltip
+                                                        content={({ active, payload }) => {
+                                                            if (active && payload && payload.length) {
+                                                                return (
+                                                                    <div
+                                                                        className="px-3 py-2 rounded-lg shadow-lg"
+                                                                        style={{
+                                                                            backgroundColor: currentTheme.background,
+                                                                            border: `2px solid ${currentTheme.secondary}`,
+                                                                            color: currentTheme.text
+                                                                        }}
+                                                                    >
+                                                                        <p className="font-semibold text-sm mb-1">{payload[0].payload.translatedType}</p>
+                                                                        <p className="text-xs" style={{ color: currentTheme.secondary }}>
+                                                                            {t('statistics.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="quantity">
+                                                        {translatedWasteData.map((entry, index) => (
+                                                            <Cell key={index} fill={getWasteColor(entry.type)} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        {/* Pie Chart */}
+                                        <div className="p-4 rounded-lg" style={{ backgroundColor: currentTheme.hover }}>
+                                            <h3
+                                                className="text-lg font-semibold mb-3"
+                                                style={{ color: currentTheme.text }}
+                                            >
+                                                {t('statistics.wasteDistribution', 'Waste Distribution')}
+                                            </h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={translatedWasteData}
+                                                        dataKey="quantity"
+                                                        nameKey="translatedType"
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={55}
+                                                        outerRadius={100}
+                                                        labelLine={false}
+                                                        label={({ percent }) =>
+                                                            percent > 0 ? `${(percent * 100).toFixed(0)}%` : ""
+                                                        }
+                                                    >
+                                                        {translatedWasteData.map((entry, index) => (
+                                                            <Cell key={index} fill={getWasteColor(entry.type)} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Legend
+                                                        wrapperStyle={{ fontSize: "0.9rem", color: currentTheme.text }}
+                                                    />
+                                                    <Tooltip
+                                                        content={({ active, payload }) => {
+                                                            if (active && payload && payload.length) {
+                                                                return (
+                                                                    <div
+                                                                        className="px-3 py-2 rounded-lg shadow-lg"
+                                                                        style={{
+                                                                            backgroundColor: currentTheme.background,
+                                                                            border: `2px solid ${currentTheme.secondary}`,
+                                                                            color: currentTheme.text
+                                                                        }}
+                                                                    >
+                                                                        <p className="font-semibold text-sm mb-1">{payload[0].payload.translatedType}</p>
+                                                                        <p className="text-xs" style={{ color: currentTheme.secondary }}>
+                                                                            {t('statistics.quantity', 'Quantity')}: <span className="font-bold">{payload[0].value} grams</span>
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        {/* Summary Table */}
+                                        <div className="lg:col-span-2">
+                                            <div className="p-4 rounded-lg" style={{ backgroundColor: currentTheme.hover }}>
+                                                <h3
+                                                    className="text-lg font-semibold mb-3"
+                                                    style={{ color: currentTheme.text }}
+                                                >
+                                                    {t('statistics.summary', 'Summary')}
+                                                </h3>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full border-collapse border" style={{ borderColor: currentTheme.border }}>
+                                                        <thead>
                                                             <tr
-                                                                key={i}
                                                                 className="border-b"
                                                                 style={{ borderColor: currentTheme.border }}
                                                             >
-                                                                <td
-                                                                    className="py-2 px-4 border"
+                                                                <th
+                                                                    className="text-left py-2 px-4 border"
                                                                     style={{ color: currentTheme.text, borderColor: currentTheme.border }}
                                                                 >
-                                                                    {item.translatedType}
-                                                                </td>
-                                                                <td
+                                                                    {t('statistics.wasteType', 'Waste Type')}
+                                                                </th>
+                                                                <th
                                                                     className="text-right py-2 px-4 border"
-                                                                    style={{ color: currentTheme.text, borderColor: currentTheme.border }}
+                                                                    style={{ color: currentTheme.text, borderColor: currentTheme.border, textAlign: 'right' }}
                                                                 >
-                                                                    {item.quantity}
-                                                                </td>
+                                                                    {t('statistics.quantity', 'Quantity (g)')}
+                                                                </th>
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                        </thead>
+                                                        <tbody>
+                                                            {translatedWasteData.map((item, i) => (
+                                                                <tr
+                                                                    key={i}
+                                                                    className="border-b"
+                                                                    style={{ borderColor: currentTheme.border }}
+                                                                >
+                                                                    <td
+                                                                        className="py-2 px-4 border"
+                                                                        style={{ color: currentTheme.text, borderColor: currentTheme.border }}
+                                                                    >
+                                                                        {item.translatedType}
+                                                                    </td>
+                                                                    <td
+                                                                        className="text-right py-2 px-4 border"
+                                                                        style={{ color: currentTheme.text, borderColor: currentTheme.border }}
+                                                                    >
+                                                                        {item.quantity}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
 
-                                            {/* Text Summary */}
-                                            <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: currentTheme.secondary + '15' }}>
-                                                <p style={{ color: currentTheme.text }}>
-                                                    {t('statistics.totalWasteLogged', 'You\'ve logged a total of')}{" "}
-                                                    <strong>{totalWaste} {t('statistics.grams', 'grams')}</strong>{" "}
-                                                    {t('statistics.ofWaste', 'of waste')}.{" "}
-                                                    {topWasteType && (
-                                                        <>
-                                                            {t('statistics.topType', 'Your top recycled type is')}{" "}
-                                                            <strong>{topWasteType.type}</strong>!
-                                                        </>
-                                                    )}
-                                                </p>
+                                                {/* Text Summary */}
+                                                <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: currentTheme.secondary + '15' }}>
+                                                    <p style={{ color: currentTheme.text }}>
+                                                        {t('statistics.totalWasteLogged', 'You\'ve logged a total of')}{" "}
+                                                        <strong>{totalWaste} {t('statistics.grams', 'grams')}</strong>{" "}
+                                                        {t('statistics.ofWaste', 'of waste')}.{" "}
+                                                        {topWasteType && (
+                                                            <>
+                                                                {t('statistics.topType', 'Your top recycled type is')}{" "}
+                                                                <strong>{topWasteType.type}</strong>!
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

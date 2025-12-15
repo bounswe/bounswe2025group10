@@ -331,5 +331,32 @@
       "noEmail": "Veuillez entrer une adresse e-mail.",
       "failed": "Échec de l’envoi de l’invitation."
     }
+  },
+  "statistics": {
+    "title": "Statistiques",
+    "subtitle": "Voir votre progression de recyclage et les statistiques de la communauté",
+    "historyTitle": "Historique du Recyclage",
+    "wasteProgress": "Votre Progression",
+    "noWasteData": "Pas encore de données de déchets. Commencez à enregistrer vos efforts de recyclage !",
+    "wasteByType": "Déchets par Type",
+    "wasteDistribution": "Répartition des Déchets",
+    "summary": "Résumé",
+    "wasteType": "Type de Déchet",
+    "quantity": "Quantité (g)",
+    "totalWasteLogged": "Vous avez enregistré un total de",
+    "grams": "grammes",
+    "ofWaste": "de déchets",
+    "topType": "Votre type le plus recyclé est",
+    "communityStats": "Statistiques de la Communauté",
+    "totalPosts": "Total des Publications",
+    "totalTips": "Total des Astuces",
+    "activeChallenges": "Défis Actifs",
+    "environmentalImpact": "Impact Environnemental",
+    "impactDescription": "En recyclant vos déchets, vous avez eu un impact positif sur l'environnement !",
+    "co2Saved": "CO₂ Économisé",
+    "treesEquivalent": "Équivalent Arbres",
+    "energySaved": "Énergie Économisée",
+    "wasteEncouragement": "Excellent travail ! Chaque objet recyclé aide à réduire la pollution et à préserver les ressources naturelles. Continuez comme ça !",
+    "communityEncouragement": "Merci d'être un membre actif de notre communauté ! Ensemble, nous construisons un avenir durable et inspirons les autres à faire la différence."
   }
 }
