@@ -19,6 +19,7 @@ from .achievement import achievement_views
 from .achievement import badge_views
 from .activities.views.activity_view import ActivityEventViewSet
 from .recycling_centers import recycling_views
+from . import statistics_views
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -80,6 +81,13 @@ urlpatterns = [
     
     # GET: Retrieve details of the currently authenticated user
     path("me/", login_views.get_user_info, name="user-info"),
+
+    # Statistics Endpoints
+    # ----------------------------------------
+    # GET: System-wide statistics
+    path("api/statistics/", statistics_views.get_system_statistics, name="system-statistics"),
+    # GET: User-specific statistics by username
+    path("api/statistics/<str:username>/", statistics_views.get_user_statistics, name="user-statistics"),
     
     # Post Management Endpoints
     # ----------------------------------------
