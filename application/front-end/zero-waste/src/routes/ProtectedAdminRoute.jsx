@@ -4,7 +4,10 @@ import React from "react";
 
 export default function ProtectedAdminRoute() {
   const { isAdmin, isAuthenticated } = useAuth();
-  if (isAuthenticated) {
-    return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
+
+  return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Button, Row, Col } from "react-bootstrap";
+import { useTheme } from "../../providers/ThemeContext";
 
 /**
  * Props
@@ -19,43 +19,52 @@ export default function ChallengeCard({
   description,
   onDelete,
 }) {
-  return (
-    <Card className="shadow-sm border-0 mb-4" style={{ maxWidth: "600px" }}>
-      <Card.Body>
-        <Row className="align-items-start">
-          <Col>
-            <h5 className="fw-bold text-success mb-1">{name}</h5>
-            <div className="text-muted small">
-              <strong>ID :</strong> {challengeId}
-            </div>
-            <div className="text-muted small">
-              <strong>Challenge progress :</strong> {duration}
-            </div>
-            {reason && (
-              <div className="mt-2">
-                <strong className="text-danger">Report Reason:</strong> {reason}
-              </div>
-            )}
-            {description && (
-              <div className="text-muted small mt-1">
-                <strong>Description:</strong> {description}
-              </div>
-            )}
-          </Col>
+  const { currentTheme } = useTheme();
 
-          {onDelete && (
-            <Col xs="auto">
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => onDelete(challengeId)}
-              >
-                Delete
-              </Button>
-            </Col>
+  return (
+    <div
+      className="rounded-lg shadow-md mb-4 border w-full max-w-2xl p-4"
+      style={{
+        backgroundColor: currentTheme.background,
+        borderColor: currentTheme.border
+      }}
+    >
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h5 className="font-bold text-lg mb-1" style={{ color: currentTheme.primaryText }}>{name}</h5>
+          <div className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+            <strong>ID :</strong> {challengeId}
+          </div>
+          <div className="text-sm opacity-70 mb-2" style={{ color: currentTheme.text }}>
+            <strong>Challenge progress :</strong> {duration}
+          </div>
+          {(reason || description) && (
+            <div className="mb-2 p-3 rounded bg-red-50 border border-red-100 mt-2">
+              {reason && (
+                <div className="text-red-600">
+                  <strong className="font-semibold">Report Reason:</strong> {reason}
+                </div>
+              )}
+              {description && (
+                <div className="text-red-500 text-sm mt-1">
+                  <strong className="font-semibold">Description:</strong> {description}
+                </div>
+              )}
+            </div>
           )}
-        </Row>
-      </Card.Body>
-    </Card>
+        </div>
+
+        {onDelete && (
+          <div className="ml-4">
+            <button
+              onClick={() => onDelete(challengeId)}
+              className="px-3 py-1.5 rounded bg-red-500 text-white hover:bg-red-600 transition-colors text-sm font-medium"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
