@@ -44,6 +44,8 @@
     "weather": "الطقس",
     "istanbulWeather": "طقس إسطنبول: {{temperature}}°م",
     "noWasteLogged": "لم يتم تسجيل أي نفايات بعد",
+    "pointsInfo": "النقاط ⓘ",
+    "pointsPerLabel": "نقاط لكل 100 جرام",
     "wasteTypes": {
       "PLASTIC": "بلاستيك",
       "PAPER": "ورق",
@@ -78,7 +80,20 @@
     "logout": "تسجيل الخروج",
     "saveChanges": "حفظ التغييرات",
     "uploadPhoto": "رفع صورة",
-    "changePhoto": "تغيير الصورة"
+    "changePhoto": "تغيير الصورة",
+    "followers": "المتابعين",
+    "following": "تتابعهم",
+    "follow": "متابعة",
+    "unfollow": "إلغاء المتابعة",
+    "followed": "تمت المتابعة بنجاح",
+    "unfollowed": "تم إلغاء المتابعة بنجاح",
+    "noFollowers": "لا يوجد متابعون بعد.",
+    "noFollowing": "أنت لا تتابع أي شخص بعد.",
+    "failedToLoad": "فشل تحميل الملف الشخصي.",
+    "failedToLoadFollowers": "فشل تحميل المتابعين.",
+    "failedToLoadFollowing": "فشل تحميل قائمة المتابَعين.",
+    "loginToFollow": "سجل الدخول لمتابعة المستخدمين.",
+    "posts": "المنشورات"
   },
   "community": {
     "title": "المجتمع",

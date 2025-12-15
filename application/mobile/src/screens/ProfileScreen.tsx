@@ -40,6 +40,14 @@ const THEME_OPTIONS: { mode: ThemeMode; labelKey: string }[] = [
   { mode: 'system', labelKey: 'profile.themeSystem' },
 ];
 
+// User type for followers/following list
+interface FollowUser {
+  id: number;
+  username: string;
+  profile_image?: string | null;
+  bio?: string | null;
+}
+
 // Main profile component that handles the user data display
 const ProfileMain: React.FC = () => {
   const { userData, fetchUserData, logout } = useAuth();
@@ -70,6 +78,16 @@ const ProfileMain: React.FC = () => {
   const [bioInput, setBioInput] = useState<string>('');
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [themeModalVisible, setThemeModalVisible] = useState(false);
+  
+  // Follow state
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [followingModalVisible, setFollowingModalVisible] = useState(false);
+  const [followersList, setFollowersList] = useState<FollowUser[]>([]);
+  const [followingList, setFollowingList] = useState<FollowUser[]>([]);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
 
   // Load auth token once on mount
   useEffect(() => {
@@ -89,6 +107,61 @@ const ProfileMain: React.FC = () => {
       console.warn('Error fetching bio');
     }
   }, [userData?.username]);
+
+  const fetchFollowStats = useCallback(async () => {
+    if (!userData?.username) {return;}
+    try {
+      const data = await profileService.getFollowStatus(userData.username);
+      if (data && data.data) {
+        setFollowersCount(data.data.followers_count || 0);
+        setFollowingCount(data.data.following_count || 0);
+      }
+    } catch (err) {
+      console.warn('Error fetching follow stats');
+    }
+  }, [userData?.username]);
+
+  const handleOpenFollowers = async () => {
+    if (!userData?.username) {return;}
+    setFollowersModalVisible(true);
+    setLoadingFollowers(true);
+    try {
+      const data = await profileService.getFollowers(userData.username);
+      if (data && data.data && data.data.followers) {
+        setFollowersList(data.data.followers);
+        setFollowersCount(data.data.followers_count || data.data.followers.length);
+      }
+    } catch (err) {
+      console.warn('Error fetching followers:', err);
+      Alert.alert(t('common.error', 'Error'), t('profile.failedToLoadFollowers', 'Failed to load followers'));
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  const handleOpenFollowing = async () => {
+    if (!userData?.username) {return;}
+    setFollowingModalVisible(true);
+    setLoadingFollowing(true);
+    try {
+      const data = await profileService.getFollowing(userData.username);
+      if (data && data.data && data.data.following) {
+        setFollowingList(data.data.following);
+        setFollowingCount(data.data.following_count || data.data.following.length);
+      }
+    } catch (err) {
+      console.warn('Error fetching following:', err);
+      Alert.alert(t('common.error', 'Error'), t('profile.failedToLoadFollowing', 'Failed to load following'));
+    } finally {
+      setLoadingFollowing(false);
+    }
+  };
+
+  const handleNavigateToProfile = (username: string) => {
+    setFollowersModalVisible(false);
+    setFollowingModalVisible(false);
+    navigateToScreen('OtherProfile', { username });
+  };
 
   const fetchData = async () => {
     try {
@@ -123,7 +196,8 @@ const ProfileMain: React.FC = () => {
   useEffect(() => {
     fetchData();
     fetchBio();
-  }, [fetchBio]); // fetchBio already depends on userData?.username
+    fetchFollowStats();
+  }, [fetchBio, fetchFollowStats]); // fetchBio and fetchFollowStats already depend on userData?.username
 
   // Prepare data for BarChart - handle the specific waste data structure with translated labels
   const screenWidth = Dimensions.get('window').width - 40;
@@ -222,6 +296,19 @@ const ProfileMain: React.FC = () => {
         )}
       </TouchableOpacity>
       <Text style={[styles.title, textStyle, { color: colors.primary }]}>{t('profile.myProfile')}</Text>
+      
+      {/* Followers / Following Stats */}
+      <View style={styles.followStatsRow}>
+        <TouchableOpacity style={styles.followStatItem} onPress={handleOpenFollowers}>
+          <Text style={[styles.followStatNumber, { color: colors.textPrimary }]}>{followersCount}</Text>
+          <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>{t('profile.followers', 'Followers')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.followStatItem} onPress={handleOpenFollowing}>
+          <Text style={[styles.followStatNumber, { color: colors.textPrimary }]}>{followingCount}</Text>
+          <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>{t('profile.following', 'Following')}</Text>
+        </TouchableOpacity>
+      </View>
+      
       <View style={styles.infoContainer}>
         <Text style={[styles.infoText, textStyle, { color: colors.textPrimary }]}><Text style={[styles.infoLabel, { color: colors.primary }]}>{t('profile.username')}:</Text> {userData?.username || t('common.loading')}</Text>
         {editingBio ? (
@@ -395,6 +482,120 @@ const ProfileMain: React.FC = () => {
             >
               <Text style={[styles.modalCloseButtonText, { color: colors.textSecondary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Followers Modal */}
+      <Modal
+        visible={followersModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFollowersModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setFollowersModalVisible(false)}
+        >
+          <View style={[styles.followModalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.followModalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>{t('profile.followers', 'Followers')}</Text>
+              <TouchableOpacity onPress={() => setFollowersModalVisible(false)}>
+                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {loadingFollowers ? (
+              <View style={styles.followListLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : followersList.length === 0 ? (
+              <Text style={[styles.emptyFollowText, { color: colors.textSecondary }]}>
+                {t('profile.noFollowers', 'No followers yet.')}
+              </Text>
+            ) : (
+              <ScrollView style={styles.followList} showsVerticalScrollIndicator={false}>
+                {followersList.map((user) => (
+                  <TouchableOpacity
+                    key={user.id}
+                    style={[styles.followUserItem, { borderColor: colors.lightGray }]}
+                    onPress={() => handleNavigateToProfile(user.username)}
+                  >
+                    <Image
+                      source={user.profile_image ? { uri: user.profile_image } : PROFILE_PLACEHOLDER}
+                      style={styles.followUserAvatar}
+                    />
+                    <View style={styles.followUserInfo}>
+                      <Text style={[styles.followUserName, { color: colors.textPrimary }]}>{user.username}</Text>
+                      {user.bio && (
+                        <Text style={[styles.followUserBio, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {user.bio}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.followUserArrow, { color: colors.textSecondary }]}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Following Modal */}
+      <Modal
+        visible={followingModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFollowingModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setFollowingModalVisible(false)}
+        >
+          <View style={[styles.followModalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.followModalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>{t('profile.following', 'Following')}</Text>
+              <TouchableOpacity onPress={() => setFollowingModalVisible(false)}>
+                <Text style={[styles.closeButton, { color: colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {loadingFollowing ? (
+              <View style={styles.followListLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : followingList.length === 0 ? (
+              <Text style={[styles.emptyFollowText, { color: colors.textSecondary }]}>
+                {t('profile.noFollowing', 'Not following anyone yet.')}
+              </Text>
+            ) : (
+              <ScrollView style={styles.followList} showsVerticalScrollIndicator={false}>
+                {followingList.map((user) => (
+                  <TouchableOpacity
+                    key={user.id}
+                    style={[styles.followUserItem, { borderColor: colors.lightGray }]}
+                    onPress={() => handleNavigateToProfile(user.username)}
+                  >
+                    <Image
+                      source={user.profile_image ? { uri: user.profile_image } : PROFILE_PLACEHOLDER}
+                      style={styles.followUserAvatar}
+                    />
+                    <View style={styles.followUserInfo}>
+                      <Text style={[styles.followUserName, { color: colors.textPrimary }]}>{user.username}</Text>
+                      {user.bio && (
+                        <Text style={[styles.followUserBio, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {user.bio}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.followUserArrow, { color: colors.textSecondary }]}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -869,5 +1070,91 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: defaultColors.textSecondary,
     fontWeight: '600',
+  },
+  // Follow styles
+  followStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  followStatItem: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  followStatNumber: {
+    ...typography.h3,
+    fontWeight: 'bold',
+  },
+  followStatLabel: {
+    ...typography.caption,
+    marginTop: 2,
+  },
+  followModalContent: {
+    backgroundColor: defaultColors.background,
+    borderRadius: 16,
+    padding: spacing.lg,
+    width: '85%',
+    maxWidth: 400,
+    maxHeight: '70%',
+  },
+  followModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: defaultColors.lightGray,
+  },
+  closeButton: {
+    fontSize: 24,
+    padding: spacing.xs,
+  },
+  followListLoading: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyFollowText: {
+    ...typography.body,
+    textAlign: 'center',
+    padding: spacing.lg,
+    fontStyle: 'italic',
+  },
+  followList: {
+    maxHeight: 350,
+  },
+  followUserItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  followUserAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: spacing.sm,
+    backgroundColor: defaultColors.lightGray,
+  },
+  followUserInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  followUserName: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  followUserBio: {
+    ...typography.caption,
+    marginTop: 2,
+  },
+  followUserArrow: {
+    fontSize: 20,
+    opacity: 0.5,
+    marginLeft: spacing.sm,
   },
 });
