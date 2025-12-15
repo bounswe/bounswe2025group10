@@ -19,20 +19,24 @@ def format_co2(value: float) -> str:
         # or f"{value:.4f}" if that's what your serializer does
 
 class WasteViewsTests(TestCase):
+    """Test suite for waste views."""
     def setUp(self):
+        """Set up test fixtures."""
         self.factory = APIRequestFactory()
+
         # Create test user
         self.user = Users.objects.create_user(
             username="testuser",
             email="test@example.com",
             password="testpass123"
         )
+
         # Get or create waste types
         self.plastic, _ = Waste.objects.get_or_create(type='PLASTIC')
         self.paper, _ = Waste.objects.get_or_create(type='PAPER')
         self.glass, _ = Waste.objects.get_or_create(type='GLASS')
         self.metal, _ = Waste.objects.get_or_create(type='METAL')
-        
+
         # Create some test waste records
         UserWastes.objects.create(
             user=self.user,
@@ -48,61 +52,60 @@ class WasteViewsTests(TestCase):
         )
 
     def test_create_user_waste_success(self):
-        """Test successful creation of user waste"""
+        """Test successful creation of user waste."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'GLASS',
             'amount': 3.5
         }, format='json')
         force_authenticate(request, user=self.user)
         response = create_user_waste(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['message'], 'Waste recorded successfully')
         self.assertEqual(response.data['data']['amount'], 3.5)
         self.assertEqual(response.data['data']['type'], 'GLASS')
 
     def test_create_user_waste_invalid_type(self):
-        """Test creation with invalid waste type"""
+        """Test creation with invalid waste type."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'INVALID',
             'amount': 1.0
         }, format='json')
         force_authenticate(request, user=self.user)
         response = create_user_waste(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_user_waste_missing_data(self):
-        """Test creation with missing data"""
+        """Test creation with missing data."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'PLASTIC'
         }, format='json')
         force_authenticate(request, user=self.user)
         response = create_user_waste(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_user_waste_unauthenticated(self):
-        """Test creation without authentication"""
+        """Test creation without authentication."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'PLASTIC',
             'amount': 1.0
         }, format='json')
         response = create_user_waste(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_user_wastes_success(self):
-        """Test successful retrieval of user wastes"""
+        """Test successful retrieval of user wastes."""
         request = self.factory.get('/api/waste/get/')
         force_authenticate(request, user=self.user)
         response = get_user_wastes(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'User wastes retrieved successfully')
-        # Should return all waste types (7: PLASTIC, PAPER, GLASS, METAL, ELECTRONIC, OIL&FATS, ORGANIC)
         self.assertEqual(len(response.data['data']), 7)
-        
+
         # Verify the amounts for waste types we created
         waste_data = {item['waste_type']: item for item in response.data['data']}
         self.assertEqual(waste_data['PLASTIC']['total_amount'], 1.5)
@@ -138,23 +141,20 @@ class WasteViewsTests(TestCase):
         self.assertEqual(len(waste_data['METAL']['records']), 0)
 
     def test_get_user_wastes_unauthenticated(self):
-        """Test retrieval without authentication"""
+        """Test retrieval without authentication."""
         request = self.factory.get('/api/waste/get/')
         response = get_user_wastes(request)
-        
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_user_wastes_empty(self):
-        """Test retrieval with no waste records"""
-        # Delete all user wastes
+        """Test retrieval with no waste records."""
         UserWastes.objects.all().delete()
-        
+
         request = self.factory.get('/api/waste/get/')
         force_authenticate(request, user=self.user)
         response = get_user_wastes(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should still return all waste types with 0 amounts (7 types total)
         self.assertEqual(len(response.data['data']), 7)
         for item in response.data['data']:
             self.assertEqual(item['total_amount'], 0)
@@ -378,35 +378,23 @@ class WasteViewsTests(TestCase):
         self.assertEqual(current_user['points'], 0)
 
     def test_create_user_waste_zero_amount(self):
-        """Test waste creation with zero amount
-        Note: Currently the API accepts zero amounts. This test documents current behavior.
-        Consider adding validation to reject zero amounts in the future.
-        """
+        """Test waste creation with zero amount."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'PLASTIC',
             'amount': 0
         }, format='json')
         force_authenticate(request, user=self.user)
         response = create_user_waste(request)
-        
-        # API currently accepts zero amounts (no validation)
-        # This could be improved with validation in the serializer
         self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
 
     def test_create_user_waste_negative_amount(self):
-        """Test waste creation with negative amount
-        Note: Currently the API accepts negative amounts. This test documents current behavior.
-        Consider adding validation to reject negative amounts in the future.
-        """
+        """Test waste creation with negative amount."""
         request = self.factory.post('/api/waste/', {
             'waste_type': 'PLASTIC',
             'amount': -1.0
         }, format='json')
         force_authenticate(request, user=self.user)
         response = create_user_waste(request)
-        
-        # API currently accepts negative amounts (no validation)
-        # This could be improved with validation in the serializer
         self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
 
     def test_create_user_waste_very_large_amount(self):

@@ -1,23 +1,28 @@
-from django.test import TestCase
-from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.test import APIRequestFactory, force_authenticate
-from rest_framework import status
-from api.models import Users
-from api.profile.profile_views import upload_profile_picture
 import os
-from django.conf import settings
 import shutil
 
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIRequestFactory, force_authenticate
+
+from api.models import Users
+from api.profile.profile_views import upload_profile_picture
+
+
 class ProfilePictureUploadTests(TestCase):
+    """Test suite for profile picture upload functionality."""
+
     def setUp(self):
+        """Set up test fixtures."""
         self.factory = APIRequestFactory()
-        # Create test user
         self.user = Users.objects.create_user(
             username="testuser",
             email="test@example.com",
             password="testpass123"
         )
-        
+
         # Create test image
         self.image_content = b"fake image content"
         self.image = SimpleUploadedFile(
@@ -27,42 +32,47 @@ class ProfilePictureUploadTests(TestCase):
         )
 
     def tearDown(self):
-        # Clean up uploaded files after tests
+        """Clean up uploaded files after tests."""
         user_media_dir = os.path.join(settings.MEDIA_ROOT, 'users', str(self.user.id))
         if os.path.exists(user_media_dir):
             shutil.rmtree(user_media_dir)
 
     def test_upload_profile_picture_no_image(self):
-        """Test upload without providing an image"""
+        """Test upload without providing an image."""
         request = self.factory.post('/api/profile/profile-picture/', {}, format='multipart')
         force_authenticate(request, user=self.user)
         response = upload_profile_picture(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'No image file provided')
 
     def test_upload_profile_picture_invalid_type(self):
-        """Test upload with invalid file type"""
+        """Test upload with invalid file type."""
         invalid_file = SimpleUploadedFile(
             "test.txt",
             b"text content",
             content_type="text/plain"
         )
-        request = self.factory.post('/api/profile/profile-picture/', 
-                                  {'image': invalid_file}, 
-                                  format='multipart')
+        request = self.factory.post(
+            '/api/profile/profile-picture/',
+            {'image': invalid_file},
+            format='multipart'
+        )
         force_authenticate(request, user=self.user)
         response = upload_profile_picture(request)
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 
-                        'Invalid file type. Only JPEG and PNG files are allowed.')
+        self.assertEqual(
+            response.data['error'],
+            'Invalid file type. Only JPEG and PNG files are allowed.'
+        )
 
     def test_upload_profile_picture_unauthenticated(self):
-        """Test upload without authentication"""
-        request = self.factory.post('/api/profile/profile-picture/', 
-                                  {'image': self.image}, 
-                                  format='multipart')
+        """Test upload without authentication."""
+        request = self.factory.post(
+            '/api/profile/profile-picture/',
+            {'image': self.image},
+            format='multipart'
+        )
         response = upload_profile_picture(request)
-        
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -1,24 +1,26 @@
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIRequestFactory, APIClient
-from rest_framework import status
-from api.models import Posts, Users, Comments
-from api.comment.comment_serializer import CommentSerializer
-from api.comment.comment_views import create_comment, get_post_comments
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from api.comment.comment_views import create_comment, get_post_comments
+from api.models import Comments, Posts, Users
+
 
 class CommentViewsTests(TestCase):
+    """Test suite for comment views."""
     def setUp(self):
-        self.factory = APIRequestFactory()
+        """Set up test fixtures."""
         self.client = APIClient()
-        
+
         # Create test users
         self.user1 = Users.objects.create_user(
             email='testuser1@example.com',
             username='testuser1',
             password='testpass123'
         )
-        
+
         self.user2 = Users.objects.create_user(
             email='testuser2@example.com',
             username='testuser2',
@@ -33,7 +35,7 @@ class CommentViewsTests(TestCase):
             like_count=0,
             dislike_count=0
         )
-        
+
         # Create test comments
         self.comments = [
             Comments.objects.create(
@@ -76,9 +78,9 @@ class CommentViewsTests(TestCase):
         }
         
         response = self.client.post(url, data, format='json')
-        
+
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Comments.objects.count(), 2)  # No new comment should be created
+        self.assertEqual(Comments.objects.count(), 2)
 
     def test_create_comment_missing_content(self):
         """Test comment creation with missing content"""
@@ -87,9 +89,9 @@ class CommentViewsTests(TestCase):
         data = {}  # Empty data
         
         response = self.client.post(url, data, format='json')
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Comments.objects.count(), 2)  # No new comment should be created
+        self.assertEqual(Comments.objects.count(), 2)
 
     def test_create_comment_post_not_found(self):
         """Test comment creation for a non-existent post"""
@@ -100,19 +102,19 @@ class CommentViewsTests(TestCase):
         }
         
         response = self.client.post(url, data, format='json')
-        
+
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(Comments.objects.count(), 2)  # No new comment should be created
+        self.assertEqual(Comments.objects.count(), 2)
 
     def test_get_post_comments_success(self):
         """Test successful retrieval of post comments"""
         url = reverse('get_post_comments', kwargs={'post_id': self.post.id})
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Comments retrieved successfully')
         self.assertEqual(len(response.data['data']), 2)
-        
+
         # Check if comments are in correct order (oldest first)
         self.assertEqual(response.data['data'][0]['content'], 'First test comment')
         self.assertEqual(response.data['data'][1]['content'], 'Second test comment')
@@ -125,8 +127,7 @@ class CommentViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def test_get_post_comments_empty(self):
-        """Test retrieval of comments for a post with no comments"""
-        # Create a new post with no comments
+        """Test retrieval of comments for a post with no comments."""
         new_post = Posts.objects.create(
             creator=self.user1,
             text="Post with no comments",
@@ -134,13 +135,13 @@ class CommentViewsTests(TestCase):
             like_count=0,
             dislike_count=0
         )
-        
+
         url = reverse('get_post_comments', kwargs={'post_id': new_post.id})
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Comments retrieved successfully')
-        self.assertEqual(len(response.data['data']), 0)  # No comments should be returned
+        self.assertEqual(len(response.data['data']), 0)
 
     def test_create_comment_empty_content(self):
         """Test comment creation with empty content"""
@@ -184,11 +185,9 @@ class CommentViewsTests(TestCase):
         self.assertEqual(latest_comment.content, data['content'])
 
     def test_get_post_comments_ordering(self):
-        """Test that comments are returned in correct order (oldest first)"""
-        # Create additional comments with explicit timestamps
-        from django.utils import timezone
+        """Test that comments are returned in correct order (oldest first)."""
         import time
-        
+
         comment1 = Comments.objects.create(
             post=self.post,
             author=self.user1,
@@ -196,21 +195,21 @@ class CommentViewsTests(TestCase):
             date=timezone.now()
         )
         time.sleep(0.01)  # Small delay to ensure different timestamps
-        
+
         comment2 = Comments.objects.create(
             post=self.post,
             author=self.user2,
             content="Second comment",
             date=timezone.now()
         )
-        
+
         url = reverse('get_post_comments', kwargs={'post_id': self.post.id})
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should have all comments (2 existing + 2 new = 4 total)
         self.assertGreaterEqual(len(response.data['data']), 4)
-        
+
         # First comment should be the oldest
         self.assertEqual(response.data['data'][0]['content'], 'First test comment')
 
@@ -221,7 +220,6 @@ class CommentViewsTests(TestCase):
         data = {'content': '   \n\t   '}  # Only whitespace
         
         response = self.client.post(url, data, format='json')
-        # Should fail validation
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_multiple_comments_same_post(self):

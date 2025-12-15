@@ -1,20 +1,20 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
-from rest_framework import status
-from challenges.models import Challenge, UserChallenge
 import uuid
 
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from challenges.models import Challenge, UserChallenge
 
 User = get_user_model()
 
 
 class ChallengeTests(TestCase):
+    """Test suite for challenge views."""
+
     def setUp(self):
-        '''
-        Method to set up the test environment.
-        '''
-        # Create a test client
+        """Set up test fixtures."""
         self.client = APIClient()
 
         # Generate unique emails for each test run
@@ -52,6 +52,7 @@ class ChallengeTests(TestCase):
 
 
     def test_list_challenges(self):
+        """Test listing challenges."""
         # Unauthenticated user should see only public challenges
         response = self.client.get('/api/challenges/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -64,6 +65,7 @@ class ChallengeTests(TestCase):
         self.assertEqual(len(response.data['results']), 2)  # Both public and private challenges are visible
 
     def test_create_challenge(self):
+        """Test creating a challenge."""
         # Unauthenticated user cannot create a challenge
         data = {
             "title": "New Challenge",
@@ -77,26 +79,34 @@ class ChallengeTests(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/api/challenges/', data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Challenge.objects.count(), 3)  # Two initial challenges + one new
+        self.assertEqual(Challenge.objects.count(), 3)
 
     def test_update_challenge(self):
-        # Authenticate as a regular user
+        """Test updating a challenge."""
         self.client.force_authenticate(user=self.user)
 
         # Try updating a public challenge (should fail for non-admin)
         data = {"title": "Updated Public Challenge"}
-        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data, content_type='application/json')
+        response = self.client.put(
+            f'/api/challenges/{self.public_challenge.id}/update/',
+            data,
+            content_type='application/json'
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Authenticate as an admin
         self.client.force_authenticate(user=self.admin)
-        response = self.client.put(f'/api/challenges/{self.public_challenge.id}/update/', data, content_type='application/json')
+        response = self.client.put(
+            f'/api/challenges/{self.public_challenge.id}/update/',
+            data,
+            content_type='application/json'
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.public_challenge.refresh_from_db()
         self.assertEqual(self.public_challenge.title, "Updated Public Challenge")
 
     def test_delete_challenge(self):
-        # Authenticate as a regular user
+        """Test deleting a challenge."""
         self.client.force_authenticate(user=self.user)
 
         # Try deleting a public challenge (should fail for non-admin)
@@ -106,18 +116,20 @@ class ChallengeTests(TestCase):
         # Try deleting a private challenge (should succeed for the creator)
         response = self.client.delete(f'/api/challenges/{self.private_challenge.id}/delete/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Challenge.objects.count(), 1)  # Only the public challenge remains
+        self.assertEqual(Challenge.objects.count(), 1)
 
         # Authenticate as an admin
         self.client.force_authenticate(user=self.admin)
         response = self.client.delete(f'/api/challenges/{self.public_challenge.id}/delete/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Challenge.objects.count(), 0)  # All challenges deleted
+        self.assertEqual(Challenge.objects.count(), 0)
 
 
 class ChallengeParticipationTests(TestCase):
+    """Test suite for challenge participation."""
+
     def setUp(self):
-        # Create a test client
+        """Set up test fixtures."""
         self.client = APIClient()
 
         # Generate unique emails for each test run
@@ -129,7 +141,7 @@ class ChallengeParticipationTests(TestCase):
             username=f"user_{unique_suffix}",
             password="password123"
         )
-        
+
         self.other_user = User.objects.create_user(
             email=f"other_user_{unique_suffix}@example.com",
             username=f"other_user_{unique_suffix}",
