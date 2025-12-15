@@ -60,34 +60,38 @@ export const LeaderboardScreen: React.FC = () => {
   };
 
   // Fetch leaderboard data
-  const fetchLeaderboard = useCallback(async () => {
-    if (!refreshing) setLoading(true);
+  const fetchLeaderboard = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     setError(null);
 
     try {
       const response = await leaderboardService.getLeaderboard();
       const data = response.data;
-      
+
       // Process top users
-      const topUsers: LeaderboardUser[] = (data.top_users || []).map((user: any) => ({
-        rank: user.rank,
-        username: user.username,
-        total_waste: user.total_waste,
-        points: user.points || 0,
-        profile_picture: user.profile_picture,
-        isCurrentUser: false,
-      }));
+      const topUsers: LeaderboardUser[] = ((data as { top_users?: unknown[] }).top_users || []).map((user: unknown) => {
+        const u = user as { rank: number; username: string; total_waste: number; points?: number; profile_picture?: string };
+        return {
+          rank: u.rank,
+          username: u.username,
+          total_waste: u.total_waste,
+          points: u.points || 0,
+          profile_picture: u.profile_picture,
+          isCurrentUser: false,
+        };
+      });
 
       setLeaderboard(topUsers);
 
       // Set current user if exists and not in top 10
-      if (data.current_user && data.current_user.rank > 10) {
+      const responseData = data as { current_user?: { rank: number; username: string; total_waste: number; points?: number; profile_picture?: string } };
+      if (responseData.current_user && responseData.current_user.rank > 10) {
         setCurrentUser({
-          rank: data.current_user.rank,
-          username: data.current_user.username,
-          total_waste: data.current_user.total_waste,
-          points: data.current_user.points || 0,
-          profile_picture: data.current_user.profile_picture,
+          rank: responseData.current_user.rank,
+          username: responseData.current_user.username,
+          total_waste: responseData.current_user.total_waste,
+          points: responseData.current_user.points || 0,
+          profile_picture: responseData.current_user.profile_picture,
           isCurrentUser: true,
         });
       } else {
@@ -101,11 +105,11 @@ export const LeaderboardScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchLeaderboard();
+    await fetchLeaderboard(true);
   }, [fetchLeaderboard]);
 
   useEffect(() => {

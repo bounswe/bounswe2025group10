@@ -47,10 +47,12 @@ jest.mock('../../services/api', () => ({
   profileService: {
     uploadProfilePicture: jest.fn(),
     updateBio: jest.fn(),
+    getFollowStats: jest.fn().mockResolvedValue({ followers_count: 0, following_count: 0 }),
   },
   profilePublicService: {
     getUserBio: jest.fn().mockResolvedValue({ username: 'testuser', bio: 'Test bio' }),
   },
+  getProfilePictureUrl: jest.fn((username: string) => `http://localhost:8000/api/profile/${username}/picture/`),
   API_URL: 'http://localhost:8000',
 }));
 

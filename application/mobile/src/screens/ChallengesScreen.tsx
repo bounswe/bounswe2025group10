@@ -86,14 +86,14 @@ export const ChallengesScreen = () => {
   const [deadline, setDeadline] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
-  const fetchChallenges = useCallback(async () => {
-    if (!refreshing) {setLoading(true);}
+  const fetchChallenges = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) {setLoading(true);}
     try {
       const [challengesResponse, enrolledResponse] = await Promise.all([
         challengeService.getChallenges(),
         challengeService.getEnrolledChallenges()
       ]);
-      
+
       const allChallenges = challengesResponse;
       const enrolled = enrolledResponse;
 
@@ -119,11 +119,11 @@ export const ChallengesScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, [t]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await fetchChallenges();
+    await fetchChallenges(true);
   }, [fetchChallenges]);
 
   const createChallenge = async () => {
