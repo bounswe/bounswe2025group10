@@ -222,7 +222,7 @@
     "startActivityHint": "Registra residuos, únete a desafíos",
     "types": {
       "all": "Todo",
-      "post": "Publicación",
+      "posts": "Publicaciones",
       "waste": "Registro",
       "achievement": "Logro",
       "challenge": "Desafío",

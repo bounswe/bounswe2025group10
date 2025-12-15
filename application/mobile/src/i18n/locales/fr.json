@@ -222,7 +222,7 @@
     "startActivityHint": "Enregistrez des déchets, rejoignez des défis",
     "types": {
       "all": "Tout",
-      "post": "Publication",
+      "posts": "Publications",
       "waste": "Déchet",
       "achievement": "Réalisation",
       "challenge": "Défi",
