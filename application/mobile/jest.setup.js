@@ -37,6 +37,7 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+
 // Mock react-native-chart-kit
 jest.mock('react-native-chart-kit', () => {
   const React = require('react');
@@ -126,6 +127,33 @@ jest.mock('./src/utils/logger', () => ({
     error: jest.fn(),
     debug: jest.fn(),
   },
+}));
+
+// Mock ThemeContext
+jest.mock('./src/context/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      primary: '#2E7D32',
+      background: '#FFFFFF',
+      backgroundSecondary: '#F5F5F5',
+      textPrimary: '#212121',
+      textSecondary: '#757575',
+      textOnPrimary: '#FFFFFF',
+      error: '#D32F2F',
+      success: '#4CAF50',
+      warning: '#FF9800',
+      lightGray: '#E0E0E0',
+      gray: '#9E9E9E',
+      darkGray: '#424242',
+      white: '#FFFFFF',
+      black: '#000000',
+      primaryLight: '#C8E6C9',
+    },
+    isDarkMode: false,
+    themeMode: 'light',
+    setThemeMode: jest.fn(),
+  }),
+  ThemeProvider: ({ children }) => children,
 }));
 
 // Mock error utility
