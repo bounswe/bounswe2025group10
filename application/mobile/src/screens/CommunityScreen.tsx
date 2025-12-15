@@ -182,8 +182,10 @@ export const CommunityScreen = () => {
       ? getPostImageUrl(item.image_url)
       : (item.image ? getPostImageUrl(item.image) : null);
 
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const profileImageSource = require('../assets/profile_placeholder.png');
+    // Load profile picture from API with fallback to placeholder
+    const profileImageSource = item.creator_username
+      ? { uri: getProfilePictureUrl(item.creator_username) }
+      : require('../assets/profile_placeholder.png');
 
     return (
       <View style={[styles.postItem, { backgroundColor: colors.backgroundSecondary }]}>
@@ -301,8 +303,10 @@ export const CommunityScreen = () => {
             <ScrollView style={{ flex: 1, padding: spacing.md }}>
               {selectedPostId && comments[selectedPostId] && comments[selectedPostId].length > 0 ? (
                 comments[selectedPostId].map(comment => {
-                  // TODO: Re-enable profile picture loading when backend is fixed
-                  const commentProfileSource = require('../assets/profile_placeholder.png');
+                  // Load profile picture from API with fallback to placeholder
+                  const commentProfileSource = comment.author_username
+                    ? { uri: getProfilePictureUrl(comment.author_username) }
+                    : require('../assets/profile_placeholder.png');
                   return (
                     <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>

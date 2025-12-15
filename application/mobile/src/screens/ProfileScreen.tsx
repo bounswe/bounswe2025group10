@@ -140,9 +140,10 @@ const ProfileMain: React.FC = () => {
   // Check if there's any data to display
   const hasData = barData.some(val => val > 0);
 
-  // TODO: Re-enable profile picture loading when backend is fixed
-  // For now, always use placeholder to avoid 404/500 errors
-  const profileImageSource = PROFILE_PLACEHOLDER;
+  // Try to load profile picture from API, fall back to placeholder on error
+  const profileImageSource = userData?.username && !_profileImageLoadError
+    ? { uri: getProfilePictureUrl(userData.username) }
+    : PROFILE_PLACEHOLDER;
 
   // Handle selecting and uploading a new profile picture
   const handleChoosePhoto = async () => {

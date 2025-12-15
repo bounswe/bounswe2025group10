@@ -74,8 +74,11 @@ export const OtherUserProfileScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      {/* TODO: Re-enable profile picture loading when backend is fixed */}
-      <Image source={PROFILE_PLACEHOLDER} style={styles.profilePic} />
+      <Image
+        source={username ? { uri: getProfilePictureUrl(username) } : PROFILE_PLACEHOLDER}
+        style={styles.profilePic}
+        defaultSource={PROFILE_PLACEHOLDER}
+      />
       <Text style={styles.username}>{username}</Text>
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
       <Text style={[styles.sectionTitle, { alignSelf: 'flex-start' }]}>Posts</Text>

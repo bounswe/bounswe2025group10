@@ -163,8 +163,10 @@ export const LeaderboardScreen: React.FC = () => {
 
   // Render leaderboard item
   const renderLeaderboardItem = ({ item, index }: { item: LeaderboardUser; index: number }) => {
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const profileImageSource = require('../assets/profile_placeholder.png');
+    // Load profile picture from API with fallback to placeholder
+    const profileImageSource = item.username
+      ? { uri: getProfilePictureUrl(item.username) }
+      : require('../assets/profile_placeholder.png');
 
     return (
       <View style={[styles.leaderboardRow, getUserRowStyle(item.isCurrentUser || false, index)]}>
@@ -214,8 +216,10 @@ export const LeaderboardScreen: React.FC = () => {
   const renderCurrentUserRow = () => {
     if (!currentUser) return null;
 
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const currentUserProfileSource = require('../assets/profile_placeholder.png');
+    // Load profile picture from API with fallback to placeholder
+    const currentUserProfileSource = currentUser.username
+      ? { uri: getProfilePictureUrl(currentUser.username) }
+      : require('../assets/profile_placeholder.png');
 
     return (
       <View style={styles.currentUserSection}>
@@ -335,10 +339,12 @@ export const LeaderboardScreen: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={styles.modalUserInfo}>
-              {/* TODO: Re-enable profile picture loading when backend is fixed */}
               <Image
-                source={require('../assets/profile_placeholder.png')}
+                source={selectedUserBio?.username
+                  ? { uri: getProfilePictureUrl(selectedUserBio.username) }
+                  : require('../assets/profile_placeholder.png')}
                 style={styles.modalProfileImage}
+                defaultSource={require('../assets/profile_placeholder.png')}
               />
               <View style={styles.modalUserDetails}>
                 <Text style={styles.modalUsername}>{selectedUserBio?.username}</Text>
