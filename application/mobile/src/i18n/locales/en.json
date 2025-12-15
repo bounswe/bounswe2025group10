@@ -161,6 +161,61 @@
     "approve": "Approve",
     "reject": "Reject",
     "ban": "Ban User"
+  },
+  "wasteHelper": {
+    "selectMethod": "Select Method",
+    "selectTypeAndMethod": "Please select a waste type and input method",
+    "enterValidQuantity": "Please enter a valid quantity (positive number)",
+    "selectUnitAndCount": "Please select an item type and count",
+    "highAmountWarning": "This amount seems high. Are you sure this is correct?",
+    "excessiveAmountError": "Amount exceeds maximum limit (5000g). Please enter a smaller amount.",
+    "quantityGrams": "Grams",
+    "chooseItem": "Choose Item",
+    "count": "Count",
+    "methods": {
+      "grams": "By Grams",
+      "unit": "By Item"
+    },
+    "items": {
+      "plasticBottle": "Plastic Bottle",
+      "plasticBag": "Plastic Bag",
+      "plasticCup": "Plastic Cup",
+      "paperSheet": "Paper Sheet (A4)",
+      "notebook": "Notebook",
+      "glassBottle": "Glass Bottle",
+      "glassJar": "Glass Jar",
+      "aluminumCan": "Aluminum Can",
+      "metalSpoon": "Metal Spoon",
+      "phoneCharger": "Phone Charger",
+      "usbCable": "USB Cable",
+      "cookingOil": "Cooking Oil (tbsp)",
+      "butterWrapper": "Butter Wrapper",
+      "bananaPeel": "Banana Peel",
+      "appleCore": "Apple Core",
+      "foodScraps": "Food Scraps"
+    }
+  },
+  "filter": {
+    "title": "Filter Data",
+    "timeRange": "Time Range",
+    "wasteTypes": "Waste Types",
+    "apply": "Apply Filters",
+    "clearAll": "Clear All",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selected": "selected",
+    "selectedFilters": "Selected Filters",
+    "noDataForFilters": "No data for selected filters",
+    "filterButton": "Filter",
+    "activeFilters": "Filters Active",
+    "timeRanges": {
+      "day": "Today",
+      "week": "Last 7 Days",
+      "month": "Last 30 Days",
+      "year": "Last Year",
+      "all": "All Time",
+      "custom": "Custom Range"
+    }
   }
 }
 

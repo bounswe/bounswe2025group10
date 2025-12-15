@@ -161,5 +161,60 @@
     "approve": "موافقة",
     "reject": "رفض",
     "ban": "حظر المستخدم"
+  },
+  "wasteHelper": {
+    "selectMethod": "اختر الطريقة",
+    "selectTypeAndMethod": "يرجى اختيار نوع النفايات وطريقة الإدخال",
+    "enterValidQuantity": "يرجى إدخال كمية صالحة (رقم موجب)",
+    "selectUnitAndCount": "يرجى اختيار نوع العنصر والعدد",
+    "highAmountWarning": "هذه الكمية تبدو مرتفعة. هل أنت متأكد من صحتها؟",
+    "excessiveAmountError": "الكمية تتجاوز الحد الأقصى (5000 جرام). يرجى إدخال كمية أصغر.",
+    "quantityGrams": "جرام",
+    "chooseItem": "اختر عنصراً",
+    "count": "العدد",
+    "methods": {
+      "grams": "بالجرام",
+      "unit": "بالعنصر"
+    },
+    "items": {
+      "plasticBottle": "زجاجة بلاستيكية",
+      "plasticBag": "كيس بلاستيك",
+      "plasticCup": "كوب بلاستيك",
+      "paperSheet": "ورقة (A4)",
+      "notebook": "دفتر",
+      "glassBottle": "زجاجة زجاجية",
+      "glassJar": "برطمان زجاجي",
+      "aluminumCan": "علبة ألومنيوم",
+      "metalSpoon": "ملعقة معدنية",
+      "phoneCharger": "شاحن هاتف",
+      "usbCable": "كابل USB",
+      "cookingOil": "زيت طهي (ملعقة)",
+      "butterWrapper": "غلاف زبدة",
+      "bananaPeel": "قشرة موز",
+      "appleCore": "قلب تفاحة",
+      "foodScraps": "بقايا طعام"
+    }
+  },
+  "filter": {
+    "title": "تصفية البيانات",
+    "timeRange": "النطاق الزمني",
+    "wasteTypes": "أنواع النفايات",
+    "apply": "تطبيق الفلاتر",
+    "clearAll": "مسح الكل",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء تحديد الكل",
+    "selected": "محدد",
+    "selectedFilters": "الفلاتر المحددة",
+    "noDataForFilters": "لا توجد بيانات للفلاتر المحددة",
+    "filterButton": "تصفية",
+    "activeFilters": "الفلاتر نشطة",
+    "timeRanges": {
+      "day": "اليوم",
+      "week": "آخر 7 أيام",
+      "month": "آخر 30 يوماً",
+      "year": "السنة الماضية",
+      "all": "كل الوقت",
+      "custom": "نطاق مخصص"
+    }
   }
 }

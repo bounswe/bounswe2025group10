@@ -161,6 +161,61 @@
     "approve": "Aprobar",
     "reject": "Rechazar",
     "ban": "Prohibir usuario"
+  },
+  "wasteHelper": {
+    "selectMethod": "Seleccionar método",
+    "selectTypeAndMethod": "Por favor seleccione un tipo de residuo y método de entrada",
+    "enterValidQuantity": "Por favor ingrese una cantidad válida (número positivo)",
+    "selectUnitAndCount": "Por favor seleccione un tipo de artículo y cantidad",
+    "highAmountWarning": "Esta cantidad parece alta. ¿Está seguro de que es correcta?",
+    "excessiveAmountError": "La cantidad excede el límite máximo (5000g). Por favor ingrese una cantidad menor.",
+    "quantityGrams": "Gramos",
+    "chooseItem": "Elegir artículo",
+    "count": "Cantidad",
+    "methods": {
+      "grams": "Por gramos",
+      "unit": "Por artículo"
+    },
+    "items": {
+      "plasticBottle": "Botella de plástico",
+      "plasticBag": "Bolsa de plástico",
+      "plasticCup": "Vaso de plástico",
+      "paperSheet": "Hoja de papel (A4)",
+      "notebook": "Cuaderno",
+      "glassBottle": "Botella de vidrio",
+      "glassJar": "Frasco de vidrio",
+      "aluminumCan": "Lata de aluminio",
+      "metalSpoon": "Cuchara de metal",
+      "phoneCharger": "Cargador de teléfono",
+      "usbCable": "Cable USB",
+      "cookingOil": "Aceite de cocina (cda)",
+      "butterWrapper": "Envoltorio de mantequilla",
+      "bananaPeel": "Cáscara de plátano",
+      "appleCore": "Corazón de manzana",
+      "foodScraps": "Restos de comida"
+    }
+  },
+  "filter": {
+    "title": "Filtrar datos",
+    "timeRange": "Rango de tiempo",
+    "wasteTypes": "Tipos de residuos",
+    "apply": "Aplicar filtros",
+    "clearAll": "Borrar todo",
+    "selectAll": "Seleccionar todo",
+    "deselectAll": "Deseleccionar todo",
+    "selected": "seleccionados",
+    "selectedFilters": "Filtros seleccionados",
+    "noDataForFilters": "No hay datos para los filtros seleccionados",
+    "filterButton": "Filtro",
+    "activeFilters": "Filtros activos",
+    "timeRanges": {
+      "day": "Hoy",
+      "week": "Últimos 7 días",
+      "month": "Últimos 30 días",
+      "year": "Último año",
+      "all": "Todo el tiempo",
+      "custom": "Rango personalizado"
+    }
   }
 }
 

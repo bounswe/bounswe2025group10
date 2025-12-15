@@ -161,6 +161,61 @@
     "approve": "Onayla",
     "reject": "Reddet",
     "ban": "Kullanıcıyı Engelle"
+  },
+  "wasteHelper": {
+    "selectMethod": "Yöntem Seç",
+    "selectTypeAndMethod": "Lütfen atık türü ve giriş yöntemi seçin",
+    "enterValidQuantity": "Lütfen geçerli bir miktar girin (pozitif sayı)",
+    "selectUnitAndCount": "Lütfen öğe türü ve adet seçin",
+    "highAmountWarning": "Bu miktar yüksek görünüyor. Doğru olduğundan emin misiniz?",
+    "excessiveAmountError": "Miktar maksimum limiti aşıyor (5000g). Lütfen daha küçük bir miktar girin.",
+    "quantityGrams": "Gram",
+    "chooseItem": "Öğe Seç",
+    "count": "Adet",
+    "methods": {
+      "grams": "Gram ile",
+      "unit": "Öğe ile"
+    },
+    "items": {
+      "plasticBottle": "Plastik Şişe",
+      "plasticBag": "Plastik Poşet",
+      "plasticCup": "Plastik Bardak",
+      "paperSheet": "Kağıt (A4)",
+      "notebook": "Defter",
+      "glassBottle": "Cam Şişe",
+      "glassJar": "Cam Kavanoz",
+      "aluminumCan": "Alüminyum Kutu",
+      "metalSpoon": "Metal Kaşık",
+      "phoneCharger": "Telefon Şarj Cihazı",
+      "usbCable": "USB Kablo",
+      "cookingOil": "Yemeklik Yağ (kaşık)",
+      "butterWrapper": "Tereyağı Paketi",
+      "bananaPeel": "Muz Kabuğu",
+      "appleCore": "Elma Çekirdeği",
+      "foodScraps": "Yemek Artığı"
+    }
+  },
+  "filter": {
+    "title": "Veriyi Filtrele",
+    "timeRange": "Zaman Aralığı",
+    "wasteTypes": "Atık Türleri",
+    "apply": "Filtreleri Uygula",
+    "clearAll": "Temizle",
+    "selectAll": "Tümünü Seç",
+    "deselectAll": "Seçimi Kaldır",
+    "selected": "seçili",
+    "selectedFilters": "Seçili Filtreler",
+    "noDataForFilters": "Seçili filtreler için veri yok",
+    "filterButton": "Filtre",
+    "activeFilters": "Filtreler Aktif",
+    "timeRanges": {
+      "day": "Bugün",
+      "week": "Son 7 Gün",
+      "month": "Son 30 Gün",
+      "year": "Son Yıl",
+      "all": "Tüm Zamanlar",
+      "custom": "Özel Aralık"
+    }
   }
 }
 

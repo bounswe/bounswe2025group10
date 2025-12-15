@@ -14,6 +14,8 @@ import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage, LANGUAGES, isRTL } from '../i18n';
 import { I18nManager } from 'react-native';
+import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components/WasteFilterModal';
+import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
 
 // Chart config will be computed dynamically based on theme
 const getChartConfig = (colors: typeof defaultColors, isDarkMode: boolean) => ({
@@ -26,7 +28,7 @@ const getChartConfig = (colors: typeof defaultColors, isDarkMode: boolean) => ({
     ? `rgba(255, 255, 255, ${opacity})` // dark mode text
     : `rgba(33, 33, 33, ${opacity})`, // light mode text
   barPercentage: 0.7,
-  decimalPlaces: 0,
+  decimalPlaces: 2,
 });
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
@@ -45,9 +47,20 @@ const ProfileMain: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { textStyle, rowStyle } = useRTL();
   const { colors, isDarkMode, themeMode, setThemeMode } = useTheme();
-  const [wasteData, setWasteData] = useState<any[]>([]);
+  const [wasteData, setWasteData] = useState<WasteDataItem[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter hook for waste data
+  const {
+    filters,
+    filteredData,
+    filtersActive,
+    isFilterModalVisible,
+    openFilterModal,
+    closeFilterModal,
+    applyFilters,
+  } = useWasteFilters(wasteData);
   const [uploading, setUploading] = useState(false);
   const [_refreshing, setRefreshing] = useState(false);
   const [_profileImageLoadError, setProfileImageLoadError] = useState(false);
@@ -114,13 +127,17 @@ const ProfileMain: React.FC = () => {
 
   // Prepare data for BarChart - handle the specific waste data structure with translated labels
   const screenWidth = Dimensions.get('window').width - 40;
-  const barLabels = wasteData.map((item) => {
+  const barLabels = filteredData.map((item) => {
     const wasteType = item.waste_type?.toUpperCase();
     // Translate waste type if translation exists, otherwise use original
     return wasteType ? t(`home.wasteTypes.${wasteType}`, { defaultValue: item.waste_type }) : '';
   });
-  const barData = wasteData.map((item) => item.total_amount || 0);
+  // Convert grams to kg for display (backend stores in grams, chart shows kg)
+  const barData = filteredData.map((item) => (item.total_amount || 0) / 1000);
   const chartWidth = Math.max(screenWidth - 32, barLabels.length * 80);
+  
+  // Check if there's any data to display
+  const hasData = barData.some(val => val > 0);
 
   // TODO: Re-enable profile picture loading when backend is fixed
   // For now, always use placeholder to avoid 404/500 errors
@@ -384,31 +401,88 @@ const ProfileMain: React.FC = () => {
 
       {/* Progress Chart Section */}
       <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('home.wasteHistory')}</Text>
-        <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, alignItems: 'center' }}>
-          <View style={{ width: chartWidth, alignItems: 'center' }}>
-            <BarChart
-              data={{
-                labels: barLabels,
-                datasets: [{ data: barData }],
-              }}
-              width={chartWidth}
-              height={220}
-              chartConfig={{
-                ...getChartConfig(colors, isDarkMode),
-                propsForLabels: { fontSize: 12 },
-              }}
-              verticalLabelRotation={15}
-              showValuesOnTopOfBars
-              fromZero
-              style={{ ...styles.chart, marginBottom: spacing.sm + 4 }}
-              yAxisLabel=""
-              yAxisSuffix="kg"
-            />
+        <View style={styles.chartHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>{t('home.wasteHistory')}</Text>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              { 
+                backgroundColor: filtersActive ? colors.primary : colors.background,
+                borderColor: colors.primary,
+              },
+            ]}
+            onPress={openFilterModal}
+            accessibilityRole="button"
+            accessibilityLabel={t('filter.filterButton')}
+            accessibilityHint={filtersActive ? t('filter.activeFilters') : undefined}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              { color: filtersActive ? colors.textOnPrimary : colors.primary }
+            ]}>
+              {filtersActive ? `⚡ ${t('filter.filterButton')}` : `🔍 ${t('filter.filterButton')}`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Active filters indicator */}
+        {filtersActive && (
+          <View style={[styles.activeFiltersBar, { backgroundColor: colors.background }]}>
+            <Text style={[styles.activeFiltersText, { color: colors.textSecondary }]}>
+              {t(`filter.timeRanges.${filters.timeRange}`)} • {filters.wasteTypes.length} {t('filter.wasteTypes').toLowerCase()}
+            </Text>
           </View>
-        </RNScrollView>
-        {/* End chart scroll */}
+        )}
+        
+        {hasData ? (
+          <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, alignItems: 'center' }}>
+            <View style={{ width: chartWidth, alignItems: 'center' }}>
+              <BarChart
+                data={{
+                  labels: barLabels,
+                  datasets: [{ data: barData }],
+                }}
+                width={chartWidth}
+                height={220}
+                chartConfig={{
+                  ...getChartConfig(colors, isDarkMode),
+                  propsForLabels: { fontSize: 12 },
+                }}
+                verticalLabelRotation={15}
+                showValuesOnTopOfBars
+                fromZero
+                style={{ ...styles.chart, marginBottom: spacing.sm + 4 }}
+                yAxisLabel=""
+                yAxisSuffix="kg"
+              />
+            </View>
+          </RNScrollView>
+        ) : (
+          <View style={styles.emptyChartContainer}>
+            <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
+              {filtersActive ? t('filter.noDataForFilters') : t('home.noWasteLogged')}
+            </Text>
+            {filtersActive && (
+              <TouchableOpacity
+                style={[styles.clearFiltersButton, { borderColor: colors.primary }]}
+                onPress={openFilterModal}
+              >
+                <Text style={[styles.clearFiltersText, { color: colors.primary }]}>
+                  {t('filter.clearAll')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
+
+      {/* Waste Filter Modal */}
+      <WasteFilterModal
+        visible={isFilterModalVisible}
+        onClose={closeFilterModal}
+        onApply={applyFilters}
+        currentFilters={filters}
+      />
 
       {/* Achievements Section */}
       <View style={styles.cardSection}>
@@ -544,6 +618,57 @@ const styles = StyleSheet.create({
     color: defaultColors.primary,
     textAlign: 'left',
     marginBottom: spacing.md,
+  },
+  chartHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    borderWidth: 1,
+    minHeight: MIN_TOUCH_TARGET,
+  },
+  filterButtonText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  activeFiltersBar: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    marginBottom: spacing.sm,
+  },
+  activeFiltersText: {
+    ...typography.caption,
+    textAlign: 'center',
+  },
+  emptyChartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    minHeight: 150,
+  },
+  emptyChartText: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  clearFiltersButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+  },
+  clearFiltersText: {
+    ...typography.button,
   },
   cardSection: {
     width: '100%',
