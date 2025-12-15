@@ -7,6 +7,12 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+PROFILE_PRIVACY_CHOICES = [
+    ('public', 'Public'),
+    ('private', 'Private'),
+    ('followers', 'Followers'),
+]
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         if not email:
@@ -43,8 +49,10 @@ class Users(AbstractUser):
     profile_id = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.CharField(max_length=255, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
+    bio_privacy = models.CharField(max_length=16, choices=PROFILE_PRIVACY_CHOICES, default='public')
     total_points = models.FloatField(default=0)
     total_co2 = models.FloatField(default=0)
+    waste_stats_privacy = models.CharField(max_length=16, choices=PROFILE_PRIVACY_CHOICES, default='public')
 
     # Keep Django’s staff/superuser flags in sync if you need them
     is_staff = models.BooleanField(default=False)

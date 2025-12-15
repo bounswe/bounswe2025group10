@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .waste_serializer import UserWasteSerializer
 from django.core.exceptions import ObjectDoesNotExist
 from ..models import SuspiciousWaste, UserWastes, Waste, Users, UserAchievements
+from api.profile.privacy_utils import can_view_profile_field
 from challenges.models import UserChallenge
 from django.db.models import Sum, F
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
@@ -307,7 +308,7 @@ def get_user_wastes(request):
 
 @extend_schema(
     summary="Get top users leaderboard",
-    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). If authenticated, also returns current user's stats and ranking.",
+    description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings) are omitted. If authenticated, also returns current user's stats and ranking.",
     responses={
         200: OpenApiResponse(
             response={
@@ -399,11 +400,12 @@ def get_top_users(request):
             id__in=UserWastes.objects.values('user_id')
         ).order_by('-total_points')
         
-        # For leaderboard: get top 10 users
-        top_users = all_users_with_waste[:10]
-          # Prepare response data for top users
         top_users_data = []
-        for index, user in enumerate(top_users):
+        visible_rank = 1
+        for user in all_users_with_waste:
+            if not can_view_profile_field(request.user, user, user.waste_stats_privacy):
+                continue
+
             # Get the profile image URL with absolute URI
             profile_picture = None
             if user.profile_image:
@@ -418,12 +420,15 @@ def get_top_users(request):
                     profile_picture = f"{media_url.rstrip('/')}/{user.profile_image.lstrip('/')}"
             
             top_users_data.append({
-                'rank': index + 1,
+                'rank': visible_rank,
                 'username': user.username,
                 'total_waste': f"{user.total_co2:.4f}",  # CO2 emission formatted to 4 decimals
                 'profile_picture': profile_picture,
                 'points': user.total_points,
             })
+            visible_rank += 1
+            if len(top_users_data) >= 10:
+                break
         
         # Prepare response
         response_data = {
