@@ -1,9 +1,13 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
-import SkeletonCard from "../components/SkeletonCard";
-import { useAuth } from "../Login/AuthContent";
-import { showToast } from "../util/toast";
+import Navbar from "../components/layout/Navbar";
+import { useAuth } from "../providers/AuthContext";
+import { useTheme } from "../providers/ThemeContext";
+import { useLanguage } from "../providers/LanguageContext";
+import { showToast } from "../utils/toast";
+import { usePosts } from "../hooks/usePosts";
+import { useComments } from "../hooks/useComments";
+import { postsService } from "../services/postsService";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
@@ -14,232 +18,209 @@ const DEFAULT_POST_IMAGE = "https://developers.elementor.com/docs/assets/img/ele
 
 export default function Community() {
   const { token } = useAuth();
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const { currentTheme } = useTheme();
+  const { t, isRTL, language } = useLanguage();
+  const [pageSize, setPageSize] = useState(9);
+  const {
+    posts,
+    postsLoading: isLoading,
+    createPost,
+    createLoading: isCreating,
+    toggleLike,
+    toggleDislike,
+    savedPosts,
+    savedPostIds,
+    savePost,
+    unsavePost,
+    fetchSavedPosts,
+    fetchPosts,
+    postsResponse,
+    setPostsResponse,
+  } = usePosts(language, pageSize);
+
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const {
+    postComments,
+    commentInputs,
+    commentLoading,
+    fetchComments,
+    createComment,
+    reportComment,
+    updateCommentInput,
+  } = useComments();
+
   const [newPost, setNewPost] = useState({ description: "", image: null });
   const [sortOption, setSortOption] = useState("recent");
-
   const [reportingId, setReportingId] = useState(null);
   const [reason, setReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
-
-  const [postComments, setPostComments] = useState({});
-
-  const [savedPosts, setSavedPosts] = useState([]);
   const [showingSaved, setShowingSaved] = useState(false);
-  const [commentInputs, setCommentInputs] = useState({});
   const [viewingCommentsPostId, setViewingCommentsPostId] = useState(null);
-
   const [reportingCommentId, setReportingCommentId] = useState(null);
   const [commentReportReason, setCommentReportReason] = useState("");
   const [commentReportDescription, setCommentReportDescription] = useState("");
-  const [commentSortOrder, setCommentSortOrder] = useState("newest"); // or "oldest"
+  const [commentSortOrder, setCommentSortOrder] = useState("newest");
+  const [shouldScrollToTop, setShouldScrollToTop] = useState(false);
+  const postsContainerRef = useRef(null);
 
-  const [savedPostIds, setSavedPostIds] = useState(new Set());
+  // Fetch posts on mount
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
+  // Scroll to top when pagination occurs
+  useEffect(() => {
+    if (shouldScrollToTop && postsContainerRef.current) {
+      postsContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setShouldScrollToTop(false);
+    }
+  }, [posts, shouldScrollToTop]);
 
-  const fetchPosts = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/posts/all/`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const result = await response.json();
-      if (response.ok) {
-        setPosts(result.data);
+  // Pagination handlers
+  const handleNextPage = async () => {
+    if (postsResponse?.next) {
+      try {
+        const data = await postsService.getPostsFromUrl(postsResponse.next, token, language, pageSize);
+        setPostsResponse(data);
+        setShouldScrollToTop(true);
+      } catch (error) {
+        showToast(t('common.error', 'An error occurred'), "error");
       }
-      else showToast(result.message || "Failed to fetch posts.", "error");
-    } catch (err) {
-      showToast("Error fetching posts: " + err.message, "error");
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  const handlePreviousPage = async () => {
+    if (postsResponse?.previous) {
+      try {
+        const data = await postsService.getPostsFromUrl(postsResponse.previous, token, language, pageSize);
+        setPostsResponse(data);
+        setShouldScrollToTop(true);
+      } catch (error) {
+        showToast(t('common.error', 'An error occurred'), "error");
+      }
+    }
+  };
+
+  // Calculate current page number from pagination URLs
+  const getCurrentPage = () => {
+    if (postsResponse?.previous) {
+      const prevUrl = new URL(postsResponse.previous, window.location.origin);
+      const prevPage = parseInt(prevUrl.searchParams.get('page') || '1');
+      return prevPage + 1;
+    } else if (postsResponse?.next) {
+      return 1;
+    }
+    return 1;
+  };
+
+  const getTotalPages = () => {
+    if (postsResponse?.count && pageSize) {
+      return Math.ceil(postsResponse.count / pageSize);
+    }
+    return 1;
+  };
+
+
+  // Posts are now managed by usePosts hook - no need for fetchPosts function
 
   const handleCreatePost = async () => {
     if (!newPost.description.trim()) {
-      showToast("Description is required.", "error");
+      showToast(t('community.pleaseAddDescription', 'Please add a description'), "error");
       return;
     }
+
     try {
-      const formData = new FormData();
-      formData.append("text", newPost.description);
-      if (newPost.image instanceof File) {
-        formData.append("image", newPost.image);
-      }
-
-      const response = await fetch(`${API_BASE}/api/posts/create/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }, // Do NOT set Content-Type
-        body: formData,
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        showToast("Post created successfully!", "success");
-        setNewPost({ description: "", image: null });
-        setIsCreating(false);
-        await fetchPosts();
-      } else {
-        showToast(result.message || "Failed to create post.", "error");
-      }
-    } catch (err) {
-      showToast("Error creating post: " + err.message, "error");
+      await createPost(newPost);
+      setNewPost({ description: "", image: null });
+      setShowCreateForm(false);
+      showToast(t('community.postCreated', 'Post created successfully!'), "success");
+    } catch (error) {
+      console.error("Error creating post:", error);
     }
   };
 
-  const handleReaction = async (postId, type) => {
+  const handleLike = async (postId, isLiked) => {
     try {
-      const endpoint = `${API_BASE}/api/posts/${postId}/${type}/`;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-
-      if (response.ok && result.data) {
-        const updatedPost = result.data;
-
-        setPosts((prev) =>
-          prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p))
-        );
-      } else {
-        showToast(result.message || `Failed to ${type} post.`, "error");
-      }
-    } catch (err) {
-      showToast(`Error: ${err.message}`, "error");
+      await toggleLike(postId, isLiked);
+      showToast(isLiked ? t('community.unliked', 'Unliked') : t('community.liked', 'Liked!'), "success");
+    } catch (error) {
+      console.error("Error updating like:", error);
     }
   };
 
-  const fetchSavedPosts = async () => {
+  const handleDislike = async (postId, isDisliked) => {
     try {
-      const response = await fetch(`${API_BASE}/api/posts/saved/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-      if (response.ok) {
-        setSavedPosts(result.data);
-        setSavedPostIds(new Set(result.data.map((p) => p.id)));
-      }
-      else showToast(result.message || "Failed to fetch saved posts.", "error");
-    } catch (err) {
-      showToast("Error fetching saved posts: " + err.message, "error");
+      await toggleDislike(postId, isDisliked);
+      showToast(isDisliked ? t('community.undisliked', 'Undisliked') : t('community.disliked', 'Disliked'), "success");
+    } catch (error) {
+      console.error("Error updating dislike:", error);
     }
   };
 
   const handleSavePost = async (postId) => {
     try {
-      const response = await fetch(`${API_BASE}/api/posts/${postId}/save/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-      if (response.ok) {
-        showToast("Post saved.", "success");
-        await fetchSavedPosts(); // refresh saved list if showing
-      }
-      else showToast(result.message || "Failed to save post.", "error");
-    } catch (err) {
-      showToast("Error saving post: " + err.message, "error");
+      await savePost(postId);
+      showToast(t('community.postSaved', 'Post saved!'), "success");
+    } catch (error) {
+      console.error("Error saving post:", error);
     }
   };
 
   const handleUnsavePost = async (postId) => {
     try {
-      const response = await fetch(`${API_BASE}/api/posts/${postId}/unsave/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-      if (response.ok) {
-        showToast("Post unsaved.", "success");
-        await fetchSavedPosts(); // refresh saved list if showing
-      } else {
-        showToast(result.message || "Failed to unsave post.", "error");
-      }
-    } catch (err) {
-      showToast("Error unsaving post: " + err.message, "error");
+      await unsavePost(postId);
+      showToast(t('community.postUnsaved', 'Post unsaved!'), "success");
+    } catch (error) {
+      console.error("Error unsaving post:", error);
     }
   };
 
 
-  const fetchComments = async (postId) => {
+  const handleAddComment = async (postId) => {
+    const content = commentInputs[postId]?.trim();
+    if (!content) return;
+
     try {
-      const response = await fetch(`${API_BASE}/api/posts/${postId}/comments/`);
-      const result = await response.json();
-      if (response.ok) {
-        setPostComments((prev) => ({ ...prev, [postId]: result.data }));
-      } else {
-        showToast(result.message || "Failed to fetch comments.", "error");
-      }
-    } catch (err) {
-      showToast("Error fetching comments: " + err.message, "error");
+      await createComment(postId, content);
+      showToast(t('community.commentAdded', 'Comment added!'), "success");
+    } catch (error) {
+      console.error("Error adding comment:", error);
     }
   };
 
 
-  const handleCreateComment = async (postId) => {
-    const content = commentInputs[postId];
-    if (!content || !content.trim()) return;
+  const handleReportPost = async () => {
+    if (!reason.trim() || !reportDescription.trim()) {
+      showToast(t('community.provideReasonDescription', 'Please provide both reason and description'), "error");
+      return;
+    }
 
     try {
-      const response = await fetch(`${API_BASE}/api/posts/${postId}/comments/create/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        showToast("Comment posted.", "success");
-        setCommentInputs({ ...commentInputs, [postId]: "" });
-        await fetchPosts(); // re-fetch to update comments
-        await fetchComments(postId);
-      } else {
-        showToast(result.message || "Failed to post comment.", "error");
-      }
-    } catch (err) {
-      showToast("Error posting comment: " + err.message, "error");
+      await postsService.reportPost(reportingId, reason, reportDescription, token);
+      showToast(t('community.postReportedSuccess', 'Post reported successfully'), "success");
+      setReportingId(null);
+      setReason("");
+      setReportDescription("");
+    } catch (error) {
+      console.error("Error reporting post:", error);
     }
   };
 
-
-  const handleReport = async (postId, reason, description) => {
-    try {
-      await fetch(`${API_BASE}/api/posts/${postId}/report/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason, description }),
-      });
-      showToast("Report submitted successfully.", "success");
-    } catch (err) {
-      showToast("Error reporting post: " + err.message, "error");
+  const handleReportComment = async () => {
+    if (!commentReportReason.trim() || !commentReportDescription.trim()) {
+      showToast(t('community.provideReasonDescription', 'Please provide both reason and description'), "error");
+      return;
     }
-  };
 
-  const handleCommentReport = async (commentId, reason, description) => {
     try {
-      await fetch(`${API_BASE}/api/comments/${commentId}/report/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason, description }),
-      });
-      showToast("Comment reported successfully.", "success");
-    } catch (err) {
-      showToast("Error reporting comment: " + err.message, "error");
+      await reportComment(reportingCommentId, commentReportReason, commentReportDescription);
+      showToast(t('community.commentReportedSuccess', 'Comment reported successfully'), "success");
+      setReportingCommentId(null);
+      setCommentReportReason("");
+      setCommentReportDescription("");
+    } catch (error) {
+      console.error("Error reporting comment:", error);
     }
   };
 
@@ -251,176 +232,277 @@ export default function Community() {
   };
 
   const sortedPosts = useMemo(() => {
+    if (!posts || !Array.isArray(posts)) return [];
     return [...posts].sort((a, b) => {
       if (sortOption === "likes") return b.like_count - a.like_count;
       return new Date(b.date) - new Date(a.date);
     });
   }, [posts, sortOption]);
 
-  useEffect(() => {
-    fetchPosts();
-    fetchSavedPosts();
-  }, []);
-
   return (
-    <div className="main-bg min-vh-100 d-flex flex-column">
-      <Navbar active="Community" />
-      <motion.main className="container mx-auto px-4 py-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Community</h1>
-          <div className="flex gap-4">
-            <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}
-                    className="rounded border px-3 py-2 text-sm">
-              <option value="recent">Most Recent</option>
-              <option value="likes">Most Liked</option>
-            </select>
+    <Navbar active="community">
+      <motion.main
+        ref={postsContainerRef}
+        className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h1
+            className="text-2xl sm:text-3xl font-bold"
+            style={{ color: currentTheme.text }}
+          >
+            {t('community.title', 'Community')}
+          </h1>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <label
+                className="text-sm font-medium"
+                style={{ color: currentTheme.text }}
+              >
+                {t('common.itemsPerPage', 'Items per page')}:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg px-3 py-1.5 text-sm border"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  color: currentTheme.text,
+                  borderColor: currentTheme.border
+                }}
+              >
+                <option value={3}>3</option>
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={12}>12</option>
+                <option value={15}>15</option>
+                <option value={18}>18</option>
+                <option value={21}>21</option>
+                <option value={24}>24</option>
+              </select>
+            </div>
             <button
               onClick={() => {
                 setShowingSaved(!showingSaved);
                 if (!showingSaved) fetchSavedPosts();
               }}
-              className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-600"
+              className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
+              style={{
+                borderColor: currentTheme.border,
+                color: currentTheme.text,
+                backgroundColor: showingSaved ? currentTheme.secondary + '15' : 'transparent'
+              }}
             >
-              {showingSaved ? "Show All Posts" : "Show Saved Posts"}
+              {showingSaved ? t('community.showAll', 'Show All Posts') : t('community.showSaved', 'Show Saved Posts')}
             </button>
             <button
-              onClick={() => setIsCreating(true)}
-              className="rounded-xl bg-green-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-green-600"
+              onClick={() => setShowCreateForm(true)}
+              className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
+              style={{
+                backgroundColor: currentTheme.secondary,
+                color: currentTheme.background
+              }}
             >
-              Create Post
+              {t('community.createPost', 'Create Post')}
             </button>
           </div>
         </header>
 
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {(showingSaved ? savedPosts : sortedPosts).map((post) => (
-              <div
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+              {t('community.loadingPosts', 'Loading posts...')}
+            </div>
+          </div>
+        ) : (showingSaved ? (savedPosts || []) : sortedPosts).length === 0 ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+              {showingSaved ? t('community.noSavedPosts', 'No saved posts yet.') : t('community.noPosts', 'No posts yet. Be the first to share!')}
+            </div>
+          </div>
+        ) : (
+          <section className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {(showingSaved ? (savedPosts || []) : sortedPosts).map((post) => (
+              <motion.article
                 key={post.id}
-                className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative flex flex-col rounded-xl border shadow-md hover:shadow-lg transition-shadow duration-300"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
               >
-                {/* Always top-right report button */}
+                {/* Report button */}
                 <button
                   onClick={() => {
                     setReportingId(post.id);
                     setReason("");
                   }}
-                  className="absolute top-2 right-2 z-10 rounded-full bg-white/80 p-1 text-zinc-600 hover:bg-red-100 hover:text-red-600 transition"
-                  title="Report this post"
+                  className="absolute top-2 z-10 rounded-lg p-1.5 backdrop-blur-sm transition-opacity hover:opacity-100 opacity-60"
+                  style={{
+                    backgroundColor: currentTheme.background + 'E6',
+                    border: `1px solid ${currentTheme.border}`,
+                    ...(isRTL ? { left: '0.5rem' } : { right: '0.5rem' })
+                  }}
+                  title={t('common.report', 'Report this post')}
                 >
-                  &#9888;
+                  <span className="text-sm">⚠️</span>
                 </button>
 
-                {/* Image (optional) */}
+                {/* Post image */}
                 {post.image_url && (
-                  <img
-                    src={post.image_url}
-                    alt="Post"
-                    onError={(e) => (e.target.src = DEFAULT_POST_IMAGE)}
-                    className="h-48 w-full object-cover"
-                  />
+                  <div className="relative overflow-hidden rounded-t-xl">
+                    <img
+                      src={post.image_url}
+                      alt="Post"
+                      onError={(e) => (e.target.src = DEFAULT_POST_IMAGE)}
+                      className="w-full h-52 object-cover"
+                    />
+                  </div>
                 )}
 
-                <div className="flex items-center gap-3 px-4 pt-3">
-                  <img
-                    src={
-                      post.creator_profile_image?.startsWith("http")
-                        ? post.creator_profile_image
-                        : `${API_BASE}${post.creator_profile_image || DEFAULT_PROFILE_IMAGE}`
-                    }
-                    alt={post.creator_username}
-                    onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
-                    className="h-8 w-8 rounded-full object-cover border"
-                  />
-                  <a
-                    href={`/profile/${post.creator_username}`}
-                    className="text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:underline"
-                  >
-                    {post.creator_username}
-                  </a>
-                </div>
+                {/* Content container */}
+                <div className="flex flex-col flex-1">
+                  {/* Creator info & timestamp */}
+                  <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
+                    <img
+                      src={
+                        post.creator_profile_image?.startsWith("http")
+                          ? post.creator_profile_image
+                          : `${API_BASE}${post.creator_profile_image || DEFAULT_PROFILE_IMAGE}`
+                      }
+                      alt={post.creator_username}
+                      onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
+                      className="h-9 w-9 rounded-full object-cover ring-2"
+                      style={{ ringColor: currentTheme.border }}
+                    />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <a
+                        href={`/profile/${post.creator_username}`}
+                        className="text-sm font-semibold hover:underline truncate"
+                        style={{ color: currentTheme.text }}
+                      >
+                        {post.creator_username}
+                      </a>
+                      <span className="text-xs opacity-50" style={{ color: currentTheme.text }}>
+                        {dayjs(post.date).fromNow()}
+                      </span>
+                    </div>
+                  </div>
 
-                {/* Text content fills the space */}
-                <div className="p-4 flex-1">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">{post.text}</p>
-                </div>
+                  {/* Post text */}
+                  <div className="px-4 pb-3">
+                    <p className="text-sm leading-relaxed break-words" style={{ color: currentTheme.text, opacity: 0.9 }}>
+                      {post.text}
+                    </p>
+                  </div>
 
-                {/* Like / Dislike buttons pinned to bottom */}
-                <div className="flex items-center gap-4 border-t border-zinc-100 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                  <button
-                    onClick={() => handleReaction(post.id, "like")}
-                    className={`flex items-center gap-1 transition ${
-                      post.is_user_liked ? "text-green-600 font-semibold" : "hover:text-green-600"
-                    }`}
+                  {/* Interaction buttons */}
+                  <div
+                    className="flex items-center gap-2 border-t px-4 py-2.5 mt-auto"
+                    style={{ borderColor: currentTheme.border }}
                   >
-                    👍 {post.like_count}
-                  </button>
-                  <button
-                    onClick={() => handleReaction(post.id, "dislike")}
-                    className={`flex items-center gap-1 transition ${
-                      post.is_user_disliked ? "text-red-600 font-semibold" : "hover:text-red-600"
-                    }`}
-                  >
-                    👎 {post.dislike_count}
-                  </button>
-                  <div className="ml-auto flex items-center gap-2">
-                    {savedPostIds.has(post.id) ? (
-                      <>
-                        <span className="text-xs text-red-500">Unsave</span>
+                    <button
+                      onClick={() => handleLike(post.id, post.is_user_liked)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                      style={{
+                        backgroundColor: post.is_user_liked ? currentTheme.secondary + '15' : 'transparent',
+                        color: post.is_user_liked ? currentTheme.secondary : currentTheme.text,
+                        fontWeight: post.is_user_liked ? '600' : '500'
+                      }}
+                    >
+                      <span>👍</span>
+                      <span className="text-sm">{post.like_count}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDislike(post.id, post.is_user_disliked)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                      style={{
+                        backgroundColor: post.is_user_disliked ? currentTheme.secondary + '15' : 'transparent',
+                        color: post.is_user_disliked ? currentTheme.secondary : currentTheme.text,
+                        fontWeight: post.is_user_disliked ? '600' : '500',
+                        opacity: post.is_user_disliked ? 1 : 0.7
+                      }}
+                    >
+                      <span>👎</span>
+                      <span className="text-sm">{post.dislike_count}</span>
+                    </button>
+
+                    <div className="ml-auto">
+                      {savedPostIds.has(post.id) ? (
                         <button
                           onClick={() => handleUnsavePost(post.id)}
-                          className="text-red-500 text-sm hover:underline"
-                          title="Unsave this post"
+                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110"
+                          style={{
+                            color: currentTheme.secondary,
+                            backgroundColor: currentTheme.secondary + '15'
+                          }}
+                          title={t('community.unsave', 'Unsave')}
                         >
-                          🔖
+                          <span className="text-lg">🔖</span>
                         </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xs text-blue-500">Save</span>
+                      ) : (
                         <button
                           onClick={() => handleSavePost(post.id)}
-                          className="text-blue-500 text-sm hover:underline"
-                          title="Save this post"
+                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110 opacity-50 hover:opacity-100"
+                          style={{ color: currentTheme.text }}
+                          title={t('community.save', 'Save')}
                         >
-                          📌
+                          <span className="text-lg">📌</span>
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Comment input section */}
+                  <div className="border-t px-4 py-3" style={{ borderColor: currentTheme.border }}>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={t('community.writeComment', 'Write a comment...')}
+                        value={commentInputs[post.id] || ""}
+                        onChange={(e) => updateCommentInput(post.id, e.target.value)}
+                        className="flex-1 min-w-0 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 transition-all"
+                        style={{
+                          backgroundColor: currentTheme.background,
+                          borderColor: currentTheme.border,
+                          color: currentTheme.text
+                        }}
+                      />
+                      <button
+                        onClick={() => handleAddComment(post.id)}
+                        disabled={!commentInputs[post.id]}
+                        className="px-4 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
+                        style={{
+                          backgroundColor: currentTheme.secondary,
+                          color: currentTheme.background
+                        }}
+                      >
+                        💬
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setViewingCommentsPostId(post.id);
+                        fetchComments(post.id);
+                      }}
+                      className="mt-2 text-xs font-medium hover:underline"
+                      style={{ color: currentTheme.secondary, opacity: 0.8 }}
+                    >
+                      {t('community.viewComments', 'View all comments')}
+                    </button>
                   </div>
                 </div>
-                <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
-                  <input
-                    type="text"
-                    placeholder="Write a comment..."
-                    value={commentInputs[post.id] || ""}
-                    onChange={(e) =>
-                      setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
-                    }
-                    className="w-full rounded-md border px-3 py-1 text-sm dark:bg-zinc-100"
-                  />
-                  <button
-                    onClick={() => handleCreateComment(post.id)}
-                    disabled={!commentInputs[post.id]}
-                    className="mt-2 w-full rounded bg-green-600 py-1 text-sm text-white hover:bg-green-700"
-                  >
-                    Post Comment
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewingCommentsPostId(post.id);
-                      fetchComments(post.id); // Lazy fetch
-                    }}
-                    className="mt-2 text-xs text-blue-600 hover:underline"
-                  >
-                    View all comments
-                  </button>
-                </div>
-              </div>
+              </motion.article>
             ))}
-        </section>
+          </section>
+        )}
 
         <AnimatePresence>
-          {isCreating && (
+          {showCreateForm && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -431,47 +513,76 @@ export default function Community() {
                 initial={{ y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
+                className="w-full max-w-md rounded-lg border p-6"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
               >
-                <h2 className="text-lg font-semibold text-green-700">Create Post</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-600">
-                  Share your thoughts or experiences with the community.
+                <h2 className="text-lg font-semibold mb-2" style={{ color: currentTheme.text }}>
+                  {t('community.createPost', 'Create Post')}
+                </h2>
+                <p className="text-sm mb-4" style={{ color: currentTheme.text, opacity: 0.7 }}>
+                  {t('community.shareThoughts', 'Share your thoughts or experiences with the community.')}
                 </p>
 
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Write something..."
-                    value={newPost.description}
-                    onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
-                    className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">
-                    Upload Image (optional)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
-                    className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                      {t('community.description', 'Description')}
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder={t('community.writeSomething', 'Write something...')}
+                      value={newPost.description}
+                      onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
+                      className="w-full resize-none rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                      {t('community.uploadImage', 'Upload Image (optional)')}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    />
+                  </div>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3">
+                <div className="flex justify-end gap-3 mt-6">
                   <button
-                    onClick={() => setIsCreating(false)}
-                    className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700 shadow-sm transition hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10"
+                    onClick={() => setShowCreateForm(false)}
+                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                    style={{
+                      borderColor: currentTheme.border,
+                      color: currentTheme.text
+                    }}
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={handleCreatePost}
-                    className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isCreating}
+                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: currentTheme.secondary,
+                      color: currentTheme.background
+                    }}
                   >
-                    Create
+                    {isCreating ? t('common.creating', 'Creating...') : t('community.create', 'Create')}
                   </button>
                 </div>
               </motion.div>
@@ -483,41 +594,41 @@ export default function Community() {
         <AnimatePresence>
           {reportingId !== null && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900">
-                <h2 className="text-lg font-semibold">Report Post</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-600">Let us know what’s wrong with this post.</p>
+              <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}>
+                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportPost', 'Report Post')}</h2>
+                <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.reportDescription', "Let us know what's wrong with this post.")}</p>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Reason</label>
-                  <select value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100">
-                    <option value="">Select a reason</option>
-                    <option value="SPAM">Spam</option>
-                    <option value="INAPPROPRIATE">Inappropriate</option>
-                    <option value="HARASSMENT">Harassment</option>
-                    <option value="MISLEADING">Misleading or Fake</option>
-                    <option value="OTHER">Other</option>
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
+                  <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}>
+                    <option value="">{t('community.selectReason', 'Select a reason')}</option>
+                    <option value="SPAM">{t('community.spam', 'Spam')}</option>
+                    <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
+                    <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
+                    <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
+                    <option value="OTHER">{t('community.other', 'Other')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
-                  <textarea rows={5} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder="Please explain briefly…" className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100" />
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
+                  <textarea rows={5} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder={t('community.explainBriefly', 'Please explain briefly…')} className="w-full resize-none rounded-xl border px-4 py-3" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }} />
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3">
-                  <button onClick={closeModals} className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700 shadow-sm transition hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10">
-                    Cancel
+                <div className="flex justify-end gap-3 mt-6">
+                  <button onClick={closeModals} className="rounded-lg border px-4 py-2 text-sm hover:opacity-80" style={{ borderColor: currentTheme.border, color: currentTheme.text }}>
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={async () => {
                       if (!reason || !reportDescription.trim()) return;
-                      await handleReport(reportingId, reason, reportDescription.trim());
+                      await handleReportPost();
                       closeModals();
                     }}
                     disabled={!reason || !reportDescription.trim()}
-                    className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
                   >
-                    Submit
+                    {t('common.submit', 'Submit')}
                   </button>
                 </div>
               </motion.div>
@@ -538,29 +649,31 @@ export default function Community() {
                 initial={{ y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-xl space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-100 max-h-[90vh] overflow-y-auto"
+                className="w-full max-w-xl space-y-4 rounded-2xl p-6 shadow-lg border max-h-[90vh] overflow-y-auto"
+                style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
               >
-                <h2 className="text-lg font-semibold text-green-700">All Comments</h2>
+                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.allComments', 'All Comments')}</h2>
                 <div className="flex justify-end">
                   <select
                     value={commentSortOrder}
                     onChange={(e) => setCommentSortOrder(e.target.value)}
-                    className="mb-2 rounded border px-2 py-1 text-sm text-zinc-700 dark:bg-zinc-200"
+                    className="mb-2 rounded border px-2 py-1 text-sm"
+                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
                   >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
+                    <option value="newest">{t('community.newestFirst', 'Newest First')}</option>
+                    <option value="oldest">{t('community.oldestFirst', 'Oldest First')}</option>
                   </select>
                 </div>
                 {postComments[viewingCommentsPostId]?.length > 0 ? (
-                  <div className="space-y-4 text-sm text-zinc-800 dark:text-zinc-800">
-                    {[...postComments[viewingCommentsPostId]]
+                  <div className="space-y-4 text-sm" style={{ color: currentTheme.text }}>
+                    {(postComments[viewingCommentsPostId] || [])
                       .sort((a, b) =>
                         commentSortOrder === "newest"
                           ? new Date(b.date) - new Date(a.date)
                           : new Date(a.date) - new Date(b.date)
                       )
                       .map((comment) => (
-                        <div key={comment.id} className="relative rounded-md border px-3 py-2 dark:border-zinc-700">
+                        <div key={comment.id} className="relative rounded-md border px-3 py-2" style={{ borderColor: currentTheme.border }}>
                           <div className="flex items-center justify-between pr-6">
                             <div className="flex items-center gap-2">
                               <img
@@ -572,15 +685,17 @@ export default function Community() {
                                 alt={comment.author_username}
                                 onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
                                 className="h-6 w-6 rounded-full object-cover border"
+                                style={{ borderColor: currentTheme.border }}
                               />
                               <a
                                 href={`/profile/${comment.author_username}`}
-                                className="text-sm font-medium text-zinc-700 dark:text-zinc-800 hover:underline"
+                                className="text-sm font-medium hover:underline"
+                                style={{ color: currentTheme.text }}
                               >
                                 {comment.author_username}
                               </a>
                             </div>
-                            <span className="text-xs text-zinc-400">{dayjs(comment.date).fromNow()}</span>
+                            <span className="text-xs opacity-50" style={{ color: currentTheme.text }}>{dayjs(comment.date).fromNow()}</span>
                           </div>
                           <div>{comment.content}</div>
                           <button
@@ -598,15 +713,16 @@ export default function Community() {
                       ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">No comments yet.</p>
+                  <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.noComments', 'No comments yet.')}</p>
                 )}
 
                 <div className="flex justify-end pt-4">
                   <button
                     onClick={() => setViewingCommentsPostId(null)}
-                    className="rounded-lg border border-green-600 bg-white px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50 dark:bg-zinc-800 dark:text-green-400"
+                    className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
+                    style={{ borderColor: currentTheme.border, color: currentTheme.text }}
                   >
-                    Close
+                    {t('common.close', 'Close')}
                   </button>
                 </div>
               </motion.div>
@@ -627,64 +743,105 @@ export default function Community() {
                 initial={{ y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900"
+                className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border"
+                style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
               >
-                <h2 className="text-lg font-semibold">Report Comment</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-600">
-                  Let us know what’s wrong with this comment.
+                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportComment', 'Report Comment')}</h2>
+                <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+                  {t('community.reportCommentDescription', "Let us know what's wrong with this comment.")}
                 </p>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Reason</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
                   <select
                     value={commentReportReason}
                     onChange={(e) => setCommentReportReason(e.target.value)}
-                    className="mt-1 w-full rounded-lg border px-3 py-2 dark:bg-zinc-100"
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
                   >
-                    <option value="">Select a reason</option>
-                    <option value="SPAM">Spam</option>
-                    <option value="INAPPROPRIATE">Inappropriate</option>
-                    <option value="HARASSMENT">Harassment</option>
-                    <option value="MISLEADING">Misleading or Fake</option>
-                    <option value="OTHER">Other</option>
+                    <option value="">{t('community.selectReason', 'Select a reason')}</option>
+                    <option value="SPAM">{t('community.spam', 'Spam')}</option>
+                    <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
+                    <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
+                    <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
+                    <option value="OTHER">{t('community.other', 'Other')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-700">Description</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
                   <textarea
                     rows={4}
                     value={commentReportDescription}
                     onChange={(e) => setCommentReportDescription(e.target.value)}
-                    placeholder="Please explain briefly…"
-                    className="mt-1 w-full resize-none rounded-xl border px-4 py-3 dark:bg-zinc-100"
+                    placeholder={t('community.explainBriefly', 'Please explain briefly…')}
+                    className="w-full resize-none rounded-xl border px-4 py-3"
+                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
                   />
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3">
+                <div className="flex justify-end gap-3 mt-6">
                   <button
                     onClick={() => setReportingCommentId(null)}
-                    className="rounded-lg border border-green-600 bg-white px-5 py-2.5 text-sm font-medium text-green-700 hover:bg-green-50 dark:bg-zinc-900 dark:text-green-400 dark:hover:bg-green-400/10"
+                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                    style={{ borderColor: currentTheme.border, color: currentTheme.text }}
                   >
-                    Cancel
+                    {t('common.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={async () => {
                       if (!commentReportReason || !commentReportDescription.trim()) return;
-                      await handleCommentReport(reportingCommentId, commentReportReason, commentReportDescription.trim());
+                      await handleReportComment();
                       setReportingCommentId(null);
                     }}
                     disabled={!commentReportReason || !commentReportDescription.trim()}
-                    className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
                   >
-                    Submit
+                    {t('common.submit', 'Submit')}
                   </button>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Pagination Controls - Only show for regular posts, not saved posts */}
+        {!isLoading && !showingSaved && posts.length > 0 && (
+          <div className="flex justify-center items-center gap-4 mt-8 mb-4">
+            <button
+              onClick={handlePreviousPage}
+              disabled={!postsResponse?.previous}
+              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+              style={{
+                backgroundColor: currentTheme.secondary,
+                color: currentTheme.background
+              }}
+            >
+              ← {t('common.previous', 'Previous')}
+            </button>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
+                {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
+              </span>
+              <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
+                {postsResponse?.count ? `${t('common.total', 'Total')}: ${postsResponse.count}` : ''}
+              </span>
+            </div>
+            <button
+              onClick={handleNextPage}
+              disabled={!postsResponse?.next}
+              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+              style={{
+                backgroundColor: currentTheme.secondary,
+                color: currentTheme.background
+              }}
+            >
+              {t('common.next', 'Next')} →
+            </button>
+          </div>
+        )}
       </motion.main>
-    </div>
+    </Navbar>
   );
 }

@@ -3,44 +3,57 @@
  */
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import ChallengeCard from "../../Admin/ChallengeCard"; // ← adjust path as needed
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import ChallengeCard from "@/components/features/ChallengeCard";
 
-describe("<ChallengeCard />", () => {
+describe("<ChallengeCard /> (Tailwind version)", () => {
   const defaultProps = {
-    challengeId: 42,
-    name: "Zero-Waste Sprint",
-    duration: "14 days",
+    id: 42,
+    title: "Zero-Waste Sprint",
+    description: "A challenge about sustainable habits.",
+    difficulty: "Medium",
+    imageUrl: "https://example.com/sample.jpg",
   };
 
-  it("renders name, ID, and duration correctly without delete button", () => {
-    render(<ChallengeCard {...defaultProps} />);
+  const renderCard = (props = defaultProps) =>
+    render(
+      <MemoryRouter>
+        <ChallengeCard {...props} />
+      </MemoryRouter>
+    );
 
-    // Check that the challenge name appears
-    expect(screen.getByText(defaultProps.name)).toBeInTheDocument();
+  it("renders title, description, and difficulty", () => {
+    renderCard();
 
-    // Check that the ID is rendered
-    expect(screen.getByText(/42/i)).toBeInTheDocument();
-
-    expect(screen.getByText(/ID/i)).toBeInTheDocument();
-
-    // Check that the duration is rendered
-    expect(screen.getByText(/14 days/i)).toBeInTheDocument();
-
-    // Since onDelete is not provided, no Delete button should exist
-    expect(screen.queryByRole("button", { name: /delete/i })).toBeNull();
+    expect(screen.getByText(defaultProps.title)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.description)).toBeInTheDocument();
+    expect(screen.getByText(defaultProps.difficulty)).toBeInTheDocument();
   });
 
-  it("shows Delete button when onDelete is provided and calls it with the ID", () => {
-    const onDelete = vi.fn();
-    render(<ChallengeCard {...defaultProps} onDelete={onDelete} />);
+  it("renders cover image when imageUrl is provided", () => {
+    renderCard();
 
-    const btn = screen.getByRole("button", { name: /delete/i });
-    expect(btn).toBeInTheDocument();
+    const img = screen.getByRole("img");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", defaultProps.imageUrl);
+    expect(img).toHaveAttribute("alt", defaultProps.title);
+  });
 
-    fireEvent.click(btn);
-    expect(onDelete).toHaveBeenCalledTimes(1);
-    expect(onDelete).toHaveBeenCalledWith(defaultProps.challengeId);
+  it("does NOT render image when imageUrl is missing", () => {
+    const props = { ...defaultProps };
+    delete props.imageUrl;
+
+    renderCard(props);
+
+    expect(screen.queryByRole("img")).toBeNull();
+  });
+
+  it("wraps the card inside a link to /challenges/:id", () => {
+    renderCard();
+
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", `/challenges/${defaultProps.id}`);
   });
 });

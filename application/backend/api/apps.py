@@ -8,3 +8,4 @@ class ApiConfig(AppConfig):
     def ready(self):
         print("✅ ApiConfig.ready() called") 
         from .activities.signals import activity_signals  # noqa: F401
+        from .utils import badge_signals  # noqa: F401

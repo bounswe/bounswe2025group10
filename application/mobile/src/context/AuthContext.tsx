@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
-import { authService, AuthResponse } from '../services/api';
+import { authService, AuthResponse, updateCachedToken } from '../services/api';
 
 interface UserData {
   email: string;
   username: string;
   profile_picture?: string; // URL or relative path to profile picture
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isAdmin: boolean;
   userData: UserData | null;
   login: (email: string, password: string) => Promise<AuthResponse | null>;
   logout: () => Promise<void>;
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
 
   const fetchUserData = async () => {
@@ -35,7 +38,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       const token = await storage.getToken();
+      const adminStatus = await storage.getAdminStatus();
+      updateCachedToken(token); // Sync cached token
       setIsAuthenticated(!!token);
+      setIsAdmin(adminStatus);
       if (token) {
         await fetchUserData();
       }
@@ -46,27 +52,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password });
+
       if (response.token) {
         await storage.setToken(response.token.access);
         await storage.setRefreshToken(response.token.refresh);
+        updateCachedToken(response.token.access); // Update cached token
+
+        // Save admin status
+        if (response.isAdmin !== undefined) {
+          await storage.setAdminStatus(response.isAdmin);
+          setIsAdmin(response.isAdmin);
+        }
+
         setIsAuthenticated(true);
         await fetchUserData();
         return response;
+      } else {
+        return null;
       }
-      return null;
     } catch (error) {
+      console.error('Login error:', error);
       return null;
     }
   };
 
   const logout = async () => {
     await storage.clearTokens();
+    updateCachedToken(null); // Clear cached token
     setIsAuthenticated(false);
+    setIsAdmin(false);
     setUserData(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userData, login, logout, fetchUserData }}>
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, userData, login, logout, fetchUserData }}>
       {children}
     </AuthContext.Provider>
   );
@@ -78,4 +97,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};

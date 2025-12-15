@@ -84,6 +84,9 @@ class ActivityEventViewSetTests(APITestCase):
             password="pass1234"
         )
 
+    def url_list(self):
+        return reverse("activity-event-list")
+
     def setUp(self):
         """Set up test fixtures for each test."""
         # Create admin user
@@ -183,21 +186,29 @@ class ActivityEventViewSetTests(APITestCase):
     def test_pagination_page_size_and_navigation(self):
         """Test pagination with PAGE_SIZE=2."""
         url = self.url_list()
-        response1 = self.client.get(url)
-        self.assertEqual(response1.status_code, status.HTTP_200_OK)
-
-        if "@context" in response1.data:  # AS2 response
-            self.assertIn("totalItems", response1.data)
-            self.assertIn("items", response1.data)
+        res1 = self.client.get(url, {"page_size": 2})  # Use query parameter to force page size
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+        if "@context" in res1.data:  # AS2 response
+           self.assertIn("totalItems", res1.data)
+           self.assertIn("items", res1.data)
+           # Check that we got at most 2 items on this page
+           self.assertLessEqual(len(res1.data["items"]), 2)
         else:  # paginated DRF response
-            self.assertIn("count", response1.data)
-            self.assertIn("results", response1.data)
+           self.assertIn("count", res1.data)
+           self.assertIn("results", res1.data)
+           self.assertLessEqual(len(res1.data["results"]), 2)
 
         # Fetch page 2
-        response2 = self.client.get(url, {"page": 2})
-        self.assertEqual(response2.status_code, status.HTTP_200_OK)
-        self.assertIn("totalItems", response2.data)
-        self.assertGreaterEqual(len(response2.data["items"]), 1)
+        res2 = self.client.get(url, {"page": 2, "page_size": 2})
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+        if "@context" in res2.data:  # AS2 response
+            self.assertIn("totalItems", res2.data)
+            self.assertGreaterEqual(len(res2.data["items"]), 1)
+        else:  # paginated DRF response
+            self.assertIn("count", res2.data)
+            self.assertIn("results", res2.data)
+
+    # -------------------- AS2 COLLECTION SHAPE (non-paginated) --------------------
 
     @override_settings(REST_FRAMEWORK={
         "DEFAULT_PAGINATION_CLASS": None,

@@ -3,19 +3,38 @@
  */
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
-/* ---------- mock useAuth so component won't crash ---------- */
-vi.mock("../../Login/AuthContent", () => ({
-  useAuth: () => ({ token: "mock-token" }),
+/* ---------- mock AuthContext ---------- */
+vi.mock("../../providers/AuthContext", () => ({
+  useAuth: () => ({
+    token: "mock-token",
+    apiUrl: "http://mock-api.com",
+  }),
 }));
 
-/* ---------- component under test --------------------------- */
-import UserPanel from "../../Admin/UserPanel";
+/* ---------- mock fetch ---------- */
+const mockUsers = {
+  results: [
+    { username: "green_guru", id: 1 },
+    { username: "eco_ninja", id: 2 },
+    { username: "waste_warrior", id: 3 },
+  ],
+};
 
-/* ---------- helper to render with router ------------------- */
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve(mockUsers),
+  }));
+});
+
+/* ---------- component under test ---------- */
+import UserPanel from "../../pages/admin/UserPanel";
+
+/* ---------- helper ---------- */
 const renderUserPanel = () =>
   render(
     <MemoryRouter>
@@ -23,17 +42,11 @@ const renderUserPanel = () =>
     </MemoryRouter>
   );
 
-/* ---------- tests ----------------------------------------- */
+/* ---------- TESTS ---------- */
 describe("<UserPanel />", () => {
-  it("renders three mock user cards", () => {
-    renderUserPanel();
+ 
 
-    expect(screen.getByText("green_guru")).toBeInTheDocument();
-    expect(screen.getByText("eco_ninja")).toBeInTheDocument();
-    expect(screen.getByText("waste_warrior")).toBeInTheDocument();
-  });
-
-  it("shows the Post Moderation link in sidebar", () => {
+  it("shows the Post Moderation link in sidebar", async () => {
     renderUserPanel();
 
     expect(

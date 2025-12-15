@@ -7,6 +7,12 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+PROFILE_PRIVACY_CHOICES = [
+    ('public', 'Public'),
+    ('private', 'Private'),
+    ('followers', 'Followers'),
+]
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         if not email:
@@ -30,6 +36,7 @@ class CustomUserManager(BaseUserManager):
 class Users(AbstractUser):
     class Meta:
         db_table = 'Users'
+        app_label = 'api'
         
     # Primary key
     id = models.AutoField(primary_key=True)
@@ -42,8 +49,12 @@ class Users(AbstractUser):
     profile_id = models.IntegerField(unique=True, null=True, blank=True)
     profile_image = models.CharField(max_length=255, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
+    bio_privacy = models.CharField(max_length=16, choices=PROFILE_PRIVACY_CHOICES, default='public')
     total_points = models.FloatField(default=0)
     total_co2 = models.FloatField(default=0)
+    waste_stats_privacy = models.CharField(max_length=16, choices=PROFILE_PRIVACY_CHOICES, default='public')
+    is_anonymous = models.BooleanField(default=False)
+    anonymous_identifier = models.CharField(max_length=32, null=True, blank=True, unique=True)
 
     # Keep Django’s staff/superuser flags in sync if you need them
     is_staff = models.BooleanField(default=False)
@@ -79,6 +90,52 @@ class Achievements(models.Model):
         db_table = 'Achievements'
 
 
+class Badges(models.Model):
+    BADGE_CATEGORIES = [
+        # Waste type specific badges (7 categories)
+        ('PLASTIC', 'Plastic'),
+        ('PAPER', 'Paper'),
+        ('GLASS', 'Glass'),
+        ('METAL', 'Metal'),
+        ('ELECTRONIC', 'Electronic'),
+        ('OIL&FATS', 'Oil & Fats'),
+        ('ORGANIC', 'Organic'),
+        # Additional badge categories
+        ('TOTAL_WASTE', 'Total Waste'),
+        ('CONTRIBUTIONS', 'Contributions'),
+        ('LIKES_RECEIVED', 'Likes Received'),
+    ]
+    
+    BADGE_LEVELS = [
+        (1, 'Bronze'),
+        (2, 'Silver'),
+        (3, 'Gold'),
+        (4, 'Platinum'),
+        (5, 'Diamond'),
+    ]
+    
+    category = models.CharField(
+        max_length=50,
+        choices=BADGE_CATEGORIES,
+        help_text="Badge category (waste type, total waste, contributions, or likes)"
+    )
+    level = models.IntegerField(
+        choices=BADGE_LEVELS,
+        help_text="Achievement level within the category (1-5)"
+    )
+    criteria_value = models.FloatField(
+        help_text="Required value to earn this badge (grams for waste, count for others)"
+    )
+
+    class Meta:
+        db_table = 'Badges'
+        unique_together = (('category', 'level'),)
+        ordering = ['category', 'level']
+    
+    def __str__(self):
+        return f"{self.get_category_display()} - {self.get_level_display()}"
+
+
 class Comments(models.Model):
     post = models.ForeignKey('Posts', models.DO_NOTHING)
     author = models.ForeignKey('Users', models.DO_NOTHING)
@@ -89,6 +146,14 @@ class Comments(models.Model):
         db_table = 'Comments'
 
 
+LANGUAGE_CHOICES = [
+    ('en', 'English'),
+    ('tr', 'Turkish'),
+    ('ar', 'Arabic'),
+    ('es', 'Spanish'),
+    ('fr', 'French'),
+]
+
 class Posts(models.Model):
     creator = models.ForeignKey('Users', models.DO_NOTHING)
     date = models.DateTimeField(blank=True, null=True)
@@ -96,6 +161,7 @@ class Posts(models.Model):
     image = models.CharField(max_length=255, blank=True, null=True)  # Store relative path to image
     like_count = models.IntegerField(blank=True, null=True, default=0)
     dislike_count = models.IntegerField(blank=True, null=True, default=0)
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, blank=True, null=True, default='en')
 
     @property
     def image_url(self):
@@ -119,6 +185,7 @@ class Tips(models.Model):
     text = models.TextField()
     like_count = models.IntegerField(blank=True, null=True, default=0)
     dislike_count = models.IntegerField(blank=True, null=True, default=0)
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, blank=True, null=True, default='en')
 
     class Meta:
         db_table = 'Tips'
@@ -132,6 +199,21 @@ class UserAchievements(models.Model):
     class Meta:
         db_table = 'UserAchievements'
         unique_together = (('user', 'achievement'),) # these two together becomes primary key
+
+
+class UserBadges(models.Model):
+    user = models.ForeignKey('Users', models.DO_NOTHING, related_name='user_badges')
+    badge = models.ForeignKey(Badges, models.DO_NOTHING)
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'UserBadges'
+        unique_together = (('user', 'badge'),)
+        ordering = ['-earned_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge}"
+
 
 class Waste(models.Model):
     WASTE_TYPES = [
@@ -155,6 +237,18 @@ class Waste(models.Model):
 
     def __str__(self):
         return self.type
+
+class SuspiciousWaste(models.Model):
+    user = models.ForeignKey('Users', on_delete=models.CASCADE)
+    waste = models.ForeignKey(Waste, on_delete=models.PROTECT)
+    amount = models.FloatField(blank=False, null=False)
+    date = models.DateTimeField(default=timezone.now)
+    photo = models.ImageField(upload_to='suspicious_waste_photos/')  # Store relative path to photo
+    class Meta:
+        db_table = 'SuspiciousWaste'
+        ordering = ['-amount']
+
+
 
 class UserWastes(models.Model):
     user = models.ForeignKey('Users', on_delete=models.CASCADE)
@@ -226,6 +320,28 @@ class TipLikes(models.Model):
     class Meta:
         db_table = 'TipLikes'
         unique_together = (('user', 'tip'),)  
+
+
+class Follow(models.Model):
+    """
+    Represents a follow relationship between users.
+    follower: The user who is following
+    following: The user being followed
+    """
+    follower = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='following_set')
+    following = models.ForeignKey('Users', on_delete=models.CASCADE, related_name='followers_set')
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'Follows'
+        unique_together = (('follower', 'following'),)  # Prevent duplicate follows
+        indexes = [
+            models.Index(fields=['follower'], name='idx_follower'),
+            models.Index(fields=['following'], name='idx_following'),
+        ]
+    
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
 
 
 # activity model from .activities.models.activity_model import ActivityEvent, Visibility
@@ -330,3 +446,16 @@ class ActivityEvent(models.Model):
         # Ensure AS2 payload always reflects the current row
         self.sync_as2_json()
         super().save(*args, **kwargs)
+
+
+class AccountDeletionRequest(models.Model):
+    user = models.OneToOneField('Users', on_delete=models.CASCADE, related_name='account_deletion_request')
+    requested_at = models.DateTimeField()
+    delete_after = models.DateTimeField()
+    canceled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'AccountDeletionRequest'
+
+    def __str__(self):
+        return f"AccountDeletionRequest(user={self.user_id}, delete_after={self.delete_after.isoformat()})"

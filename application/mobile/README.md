@@ -1,97 +1,345 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Zero Waste Challenge - Mobile App
 
-# Getting Started
+A React Native mobile application for the Zero Waste Challenge platform, built with Expo.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Table of Contents
 
-## Step 1: Start Metro
+- [Prerequisites](#prerequisites)
+- [Quick Start with Docker](#quick-start-with-docker)
+- [Local Development Setup](#local-development-setup)
+- [Building the App](#building-the-app)
+- [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Environment Configuration](#environment-configuration)
+- [Troubleshooting](#troubleshooting)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+---
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Prerequisites
 
-```sh
-# Using npm
+### For Docker-based builds (Recommended for professors/reviewers)
+
+- Docker Desktop (v20.10+)
+- Docker Compose (v2.0+)
+
+### For local development
+
+- Node.js 18+
+- npm 9+
+- For Android: Android Studio with Android SDK
+- For iOS: Xcode 14+ (macOS only)
+
+---
+
+## Quick Start with Docker
+
+The easiest way to build and test the app without installing Android SDK or other dependencies.
+
+### 1. Setup Environment
+
+```bash
+cd application/mobile
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env to set your API URL (see .env.example for options)
+```
+
+### 2. Verify Build Environment
+
+```bash
+docker-compose run --rm verify
+```
+
+### 3. Run Tests
+
+```bash
+# Run all tests
+docker-compose run --rm test
+
+# Run tests with coverage
+docker-compose run --rm test-coverage
+```
+
+### 4. Lint Code
+
+```bash
+docker-compose run --rm lint
+```
+
+### 5. Build Android APK
+
+```bash
+# Create output directory
+mkdir -p build-output
+
+# Build release APK (takes ~10-15 minutes on first run)
+docker-compose run --rm build-android
+
+# Or build debug APK (faster)
+docker-compose run --rm build-android-debug
+
+# The APK will be in: build-output/app-release.apk (or app-debug.apk)
+```
+
+### 6. Build Web Version (Quick Verification)
+
+```bash
+# Export web build (much faster, no Android SDK needed)
+docker-compose run --rm build-web
+
+# Output will be in: dist/
+```
+
+---
+
+## Local Development Setup
+
+### 1. Install Dependencies
+
+```bash
+cd application/mobile
+npm install
+```
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your preferred API URL
+```
+
+### 3. Start the Development Server
+
+```bash
+# Start Expo development server
 npm start
 
-# OR using Yarn
-yarn start
+# Or start with specific platform
+npm run android  # Android
+npm run ios      # iOS (macOS only)
+npm run web      # Web browser
 ```
 
-## Step 2: Build and run your app
+### 4. Running on Devices
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+**Android Emulator:**
+1. Start Android Studio
+2. Open AVD Manager and launch an emulator
+3. Run `npm run android`
 
-### Android
+**Physical Device:**
+1. Install Expo Go app on your device
+2. Scan the QR code from Metro bundler
+3. Make sure device is on the same network as your computer
 
-```sh
-# Using npm
-npm run android
+---
 
-# OR using Yarn
-yarn android
+## Building the App
+
+### Development Build (with Docker)
+
+```bash
+# Debug APK for testing
+docker-compose run --rm build-android-debug
 ```
 
-### iOS
+### Production Build (with Docker)
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+# Release APK for distribution
+docker-compose run --rm build-android
 ```
 
-Then, and every time you update your native dependencies, run:
+### Local Build (without Docker)
 
-```sh
-bundle exec pod install
+Requires Android SDK to be installed locally.
+
+```bash
+# Generate native Android project
+npx expo prebuild --platform android
+
+# Build APK
+cd android
+./gradlew assembleRelease
+
+# APK location: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Using EAS Build (Cloud)
 
-```sh
-# Using npm
-npm run ios
+For cloud-based builds (requires Expo account):
 
-# OR using Yarn
-yarn ios
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login to Expo
+eas login
+
+# Build for Android
+eas build --platform android --profile preview
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Testing
 
-## Step 3: Modify your app
+### Run Tests
 
-Now that you have successfully run the app, let's make changes!
+```bash
+# With Docker
+docker-compose run --rm test
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+# Locally
+npm test
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Run Tests with Watch Mode
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+```bash
+npm run test:watch
+```
 
-## Congratulations! :tada:
+### Generate Coverage Report
 
-You've successfully run and modified your React Native App. :partying_face:
+```bash
+# With Docker
+docker-compose run --rm test-coverage
 
-### Now what?
+# Locally
+npm run test:coverage
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### Run Specific Tests
 
-# Troubleshooting
+```bash
+npm test -- --testPathPattern="HomeScreen"
+```
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+---
 
-# Learn More
+## Project Structure
 
-To learn more about React Native, take a look at the following resources:
+```
+mobile/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── context/        # React Context providers (AuthContext)
+│   ├── hooks/          # Custom React hooks
+│   ├── navigation/     # React Navigation setup
+│   ├── screens/        # Screen components
+│   │   └── auth/       # Authentication screens
+│   ├── services/       # API service layer
+│   ├── utils/          # Utility functions
+│   └── assets/         # Images and static files
+├── __mocks__/          # Jest mocks
+├── __tests__/          # Test files
+├── Dockerfile          # Docker build configuration
+├── docker-compose.yml  # Docker Compose services
+├── app.json            # Expo configuration
+├── babel.config.js     # Babel configuration
+├── package.json        # Dependencies and scripts
+└── .env.example        # Environment template
+```
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+---
+
+## Environment Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `API_URL` | Backend API base URL | `http://localhost:8000` |
+
+### API URL Options
+
+| Environment | URL | Notes |
+|-------------|-----|-------|
+| Local Docker | `http://localhost:8000` | Backend running locally |
+| Android Emulator | `http://10.0.2.2:8000` | Special IP for emulator |
+| Physical Device | `http://YOUR_IP:8000` | Your computer's IP |
+| Production | `http://209.38.114.201:8000` | Production server |
+
+---
+
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Start Expo development server |
+| `npm run android` | Run on Android |
+| `npm run ios` | Run on iOS |
+| `npm run web` | Run in web browser |
+| `npm test` | Run tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage |
+| `npm run lint` | Lint the codebase |
+
+---
+
+## Docker Services
+
+| Service | Description | Command |
+|---------|-------------|---------|
+| `dev` | Development server | `docker-compose up dev` |
+| `test` | Run tests | `docker-compose run --rm test` |
+| `test-coverage` | Tests with coverage | `docker-compose run --rm test-coverage` |
+| `lint` | Lint code | `docker-compose run --rm lint` |
+| `build-android` | Build release APK | `docker-compose run --rm build-android` |
+| `build-android-debug` | Build debug APK | `docker-compose run --rm build-android-debug` |
+| `build-web` | Build web version | `docker-compose run --rm build-web` |
+| `verify` | Verify environment | `docker-compose run --rm verify` |
+
+---
+
+## Troubleshooting
+
+### Docker Build Issues
+
+**"Cannot connect to Docker daemon"**
+- Make sure Docker Desktop is running
+
+**Build fails with memory error**
+- Increase Docker memory limit in Docker Desktop settings (8GB recommended)
+
+**Slow builds**
+- First build downloads Android SDK (~2GB), subsequent builds are faster
+- Use `build-android-debug` for faster iteration
+
+### Local Development Issues
+
+**"Unable to resolve module"**
+```bash
+# Clear cache and reinstall
+rm -rf node_modules
+npm install
+npx expo start --clear
+```
+
+**Metro bundler errors**
+```bash
+npx expo start --clear
+```
+
+**Android build fails locally**
+- Ensure ANDROID_HOME is set
+- Run `sdkmanager --licenses` to accept all licenses
+
+### API Connection Issues
+
+**"Network request failed"**
+- Check that backend is running
+- Verify API_URL in .env matches your setup
+- For Android emulator, use `http://10.0.2.2:8000`
+- For physical device, use your computer's IP address
+
+---
+
+## Learn More
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [React Navigation](https://reactnavigation.org/)

@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
-import { colors, spacing, typography, commonStyles } from '../utils/theme';
-import api from '../services/api';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
+import { MIN_TOUCH_TARGET } from '../utils/accessibility';
+import { postService, getProfilePictureUrl, getPostImageUrl } from '../services/api';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { useTheme } from '../context/ThemeContext';
 
 interface Post {
   id: number;
@@ -29,9 +33,9 @@ interface Comment {
   author_profile_image?: string;
 }
 
-const BASE_URL = 'https://134-209-253-215.sslip.io';
-
 export const CommunityScreen = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,33 +52,35 @@ export const CommunityScreen = () => {
 
   const navigation = useNavigation<any>();
 
-  const fetchPosts = async () => {
-    if (!refreshing) setLoading(true);
+  const fetchPosts = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) {setLoading(true);}
     try {
-      const response = await api.get('/api/posts/all/');
-      setPosts(response.data.data); // response.data.data is the array of posts
+      const response = await postService.getAllPosts();
+      setPosts(response.data); // response.data is the array of posts
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch posts');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const pickImage = async () => {
-    launchImageLibrary(
-      { mediaType: 'photo', quality: 0.8 },
-      (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) {
-          Alert.alert('Error', response.errorMessage || 'Image picker error');
-          return;
-        }
-        if (response.assets && response.assets.length > 0) {
-          setImageFile(response.assets[0]);
-        }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled) {return;}
+
+      if (result.assets && result.assets.length > 0) {
+        setImageFile(result.assets[0]);
       }
-    );
+    } catch (error) {
+      Alert.alert('Error', 'Image picker error');
+    }
   };
 
   const createPost = async () => {
@@ -85,19 +91,15 @@ export const CommunityScreen = () => {
     setCreating(true);
     try {
       const formData = new FormData();
-      if (newText) formData.append('text', newText);
+      if (newText) {formData.append('text', newText);}
       if (imageFile) {
         formData.append('image', {
           uri: imageFile.uri,
-          name: imageFile.fileName || 'photo.jpg',
-          type: imageFile.type || 'image/jpeg',
+          name: 'photo.jpg',
+          type: 'image/jpeg',
         });
       }
-      await api.post('/api/posts/create/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await postService.createPost(formData);
       setModalVisible(false);
       setNewText('');
       setImageFile(null);
@@ -111,8 +113,8 @@ export const CommunityScreen = () => {
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await fetchPosts();
-  }, []);
+    await fetchPosts(true);
+  }, [fetchPosts]);
 
   useEffect(() => {
     fetchPosts();
@@ -120,11 +122,13 @@ export const CommunityScreen = () => {
 
   const handleReaction = async (postId: number, type: 'like' | 'dislike') => {
     try {
-      const response = await api.post(`/api/posts/${postId}/${type}/`);
-      if (response.data && response.data.data) {
-        const updatedPost = response.data.data;
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+      const response = type === 'like'
+        ? await postService.likePost(postId)
+        : await postService.dislikePost(postId);
+      if (response && response.data) {
+        const updatedPost = response.data;
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
             post.id === postId ? { ...post, ...updatedPost } : post
           )
         );
@@ -137,9 +141,9 @@ export const CommunityScreen = () => {
   const fetchComments = async (postId: number) => {
     setLoadingComments(true);
     try {
-      const response = await api.get(`/api/posts/${postId}/comments/`);
-      if (response.data && response.data.data) {
-        setComments(prev => ({ ...prev, [postId]: response.data.data }));
+      const response = await postService.getComments(postId);
+      if (response && response.data) {
+        setComments(prev => ({ ...prev, [postId]: response.data }));
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch comments');
@@ -160,10 +164,10 @@ export const CommunityScreen = () => {
   };
 
   const postComment = async () => {
-    if (!selectedPostId || !newComment.trim()) return;
+    if (!selectedPostId || !newComment.trim()) {return;}
     setPostingComment(true);
     try {
-      await api.post(`/api/posts/${selectedPostId}/comments/create/`, { content: newComment });
+      await postService.createComment(selectedPostId, newComment);
       setNewComment('');
       fetchComments(selectedPostId); // Refresh comments
     } catch (error) {
@@ -174,63 +178,65 @@ export const CommunityScreen = () => {
   };
 
   const renderItem = ({ item }: { item: Post }) => {
-    const imageUrl = item.image_url || (
-      item.image
-        ? item.image.startsWith('http')
-          ? item.image
-          : `${BASE_URL}${item.image.startsWith('/') ? '' : '/'}${item.image}`
-        : null
-    );
+    const imageUrl = item.image_url
+      ? getPostImageUrl(item.image_url)
+      : (item.image ? getPostImageUrl(item.image) : null);
+
+    // TODO: Re-enable profile picture loading when backend is fixed
+    const profileImageSource = require('../assets/profile_placeholder.png');
 
     return (
-      <View style={styles.postItem}>
+      <View style={[styles.postItem, { backgroundColor: colors.backgroundSecondary }]}>
         <View style={styles.postHeader}>
           <TouchableOpacity onPress={() => navigation.navigate('OtherProfile', { username: item.creator_username })} style={{flexDirection:'row', alignItems:'center'}}>
-            {item.creator_profile_image ? (
-              <Image source={{ uri: item.creator_profile_image.startsWith('http') ? item.creator_profile_image : `${BASE_URL}${item.creator_profile_image.startsWith('/') ? '' : '/'}${item.creator_profile_image}` }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder} />
-            )}
-            <Text style={styles.username}>{item.creator_username}</Text>
+            <Image
+              source={profileImageSource}
+              style={[styles.avatar, { backgroundColor: colors.lightGray }]}
+            />
+            <Text style={[styles.username, { color: colors.primary }]}>{item.creator_username}</Text>
           </TouchableOpacity>
         </View>
-        {item.text ? <Text style={styles.postText}>{item.text}</Text> : null}
+        {item.text ? <Text style={[styles.postText, { color: colors.textPrimary }]}>{item.text}</Text> : null}
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.postImage} />
+          <Image source={{ uri: imageUrl }} style={[styles.postImage, { backgroundColor: colors.lightGray }]} />
         ) : null}
-        <View style={styles.statsRow}>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_liked && styles.activeReactionButton]} 
+        <View style={[styles.statsRow, { borderTopColor: colors.lightGray }]}>
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_liked && { backgroundColor: colors.lightGray }]}
             onPress={() => handleReaction(item.id, 'like')}
           >
-            <Text style={[styles.reactionText, item.is_user_liked && styles.activeReactionText]}>
+            <Text style={[styles.reactionText, { color: colors.textSecondary }, item.is_user_liked && { color: colors.primary, fontWeight: 'bold' }]}>
               👍 {item.like_count}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.reactionButton, item.is_user_disliked && styles.activeReactionButton]} 
+          <TouchableOpacity
+            style={[styles.reactionButton, item.is_user_disliked && { backgroundColor: colors.lightGray }]}
             onPress={() => handleReaction(item.id, 'dislike')}
           >
-            <Text style={[styles.reactionText, item.is_user_disliked && styles.activeReactionText]}>
+            <Text style={[styles.reactionText, { color: colors.textSecondary }, item.is_user_disliked && { color: colors.primary, fontWeight: 'bold' }]}>
               👎 {item.dislike_count}
             </Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={styles.commentsButton}
+          style={[styles.commentsButton, { backgroundColor: colors.lightGray }]}
           onPress={() => openCommentsModal(item.id)}
         >
-          <Text style={styles.commentsButtonText}>View Comments</Text>
+          <Text style={[styles.commentsButtonText, { color: colors.primary }]}>{t('community.comments')}</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Community Posts</Text>
-      <TouchableOpacity style={styles.createButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.createButtonText}>+ Create</Text>
+    <ScreenWrapper
+      title={t('community.title')}
+      scrollable={false}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
+      <TouchableOpacity style={[styles.createButton, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(true)}>
+        <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>+ {t('community.createPost')}</Text>
       </TouchableOpacity>
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
@@ -240,8 +246,6 @@ export const CommunityScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: spacing.lg }}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
         />
       )}
       <Modal
@@ -251,27 +255,28 @@ export const CommunityScreen = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Post</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>{t('community.createPost')}</Text>
             <TextInput
-              style={styles.input}
-              placeholder="What's on your mind?"
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.lightGray, color: colors.textPrimary }]}
+              placeholder={t('community.writePost')}
+              placeholderTextColor={colors.textSecondary}
               value={newText}
               onChangeText={setNewText}
               multiline
             />
-            <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
-              <Text style={styles.modalButtonText}>{imageFile ? 'Image Selected' : 'Pick Image'}</Text>
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.primary }]} onPress={pickImage}>
+              <Text style={[styles.modalButtonText, { color: colors.textOnPrimary }]}>{imageFile ? t('community.addImage') : t('community.addImage')}</Text>
             </TouchableOpacity>
             {imageFile && (
               <Image source={{ uri: imageFile.uri }} style={{ width: 100, height: 100, marginBottom: 8, alignSelf: 'center' }} />
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)} disabled={creating}>
-                <Text style={styles.modalButtonText}>Cancel</Text>
+              <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.lightGray }]} onPress={() => setModalVisible(false)} disabled={creating}>
+                <Text style={[styles.modalButtonText, { color: colors.textPrimary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButton} onPress={createPost} disabled={creating}>
-                <Text style={styles.modalButtonText}>{creating ? 'Sharing...' : 'Share'}</Text>
+              <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.primary }]} onPress={createPost} disabled={creating}>
+                <Text style={[styles.modalButtonText, { color: colors.textOnPrimary }]}>{creating ? t('common.loading') : t('community.post')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -283,79 +288,86 @@ export const CommunityScreen = () => {
         transparent={false}
         onRequestClose={closeCommentsModal}
       >
-        <View style={{ flex: 1, backgroundColor: 'white' }}>
-          <Text style={{ ...typography.h2, color: colors.primary, margin: spacing.md }}>Comments</Text>
-          <TouchableOpacity onPress={closeCommentsModal} style={{ alignSelf: 'flex-end', margin: spacing.md }}>
-            <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Close</Text>
-          </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray }}>
+            <Text style={{ ...typography.h2, color: colors.primary }}>{t('community.comments')}</Text>
+            <TouchableOpacity onPress={closeCommentsModal}>
+              <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
           {loadingComments ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : (
             <ScrollView style={{ flex: 1, padding: spacing.md }}>
               {selectedPostId && comments[selectedPostId] && comments[selectedPostId].length > 0 ? (
-                comments[selectedPostId].map(comment => (
-                  <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      {comment.author_profile_image ? (
-                        <Image source={{ uri: comment.author_profile_image }} style={{ width: 24, height: 24, borderRadius: 12, marginRight: 8, backgroundColor: colors.lightGray }} />
-                      ) : (
-                        <View style={{ width: 24, height: 24, borderRadius: 12, marginRight: 8, backgroundColor: colors.lightGray }} />
-                      )}
-                      <Text style={{ fontWeight: 'bold', color: colors.primary }}>{comment.author_username}</Text>
-                      <Text style={{ marginLeft: 8, color: colors.gray, fontSize: 12 }}>{new Date(comment.date).toLocaleString()}</Text>
+                comments[selectedPostId].map(comment => {
+                  // TODO: Re-enable profile picture loading when backend is fixed
+                  const commentProfileSource = require('../assets/profile_placeholder.png');
+                  return (
+                    <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <Image
+                          source={commentProfileSource}
+                          style={{ width: 24, height: 24, borderRadius: 12, marginRight: spacing.sm, backgroundColor: colors.lightGray }}
+                        />
+                        <Text style={{ fontWeight: 'bold', color: colors.primary }}>{comment.author_username}</Text>
+                        <Text style={{ marginLeft: 8, color: colors.textSecondary, fontSize: 12 }}>{new Date(comment.date).toLocaleString()}</Text>
+                      </View>
+                      <Text style={{ color: colors.textPrimary }}>{comment.content}</Text>
                     </View>
-                    <Text style={{ color: colors.black }}>{comment.content}</Text>
-                  </View>
-                ))
+                  );
+                })
               ) : (
-                <Text style={{ color: colors.gray, textAlign: 'center', marginTop: spacing.lg }}>No comments yet.</Text>
+                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg }}>{t('community.noPostsYet')}</Text>
               )}
             </ScrollView>
           )}
-          <View style={styles.newCommentContainer}>
+          <View style={[styles.newCommentContainer, { backgroundColor: colors.background, borderTopColor: colors.lightGray }]}>
             <TextInput
-              style={styles.newCommentInput}
-              placeholder="Write a comment..."
+              style={[styles.newCommentInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.lightGray, color: colors.textPrimary }]}
+              placeholder={t('community.writeComment')}
+              placeholderTextColor={colors.textSecondary}
               value={newComment}
               onChangeText={setNewComment}
               editable={!postingComment}
             />
             <TouchableOpacity
-              style={[styles.postCommentButton, (!newComment.trim() || postingComment) && { backgroundColor: colors.gray }]}
+              style={[styles.postCommentButton, { backgroundColor: colors.primary }, (!newComment.trim() || postingComment) && { backgroundColor: colors.gray }]}
               onPress={postComment}
               disabled={!newComment.trim() || postingComment}
             >
-              <Text style={styles.postCommentButtonText}>{postingComment ? 'Posting...' : 'Post'}</Text>
+              <Text style={[styles.postCommentButtonText, { color: colors.textOnPrimary }]}>{postingComment ? t('common.loading') : t('community.post')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { ...commonStyles.container, padding: spacing.md },
-  title: { ...typography.h1, color: colors.primary, marginBottom: spacing.md },
   createButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     borderRadius: 24,
     alignSelf: 'flex-end',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   createButtonText: {
-    color: colors.white,
+    color: defaultColors.white,
     fontWeight: 'bold',
     fontSize: 18,
   },
   postItem: {
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: 10,
     padding: spacing.md,
     marginBottom: spacing.md,
-    shadowColor: colors.black,
+    shadowColor: defaultColors.black,
     shadowOpacity: 0.05,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -371,23 +383,16 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: spacing.sm,
-    backgroundColor: colors.lightGray,
-  },
-  avatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: spacing.sm,
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
   },
   username: {
     ...typography.body,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: defaultColors.primary,
   },
   postText: {
     ...typography.body,
-    color: colors.black,
+    color: defaultColors.black,
     marginBottom: spacing.sm,
   },
   postImage: {
@@ -395,7 +400,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 8,
     marginBottom: spacing.sm,
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
   },
   statsRow: {
     flexDirection: 'row',
@@ -403,23 +408,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
+    borderTopColor: defaultColors.lightGray,
   },
   reactionButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: 20,
     marginLeft: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeReactionButton: {
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
   },
   reactionText: {
     ...typography.body,
-    color: colors.gray,
+    color: defaultColors.gray,
   },
   activeReactionText: {
-    color: colors.primary,
+    color: defaultColors.primary,
     fontWeight: 'bold',
   },
   modalOverlay: {
@@ -429,7 +437,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.white,
+    backgroundColor: defaultColors.white,
     borderRadius: 12,
     padding: spacing.lg,
     width: '90%',
@@ -438,7 +446,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...typography.h2,
-    color: colors.primary,
+    color: defaultColors.primary,
     marginBottom: spacing.md,
   },
   input: {
@@ -446,28 +454,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   modalButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     borderRadius: 8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginLeft: spacing.sm,
     marginTop: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalButtonText: {
-    color: colors.white,
+    color: defaultColors.white,
     fontWeight: 'bold',
     fontSize: 16,
   },
   commentsButton: {
     marginTop: spacing.sm,
     alignSelf: 'flex-end',
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
     borderRadius: 8,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   commentsButtonText: {
-    color: colors.primary,
+    color: defaultColors.primary,
     fontWeight: 'bold',
   },
   newCommentContainer: {
@@ -475,27 +489,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
-    backgroundColor: colors.white,
+    borderTopColor: defaultColors.lightGray,
+    backgroundColor: defaultColors.white,
   },
   newCommentInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: defaultColors.lightGray,
     borderRadius: 8,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     marginRight: spacing.sm,
-    backgroundColor: colors.lightGray,
+    backgroundColor: defaultColors.lightGray,
   },
   postCommentButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: defaultColors.primary,
     borderRadius: 8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   postCommentButtonText: {
-    color: colors.white,
+    color: defaultColors.white,
     fontWeight: 'bold',
   },
-}); 
+});

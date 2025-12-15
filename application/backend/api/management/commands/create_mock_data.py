@@ -1,3 +1,67 @@
+"""
+Django management command to generate realistic mock/demo data for the Zero Waste application.
+
+USAGE EXAMPLES:
+---------------
+
+1. Generate full dataset with default values (100 users, 100 posts, etc.):
+   python manage.py create_mock_data
+
+2. Generate a small test dataset:
+   python manage.py create_mock_data --num-users=10 --num-posts=20 --num-tips=10
+
+3. Generate reproducible data using a seed:
+   python manage.py create_mock_data --seed=42
+
+4. Preview data generation without saving to database (dry-run):
+   python manage.py create_mock_data --dry-run --seed=42
+
+5. Generate only specific data types using modes:
+   python manage.py create_mock_data --mode=users --num-users=50
+   python manage.py create_mock_data --mode=posts --num-posts=30
+   python manage.py create_mock_data --mode=follows --num-users=30
+   python manage.py create_mock_data --mode=wastes --num-max-wastes-per-user=20
+   python manage.py create_mock_data --mode=tips --num-tips=15
+   python manage.py create_mock_data --mode=challenges --num-challenges=10
+
+6. Combine options for custom scenarios:
+   python manage.py create_mock_data --mode=full --num-users=50 --num-posts=80 --seed=123 --dry-run
+
+AVAILABLE MODES:
+----------------
+- full: Generate all data types (default)
+- users: Generate only users
+- posts: Generate users + posts + comments
+- follows: Generate users + posts + follow relationships (activity-based)
+- wastes: Generate users + waste entries
+- tips: Generate only tips
+- challenges: Generate users + achievements + challenges
+
+AVAILABLE OPTIONS:
+------------------
+--num-users=N                    Number of users to generate (default: 100)
+--num-posts=N                    Number of posts to generate (default: 100)
+--num-max-comments-per-post=N    Max comments per post (default: 7)
+--num-tips=N                     Number of tips to generate (default: 30)
+--num-max-wastes-per-user=N      Max waste entries per user (default: 30)
+--num-achievements=N             Number of achievements to generate (default: 25)
+--num-challenges=N               Number of challenges to generate (default: 40)
+--max-challenge-target-amount=N  Max challenge target amount (default: 50)
+--reported-content-percent=F     Percentage of content to report, 0.0-1.0 (default: 0.05)
+--seed=N                         Set RNG seed for reproducible output
+--dry-run                        Run and rollback (no DB changes, useful for testing)
+--mode=MODE                      Generation mode (see above)
+
+NOTES:
+------
+- The script creates a test user (username: test_user, password: test123, email: test@gmail.com)
+- Follow relationships are activity-based: active users get more followers
+- All curated content (tips, captions, images) is recycling/sustainability themed
+- Minimum 20 items guaranteed for tips, achievements, challenges, and captions
+- Use --dry-run to validate data without persisting changes
+- Use --seed for reproducible data across runs (useful for testing/demos)
+"""
+
 from django.core.management.base import BaseCommand
 from faker import Faker
 import random
@@ -7,9 +71,10 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
 from api.models import (
     Users, Achievements, UserAchievements, Posts, Comments, Tips, Waste,
-    UserWastes, Report, TipLikes, PostLikes
+    UserWastes, Report, TipLikes, PostLikes, Follow, SavedPosts, SuspiciousWaste
 )
 from challenges.models import Challenge, UserChallenge
+from api.utils.translation import translate_text
 
 # English locale
 try:
@@ -165,6 +230,22 @@ RECYCLING_TIPS = [
     ("Upcycle creatively", "Turn waste into art, planters, or organizers."),
     ("Follow the 5Rs", "Refuse, Reduce, Reuse, Recycle, Rot."),
     ("Celebrate small wins", "Consistency beats perfection in sustainability."),
+    ("Recycling reduces landfill waste", "Recycling reduces the amount of waste sent to landfills."),
+    ("Conserve natural resources", "It helps conserve natural resources like water, minerals, and timber."),
+    ("Save energy and costs", "Recycling saves energy compared to producing new materials, lowering overall production costs."),
+    ("Lower greenhouse emissions", "It lowers greenhouse gas emissions and supports a healthier environment."),
+    ("Financial rewards available", "Many recycling programs offer direct financial rewards, points, or cashback."),
+    ("Sell recyclable materials", "Selling recyclable materials like metal or paper can generate extra income."),
+    ("Save on garbage fees", "Recycling reduces household waste volume, helping you save on garbage collection fees."),
+    ("Business tax incentives", "Businesses that recycle often qualify for tax incentives or cost reductions."),
+    ("Reduce material expenses", "Using recycled materials in manufacturing can significantly reduce material expenses."),
+    ("Deposit-return schemes", "Consumers can benefit from deposit-return schemes for bottles and cans."),
+    ("Create job opportunities", "Recycling creates job opportunities, strengthening the economy."),
+    ("Keep communities clean", "It helps keep communities cleaner and more livable."),
+    ("Reduce pollution", "Recycling reduces pollution caused by extracting and processing raw materials."),
+    ("Support circular economy", "Contributing to a circular economy helps lower market prices by reducing dependence on raw resources."),
+    ("Personal achievement", "Being environmentally responsible can give a sense of personal achievement."),
+    ("Track your progress", "Tracking your recycling progress can motivate consistent eco-friendly habits."),
 ]
 
 # ---------------------------------------------------------------------------
@@ -456,13 +537,18 @@ def generate_mock_data(
     # Seed at least MIN_POOL captions for variety (use all; then add random if desired)
     test_user_posts = []
     for text in SEED_CAPTIONS[:max(MIN_POOL, min(len(SEED_CAPTIONS), 3))]:
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate text if not English
+        post_text = translate_text(text, 'en', selected_lang) if selected_lang != 'en' else text
+        
         post = Posts(
-            text=text,
+            text=post_text,
             image=themed_post_image_url(),
             creator=test_user,
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         post.save()
         test_user_posts.append(post)
@@ -524,13 +610,18 @@ def generate_mock_data(
     for _ in range(num_posts):
         t = random.choice(waste_keys)
         text = random.choice(post_phrases).format(n=random.randint(2, 12), t=t)
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate text if not English
+        post_text = translate_text(text, 'en', selected_lang) if selected_lang != 'en' else text
+        
         post = Posts(
-            text=text,
+            text=post_text,
             image=themed_post_image_url(t),
             creator=random.choice(users),
             date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         post.save()
         posts.append(post)
@@ -567,11 +658,21 @@ def generate_mock_data(
     create_count = max(num_tips, MIN_POOL)
     for i in range(create_count):
         title, body = tips_pool[i % len(tips_pool)]
+        selected_lang = random.choice(['en', 'tr', 'ar', 'es', 'fr'])
+        # Translate both title and body if not English
+        if selected_lang != 'en':
+            tip_title = translate_text(title, 'en', selected_lang)
+            tip_body = translate_text(body, 'en', selected_lang)
+        else:
+            tip_title = title
+            tip_body = body
+        
         tip = Tips(
-            title=title,
-            text=body,
+            title=tip_title,
+            text=tip_body,
             like_count=0,
             dislike_count=0,
+            language=selected_lang,
         )
         tip.save()
         tips.append(tip)
@@ -588,20 +689,23 @@ def generate_mock_data(
         for _ in range(total_logs):
             chosen_key = random.choices(keys, weights=weights, k=1)[0]
             w = wastes[idx_by_key.get(chosen_key, 0)]
-            amount = random.randint(1, 5)
+            # Amount in grams (100g to 5000g = 0.1kg to 5kg)
+            amount = random.randint(100, 5000)
             uw = UserWastes(user=user, waste=w, amount=amount)
             uw.save()
             user_wastes.append(uw)
 
-        # Compute totals from wastes
+        # Compute totals from wastes (amount is in grams, convert to kg for CO2)
         totals_points = 0
         totals_co2 = 0.0
         for uw in UserWastes.objects.filter(user=user):
             k = key_by_id.get(uw.waste_id)
             if not k:
                 continue
-            totals_points += POINTS_PER_TYPE.get(k, 1) * uw.amount
-            totals_co2 += CO2_PER_TYPE.get(k, 0.05) * uw.amount
+            # Convert grams to kg for calculations
+            amount_kg = uw.amount / 1000.0
+            totals_points += POINTS_PER_TYPE.get(k, 1) * amount_kg
+            totals_co2 += CO2_PER_TYPE.get(k, 0.05) * amount_kg
         user.total_points = totals_points
         user.total_co2 = round(totals_co2, 3)
         user.save()
@@ -726,22 +830,35 @@ def generate_mock_data(
         challenges.append(ch)
 
 
-    # Public challenges: many members; private: creator only
+    # Public challenges: assign users but respect max 3 challenges per user
+    # Private challenges: creator only
+    user_challenge_counts = {user.id: 0 for user in users}
+    
     for ch in challenges:
         if ch.is_public:
-            chosen_users = random.sample(users, random.randint(1, len(users)))
-            for u in chosen_users:
+            # Randomly select users but ensure they don't exceed 3 challenges
+            available_users = [u for u in users if user_challenge_counts[u.id] < 3]
+            if available_users:
+                # Choose a random number of users to join this challenge
+                num_participants = random.randint(1, min(len(available_users), len(users) // 2))
+                chosen_users = random.sample(available_users, num_participants)
+                
+                for u in chosen_users:
+                    UserChallenge.objects.create(
+                        user=u,
+                        challenge=ch,
+                        joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                    )
+                    user_challenge_counts[u.id] += 1
+        else:
+            # Private challenge: only creator joins (if they have room)
+            if user_challenge_counts[ch.creator.id] < 3:
                 UserChallenge.objects.create(
-                    user=u,
+                    user=ch.creator,
                     challenge=ch,
                     joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
                 )
-        else:
-            UserChallenge.objects.create(
-                user=ch.creator,
-                challenge=ch,
-                joined_date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
-            )
+                user_challenge_counts[ch.creator.id] += 1
 
     # ------------------------------- REPORTS ---------------------------------
     comment_ct = ContentType.objects.get_for_model(Comments)
@@ -775,20 +892,280 @@ def generate_mock_data(
                 date_reported=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
             )
 
+    # ---------------------------- FOLLOW RELATIONSHIPS -----------------------
+    # Create realistic follow relationships between users
+    # Users tend to follow others who are active, similar interests, or popular
+    follows = []
+    
+    # Calculate "popularity score" based on activity
+    user_activity = {}
+    for user in users:
+        post_count = Posts.objects.filter(creator=user).count()
+        comment_count = Comments.objects.filter(author=user).count()
+        activity_score = post_count * 3 + comment_count  # Posts weighted more than comments
+        user_activity[user.id] = activity_score
+    
+    # Sort users by activity (more active users get more followers)
+    users_by_activity = sorted(users, key=lambda u: user_activity.get(u.id, 0), reverse=True)
+    
+    for user in users:
+        # Each user follows between 0-15 other users (weighted towards active users)
+        num_to_follow = random.randint(0, 15)
+        
+        # Higher chance of following more active users
+        # Create a weighted list where more active users appear more times
+        weighted_candidates = []
+        for candidate in users:
+            if candidate.id == user.id:  # Can't follow yourself
+                continue
+            
+            # Weight by activity score
+            weight = max(1, user_activity.get(candidate.id, 0) // 2)
+            weighted_candidates.extend([candidate] * weight)
+        
+        # Also add all users at least once to ensure everyone has a chance
+        for candidate in users:
+            if candidate.id != user.id:
+                weighted_candidates.append(candidate)
+        
+        if weighted_candidates:
+            # Sample without replacement to avoid duplicates
+            num_to_follow = min(num_to_follow, len(set(weighted_candidates)))
+            followed_users = []
+            attempts = 0
+            max_attempts = num_to_follow * 3
+            
+            while len(followed_users) < num_to_follow and attempts < max_attempts:
+                candidate = random.choice(weighted_candidates)
+                if candidate not in followed_users and candidate.id != user.id:
+                    followed_users.append(candidate)
+                attempts += 1
+            
+            # Create Follow relationships
+            for followed_user in followed_users:
+                # Check if relationship doesn't already exist
+                if not Follow.objects.filter(follower=user, following=followed_user).exists():
+                    follow = Follow.objects.create(
+                        follower=user,
+                        following=followed_user,
+                        created_at=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                    )
+                    follows.append(follow)
+    
+    # Ensure test_user has some followers and is following some users
+    if not Follow.objects.filter(follower=test_user).exists():
+        # Make test_user follow some active users
+        test_follows = random.sample([u for u in users_by_activity[:10] if u.id != test_user.id], min(5, len(users) - 1))
+        for followed in test_follows:
+            Follow.objects.get_or_create(
+                follower=test_user,
+                following=followed,
+                defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+    
+    if not Follow.objects.filter(following=test_user).exists():
+        # Make some users follow test_user
+        test_followers = random.sample([u for u in users if u.id != test_user.id], min(8, len(users) - 1))
+        for follower in test_followers:
+            Follow.objects.get_or_create(
+                follower=follower,
+                following=test_user,
+                defaults={'created_at': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+
+    # ---------------------------- SAVED POSTS --------------------------------
+    # Users save posts they find interesting/useful
+    saved_posts = []
+    for user in users:
+        # Each user saves between 0-10 posts
+        num_to_save = random.randint(0, min(10, len(posts + test_user_posts)))
+        if num_to_save > 0:
+            posts_to_save = random.sample(posts + test_user_posts, num_to_save)
+            for post in posts_to_save:
+                # Don't save your own posts (optional rule)
+                if post.creator.id == user.id:
+                    continue
+                # Check if not already saved
+                if not SavedPosts.objects.filter(user=user, post=post).exists():
+                    saved_post = SavedPosts.objects.create(
+                        user=user,
+                        post=post,
+                        date_saved=fake.date_time_this_year(tzinfo=timezone.get_current_timezone())
+                    )
+                    saved_posts.append(saved_post)
+    
+    # Ensure test_user has some saved posts
+    if not SavedPosts.objects.filter(user=test_user).exists():
+        test_saved = random.sample([p for p in posts if p.creator.id != test_user.id], min(5, len(posts)))
+        for post in test_saved:
+            SavedPosts.objects.get_or_create(
+                user=test_user,
+                post=post,
+                defaults={'date_saved': fake.date_time_this_year(tzinfo=timezone.get_current_timezone())}
+            )
+
+    # -------------------------- SUSPICIOUS WASTE -----------------------------
+    # Generate some suspicious waste entries that need verification
+    # These are waste logs that might be fraudulent or need review
+    suspicious_wastes = []
+    
+    # Select ~5% of users to have suspicious waste entries
+    suspicious_users = random.sample(users, max(1, int(len(users) * 0.05)))
+    
+    for user in suspicious_users:
+        # Each suspicious user has 1-3 suspicious waste entries
+        num_suspicious = random.randint(1, 3)
+        for _ in range(num_suspicious):
+            waste_type = random.choice(wastes)
+            # Suspicious entries tend to have unusually high amounts (10-50kg in grams)
+            amount = random.uniform(10000, 50000)
+            suspicious = SuspiciousWaste.objects.create(
+                user=user,
+                waste=waste_type,
+                amount=amount,
+                date=fake.date_time_this_year(tzinfo=timezone.get_current_timezone()),
+                photo=f"suspicious_waste_photos/suspicious_{user.id}_{random.randint(1000, 9999)}.jpg"
+            )
+            suspicious_wastes.append(suspicious)
+
 
 class Command(BaseCommand):
     help = 'Generate mock data (English, recycling-focused, rich variety)'
 
-    def handle(self, *args, **kwargs):
-        generate_mock_data(
-            num_users=100,
-            num_posts=100,
-            num_max_comments_per_post=7,
-            num_tips=30,             # will still create at least 20
-            num_max_wastes_per_user=30,
-            num_achievements=25,     # at least 20 will be created
-            num_challenges=40,       # at least 20 will be created
-            max_challenge_target_amount=50,
-            reported_content_percent=0.05,
+    def add_arguments(self, parser):
+        parser.add_argument("--num-users", type=int, default=100, help="Number of users to generate")
+        parser.add_argument("--num-posts", type=int, default=100, help="Number of posts to generate")
+        parser.add_argument("--num-max-comments-per-post", type=int, default=7, help="Maximum comments per post")
+        parser.add_argument("--num-tips", type=int, default=30, help="Number of tips to generate")
+        parser.add_argument("--num-max-wastes-per-user", type=int, default=30, help="Maximum waste entries per user")
+        parser.add_argument("--num-achievements", type=int, default=25, help="Number of achievements to generate")
+        parser.add_argument("--num-challenges", type=int, default=40, help="Number of challenges to generate")
+        parser.add_argument("--max-challenge-target-amount", type=int, default=50, help="Max challenge target amount")
+        parser.add_argument("--reported-content-percent", type=float, default=0.05, help="Percentage of content to report (0.0-1.0)")
+        parser.add_argument("--seed", type=int, default=None, help="Set RNG seed for reproducible output")
+        parser.add_argument("--dry-run", action="store_true", help="Run and rollback (no DB changes)")
+        parser.add_argument("--mode", choices=["full", "users", "posts", "follows", "wastes", "tips", "challenges"], default="full",
+                            help="Run only a subset useful for iteration")
+
+    def handle(self, *args, **options):
+        seed = options.get("seed")
+        dry_run = options.get("dry_run")
+        mode = options.get("mode", "full")
+
+        # Apply seed for reproducibility
+        if seed is not None:
+            random.seed(seed)
+            try:
+                fake.seed_instance(seed)
+            except Exception:
+                pass
+            self.stdout.write(self.style.NOTICE(f"Using seed={seed}"))
+
+        kwargs = dict(
+            num_users=options["num_users"],
+            num_posts=options["num_posts"],
+            num_max_comments_per_post=options["num_max_comments_per_post"],
+            num_tips=options["num_tips"],
+            num_max_wastes_per_user=options["num_max_wastes_per_user"],
+            num_achievements=options["num_achievements"],
+            num_challenges=options["num_challenges"],
+            max_challenge_target_amount=options["max_challenge_target_amount"],
+            reported_content_percent=options["reported_content_percent"],
         )
-        self.stdout.write(self.style.SUCCESS("English recycling mock data generated."))
+
+        self.stdout.write(self.style.NOTICE(f"Mode={mode} | Params: {', '.join(f'{k}={v}' for k, v in kwargs.items())}"))
+        
+        # Wrap in atomic so we can rollback on dry-run
+        with transaction.atomic():
+            try:
+                if mode == "full":
+                    generate_mock_data(**kwargs)
+                elif mode == "users":
+                    # Generate only users (needed for other modes)
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "posts":
+                    # Generate users and posts (posts need users)
+                    generate_mock_data(
+                        num_users=max(10, kwargs["num_users"] // 10),  # Need some users for posts
+                        num_posts=kwargs["num_posts"], 
+                        num_max_comments_per_post=kwargs["num_max_comments_per_post"],
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "follows":
+                    # Generate users to create follow relationships
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=max(5, kwargs["num_posts"] // 10),  # Need some posts for activity-based following
+                        num_max_comments_per_post=2,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "wastes":
+                    # Generate users and waste entries
+                    generate_mock_data(
+                        num_users=kwargs["num_users"], 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=kwargs["num_max_wastes_per_user"],
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "tips":
+                    # Generate only tips (no users needed)
+                    generate_mock_data(
+                        num_users=0, 
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=kwargs["num_tips"],
+                        num_max_wastes_per_user=0, 
+                        num_achievements=0, 
+                        num_challenges=0,
+                        max_challenge_target_amount=0,
+                        reported_content_percent=0.0
+                    )
+                elif mode == "challenges":
+                    # Generate users and challenges
+                    generate_mock_data(
+                        num_users=max(10, kwargs["num_users"] // 10),  # Need some users for challenges
+                        num_posts=0, 
+                        num_max_comments_per_post=0,
+                        num_tips=0,
+                        num_max_wastes_per_user=0, 
+                        num_achievements=kwargs["num_achievements"],  # Challenges need achievements for rewards
+                        num_challenges=kwargs["num_challenges"],
+                        max_challenge_target_amount=kwargs["max_challenge_target_amount"],
+                        reported_content_percent=0.0
+                    )
+                
+                if dry_run:
+                    # Mark rollback for the current transaction
+                    transaction.set_rollback(True)
+                    self.stdout.write(self.style.WARNING("🔄 Dry-run: rolling back changes (no data persisted)"))
+                else:
+                    self.stdout.write(self.style.SUCCESS(f"✅ Mock data generated successfully (mode: {mode})"))
+                    
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f"❌ Error during generation: {e}"))
+                raise

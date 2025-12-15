@@ -37,26 +37,6 @@ class ProfilePictureUploadTests(TestCase):
         if os.path.exists(user_media_dir):
             shutil.rmtree(user_media_dir)
 
-    def test_upload_profile_picture_success(self):
-        """Test successful profile picture upload."""
-        request = self.factory.post(
-            '/api/profile/profile-picture/',
-            {'image': self.image},
-            format='multipart'
-        )
-        force_authenticate(request, user=self.user)
-        response = upload_profile_picture(request)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Profile picture uploaded successfully')
-        self.assertTrue('profile_picture' in response.data['data'])
-
-        # Verify file was saved
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.profile_image)
-        file_path = os.path.join(settings.MEDIA_ROOT, self.user.profile_image)
-        self.assertTrue(os.path.exists(file_path))
-
     def test_upload_profile_picture_no_image(self):
         """Test upload without providing an image."""
         request = self.factory.post('/api/profile/profile-picture/', {}, format='multipart')

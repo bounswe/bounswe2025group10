@@ -501,3 +501,13 @@ class PostViewsTests(TestCase):
         self.assertIn('comments', response.data['data'])
         self.assertEqual(len(response.data['data']['comments']), 1)
         self.assertEqual(response.data['data']['comments'][0]['content'], 'Test comment')
+
+    def get_top_5_posts_by_likes(self):
+        """Helper method to get top 5 posts by like count"""
+        posts= Posts.objects.all().order_by('-like_count')[:5]
+
+        self.assertEqual(len(posts), 3)  # We only have 3 posts in setup
+        self.assertEqual(posts[0], self.posts[2])  # 10 likes
+        self.assertEqual(posts[1], self.posts[1])  # 5 likes
+        self.assertEqual(posts[2], self.posts[0])  # 0 likes
+    

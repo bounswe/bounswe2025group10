@@ -1,5 +1,7 @@
 # Import necessary views and path
 from django.urls import path
+
+from api.invite import invite_views
 # Import JWT token views from rest_framework_simplejwt
 from .activities.views.user_activity_view import UserActivityEventsView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -11,9 +13,12 @@ from .post import post_views
 from .comment import comment_views
 from .report_system.admin_panel_views import ModerateReportsViewSet
 from .profile import profile_views
+from .profile import follow_views
 from .opentdb import views as opentdb_views
 from .achievement import achievement_views
+from .achievement import badge_views
 from .activities.views.activity_view import ActivityEventViewSet
+from .recycling_centers import recycling_views
 
 # URL patterns for all API endpoints
 urlpatterns = [
@@ -29,8 +34,36 @@ urlpatterns = [
     path('api/profile/profile-picture/', profile_views.upload_profile_picture, name='upload-profile-picture'),
     # User profile update endpoint
     path('api/profile/<str:username>/bio/', profile_views.user_bio, name='user-bio'),
+    # User waste reduction statistics endpoint (respects privacy settings)
+    path('api/profile/<str:username>/waste-stats/', profile_views.user_waste_stats, name='user-waste-stats'),
     # Public profile picture retrieval endpoint
     path('api/profile/<str:username>/picture/', profile_views.download_profile_picture_public, name='download-profile-picture-public'),
+    # Profile privacy settings (authenticated user)
+    path('api/profile/privacy/', profile_views.profile_privacy_settings, name='profile-privacy-settings'),
+    # Account deletion request (authenticated user)
+    path('api/profile/delete-request/', profile_views.AccountDeletionRequestView.as_view(), name='account-deletion-request'),
+    
+    # Follow/Unfollow Endpoints
+    # ----------------------------------------
+    
+    # POST: Follow a user by username
+    path('api/profile/<str:username>/follow/', follow_views.follow_user, name='follow-user'),
+    
+    # POST: Unfollow a user by username
+    path('api/profile/<str:username>/unfollow/', follow_views.unfollow_user, name='unfollow-user'),
+    
+    # GET: Get list of followers for a specific user
+    path('api/profile/<str:username>/followers/', follow_views.get_followers, name='get-followers'),
+    
+    # GET: Get list of users that a specific user is following
+    path('api/profile/<str:username>/following/', follow_views.get_following, name='get-following'),
+    
+    # GET: Check if authenticated user is following a specific user
+    path('api/profile/<str:username>/follow-status/', follow_views.check_follow_status, name='check-follow-status'),
+    
+    # GET: Get follow statistics for the authenticated user
+    path('api/profile/follow-stats/', follow_views.get_follow_stats, name='follow-stats'),
+    
     # JWT token creation endpoint
     path("jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
     
@@ -77,6 +110,9 @@ urlpatterns = [
     
     # GET: Retrieve all posts saved by the current user
     path("api/posts/saved/", post_views.get_saved_posts, name="get_saved_posts"),
+
+    # GET: Retrieve top 5 posts with the highest number of likes
+    path("api/posts/top-liked/", post_views.get_top_liked_posts, name="get_top_liked_posts"),
     
     # Comment Management Endpoints
     # ----------------------------------------
@@ -98,6 +134,11 @@ urlpatterns = [
     
     # GET: Retrieve all waste entries logged by the current user
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+
+      # POST: Report suspicious waste item with description and image
+    path("api/waste/report_suspicious/", waste_views.create_suspicious_waste, name="create_suspicious_waste"),
+
+    path("api/waste/suspicious/list/", waste_views.get_suspicious_wastes, name="list_suspicious_wastes"),
     
     # Tips Management Endpoints
     # ----------------------------------------
@@ -145,10 +186,47 @@ urlpatterns = [
     # GET: Retrieve a specific user's achievements by username
     path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
 
+    # Badge System Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve all badges earned by authenticated user or specific user
+    path("api/badges/", badge_views.get_user_badges, name="get_user_badges"),
+    path("api/badges/<int:user_id>/", badge_views.get_user_badges, name="get_user_badges_by_id"),
+    
+    # GET: Get progress towards next badges for authenticated user
+    path("api/badges/progress/", badge_views.get_badge_progress, name="get_badge_progress"),
+    
+    # GET: Get complete badge summary (earned + progress)
+    path("api/badges/summary/", badge_views.get_user_badge_summary, name="get_user_badge_summary"),
+    path("api/badges/summary/<int:user_id>/", badge_views.get_user_badge_summary, name="get_user_badge_summary_by_id"),
+    
+    # GET: Get all available badges in the system
+    path("api/badges/all/", badge_views.get_all_badges, name="get_all_badges"),
+    
+    # POST: Manually trigger badge checking (for retroactive awarding)
+    path("api/badges/check/", badge_views.manually_check_badges, name="manually_check_badges"),
+    
+    # GET: Get badge leaderboard
+    path("api/badges/leaderboard/", badge_views.get_leaderboard, name="badge_leaderboard"),
+
     # Opentdb Trivia API Endpoints
     path('trivia/', opentdb_views.TriviaQuestionView.as_view(), name='get_trivia_question'),
 
     #get activity events
     path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
     path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
+
+    path("api/invite/send/", invite_views.send_invitation_email, name="send_invitation_email"),
+    
+    # Recycling Centers Endpoints
+    # ----------------------------------------
+    
+    # GET: Retrieve all cities with recycling centers
+    path("api/recycling-centers/cities/", recycling_views.get_cities, name="get_cities"),
+    
+    # GET: Retrieve districts for a specific city
+    path("api/recycling-centers/districts/", recycling_views.get_districts, name="get_districts"),
+    
+    # GET: Retrieve recycling centers by city and optionally by district
+    path("api/recycling-centers/", recycling_views.get_recycling_centers, name="get_recycling_centers"),
 ]
