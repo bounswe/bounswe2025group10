@@ -161,6 +161,61 @@
     "approve": "Approuver",
     "reject": "Rejeter",
     "ban": "Bannir l'utilisateur"
+  },
+  "wasteHelper": {
+    "selectMethod": "Sélectionner la méthode",
+    "selectTypeAndMethod": "Veuillez sélectionner un type de déchet et une méthode de saisie",
+    "enterValidQuantity": "Veuillez entrer une quantité valide (nombre positif)",
+    "selectUnitAndCount": "Veuillez sélectionner un type d'article et une quantité",
+    "highAmountWarning": "Cette quantité semble élevée. Êtes-vous sûr qu'elle est correcte ?",
+    "excessiveAmountError": "La quantité dépasse la limite maximale (5000g). Veuillez entrer une quantité plus petite.",
+    "quantityGrams": "Grammes",
+    "chooseItem": "Choisir un article",
+    "count": "Nombre",
+    "methods": {
+      "grams": "Par grammes",
+      "unit": "Par article"
+    },
+    "items": {
+      "plasticBottle": "Bouteille en plastique",
+      "plasticBag": "Sac en plastique",
+      "plasticCup": "Gobelet en plastique",
+      "paperSheet": "Feuille de papier (A4)",
+      "notebook": "Cahier",
+      "glassBottle": "Bouteille en verre",
+      "glassJar": "Bocal en verre",
+      "aluminumCan": "Canette en aluminium",
+      "metalSpoon": "Cuillère en métal",
+      "phoneCharger": "Chargeur de téléphone",
+      "usbCable": "Câble USB",
+      "cookingOil": "Huile de cuisson (cs)",
+      "butterWrapper": "Emballage de beurre",
+      "bananaPeel": "Peau de banane",
+      "appleCore": "Trognon de pomme",
+      "foodScraps": "Restes de nourriture"
+    }
+  },
+  "filter": {
+    "title": "Filtrer les données",
+    "timeRange": "Plage de temps",
+    "wasteTypes": "Types de déchets",
+    "apply": "Appliquer les filtres",
+    "clearAll": "Tout effacer",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "selected": "sélectionnés",
+    "selectedFilters": "Filtres sélectionnés",
+    "noDataForFilters": "Aucune donnée pour les filtres sélectionnés",
+    "filterButton": "Filtrer",
+    "activeFilters": "Filtres actifs",
+    "timeRanges": {
+      "day": "Aujourd'hui",
+      "week": "7 derniers jours",
+      "month": "30 derniers jours",
+      "year": "Dernière année",
+      "all": "Tout le temps",
+      "custom": "Plage personnalisée"
+    }
   }
 }
 
