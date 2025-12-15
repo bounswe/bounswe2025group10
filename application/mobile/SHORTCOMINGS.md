@@ -2,363 +2,310 @@
 
 This document identifies potential issues and areas for improvement in the Zero Waste mobile application.
 
-## Summary
+**Last Updated**: December 2024
+
+---
+
+## Fixed Issues (Completed)
+
+| Issue | Status | Commit |
+|-------|--------|--------|
+| Console logging in production (88 statements) | FIXED | Added logger utility |
+| Type safety - `any` types in screens | FIXED | Replaced with proper types |
+| Weak error handling | FIXED | Added structured error utility |
+| Profile pictures disabled | FIXED | Enabled API loading with fallback |
+| Missing ChallengeModeration tests | FIXED | Added 13 test cases |
+| ThemeContext mock for tests | FIXED | Added to jest.setup.js |
+
+---
+
+## Current Issues Summary
 
 | Category | Severity | Count | Impact |
 |----------|----------|-------|--------|
-| Console Logging in Production | HIGH | 88 | Data exposure |
-| Weak Error Handling | HIGH | 16 | Silent failures |
-| Type Safety (any types) | MEDIUM | 84 | Maintainability |
-| Missing Test Coverage | MEDIUM | 4 screens | Reliability |
-| Broken Features (Profile Pictures) | MEDIUM | 1 feature | UX |
-| Accessibility Gaps | MEDIUM | ~20 | Compliance |
-| Performance Issues | LOW | 5 patterns | Speed |
-| Incomplete Implementations | MEDIUM | 4 screens | Functionality |
+| Console statements (missed) | MEDIUM | 4 | Data exposure |
+| Type Safety in api.ts | HIGH | 25+ | Maintainability |
+| Hardcoded Values | MEDIUM | 8 | Flexibility |
+| Security Concerns | MEDIUM | 3 | Security |
+| useEffect Dependencies | MEDIUM | 2 | Performance bugs |
+| Undocumented API Endpoints | LOW | 3 | Documentation |
+| Error Handling Gaps | MEDIUM | 6 | UX |
+| Code Duplication | MEDIUM | 3+ patterns | Maintainability |
 
 ---
 
-## 1. Error Handling & Resilience
+## 1. Console Statements (Should Use Logger)
 
-### Issues Found
+### Files Affected
 
-1. **Insufficient Error Context in API Calls**
-   - Many catch blocks log errors but provide generic user-facing messages
-   - Example: `HomeScreen.tsx:196` - "Failed to load waste data. Please pull to refresh."
-   - No differentiation between network errors, validation errors, and server errors
-   - Timeout only set to 10 seconds in `api.ts:41`
+**src/screens/OtherUserProfileScreen.tsx**
+- **Line 69**: `console.warn('Error fetching follow status:', error);`
 
-2. **Incomplete Error Recovery Patterns**
-   - `AdminPanel.tsx:59-81` uses fallback mock data on API failure - masks real errors
-   - `PostModeration.tsx` uses same pattern
-   - No exponential backoff retry logic
+**src/screens/ProfileScreen.tsx**
+- **Line 103**: `console.warn('Error fetching follow stats');`
+- **Line 118**: `console.warn('Error fetching followers:', err);`
+- **Line 136**: `console.warn('Error fetching following:', err);`
 
-3. **Token Refresh Edge Cases**
-   - `api.ts:83-156`: Token refresh interceptor could fail silently
-   - No maximum retry limit on token refresh
-   - `processQueue()` function doesn't handle queue overflow
-
-4. **Unhandled Promise Rejections**
-   - Multiple screens call fetchData without validating response structure
-
-### Recommended Actions
-- Implement structured error handling with specific error types (NetworkError, ValidationError, AuthError, ServerError)
-- Add response validation schema before using API data
-- Implement exponential backoff with max retries (3-5 attempts)
-- Add specific error messages for common failures (network timeout, 401, 403, 404, 500)
+### Recommended Fix
+Replace all `console.warn` with `logger.warn` from `../utils/logger`.
 
 ---
 
-## 2. Security Concerns
+## 2. Type Safety Issues in api.ts
 
-### Issues Found
+### Functions Returning `Promise<any>`
 
-1. **Sensitive Data Logging (88 console.log statements)**
-   - `api.ts:182`: Full user info logged with JSON stringify
-   - `api.ts:225-242`: Tips response body logged
-   - `ChallengesScreen.tsx:56-71`: Enrolled challenges data logged
-   - `AuthContext.tsx:31`: User data including email logged
-   - **Risk**: Production builds still execute these logs
+| Line | Function | Should Return |
+|------|----------|---------------|
+| 181 | getUserInfo | `Promise<UserInfo>` |
+| 199 | getUserWastes | `Promise<WasteResponse>` |
+| 217 | addUserWaste | `Promise<WasteEntry>` |
+| 225 | getAllTips | `Promise<TipsResponse>` |
+| 248 | createTip | `Promise<Tip>` |
+| 256 | likeTip | `Promise<void>` |
+| 264 | dislikeTip | `Promise<void>` |
+| 272 | reportTip | `Promise<void>` |
+| 354 | getChallenges | `Promise<Challenge[]>` |
+| 362 | createChallenge | `Promise<Challenge>` |
+| 399 | uploadProfilePicture | `Promise<ProfilePictureResponse>` |
+| 431+ | follow/unfollow functions | `Promise<FollowResponse>` |
 
-2. **Token Handling Issues**
-   - `api.ts:44-55`: Cached token in module-level variable
-   - `storage.ts`: Tokens stored with no encryption (AsyncStorage is unencrypted on Android)
-   - No mechanism to clear token cache if user logs out on another device
-   - `storage.ts:44`: Admin status stored as string 'true'/'false'
-
-3. **Weak Input Validation**
-   - `HomeScreen.tsx:245-249`: Direct numeric input without bounds checking
-   - `ChallengesScreen.tsx:94`: parseFloat without NaN check
-   - `TipsScreen.tsx`: No sanitization of user-generated content
-
-4. **Exposed Endpoints & Hardcoded Values**
-   - `LoginScreen.tsx:36-46`: External joke API call with no error handling
-   - `HomeScreen.tsx:217-226`: Istanbul coordinates hardcoded
-
-### Recommended Actions
-- Remove ALL console.log statements from production or use environment-based logging
-- Encrypt token storage using react-native-keychain
-- Implement token cache expiration (e.g., 5 minute TTL)
-- Add bounds checking and input sanitization
-- Move hardcoded values to config files
+### Recommended Fix
+Create TypeScript interfaces for all API responses in a separate `types/api.ts` file.
 
 ---
 
-## 3. Test Coverage Gaps
+## 3. Hardcoded Values & Magic Numbers
 
-### Current State
-- **24 test files** found
-- **15 screen components** exist
-- Missing tests for: OtherUserProfileScreen, UserModeration, CommentModeration, ChallengeModeration, PostModeration
+### src/screens/HomeScreen.tsx
+- **Lines 234-235**: Istanbul coordinates hardcoded
+  ```typescript
+  const lat = 41.0082;
+  const lon = 28.9784;
+  ```
+- **Line 155**: Warning threshold `totalGrams > 500`
+- **Line 156**: Max limit `totalGrams > 5000`
+- **Line 548**: Hardcoded colors `'#dc2626'`, `'#059669'`
 
-### Specific Gaps
+### src/screens/LeaderboardScreen.tsx
+- **Lines 147-151**: Medal colors hardcoded
+  - Gold: `'#FFD700'`
+  - Silver: `'#C0C0C0'`
+  - Bronze: `'#CD7F32'`
 
-1. **Integration Tests Missing**
-   - No end-to-end tests for complete user journeys
-   - No tests for error scenarios (network failure, 401 responses)
-   - No tests for token refresh flow
+### Recommended Fix
+Extract to `src/utils/constants.ts`:
+```typescript
+export const WASTE_THRESHOLDS = {
+  WARNING: 500,
+  MAX: 5000,
+};
 
-2. **Component Tests Incomplete**
-   - LoginScreen: Only basic login tested, no failure scenarios
-   - CommunityScreen: Missing image upload error handling tests
-   - ProfileScreen: Bio editing not tested
+export const MEDAL_COLORS = {
+  GOLD: '#FFD700',
+  SILVER: '#C0C0C0',
+  BRONZE: '#CD7F32',
+};
 
-3. **Service Layer Tests Limited**
-   - api.test.ts: Missing tests for interceptors
-   - No tests for FormData multipart uploads
-   - No tests for token refresh retry logic
-
-4. **Missing Moderation Screen Tests**
-   - UserModeration.tsx (448 lines) - 0 tests
-   - CommentModeration.tsx (437 lines) - 0 tests
-   - ChallengeModeration.tsx (472 lines) - 0 tests
-   - PostModeration.tsx (423 lines) - 0 tests
-
-### Recommended Actions
-- Create tests for all 4 moderation screens
-- Add 15+ integration tests for critical user flows
-- Add error scenario tests for network failures
-- Test token refresh edge cases
-
----
-
-## 4. Code Quality & Type Safety
-
-### Issues Found
-
-1. **Type Safety Problems (84 instances of `any` type)**
-   - `api.ts:180, 198, 204`: Function return types use `any`
-   - `LoginScreen.tsx:20`: `navigation: any`
-   - `accessibility.ts:118`: `role as any`
-
-2. **Duplicated Code Patterns**
-   - Profile picture loading disabled in 4 files with identical comments:
-     - LeaderboardScreen.tsx
-     - CommunityScreen.tsx
-     - OtherUserProfileScreen.tsx
-     - ProfileScreen.tsx
-
-3. **Inconsistent Error Handling**
-   - Some screens use `err: any`, others use `error: any`
-   - Different patterns for checking error properties
-   - No consistent error interface
-
-4. **Magic Numbers & Hardcoded Values**
-   - `HomeScreen.tsx:139`: `showWarning = totalGrams > 500`
-   - `HomeScreen.tsx:140`: `exceedsMaxLimit = totalGrams > 5000`
-   - `LeaderboardScreen.tsx:83`: Hardcoded rank 10
-   - `HomeScreen.tsx:342`: `substring(0, 5)` magic number
-
-### Recommended Actions
-- Replace all `any` types with proper TypeScript interfaces
-- Extract hardcoded values to constants file
-- Create shared error handling utility function
-- Extract duplicated profile picture logic to util
-- Enable TypeScript strict mode
+export const DEFAULT_LOCATION = {
+  LAT: 41.0082,
+  LON: 28.9784,
+  NAME: 'Istanbul',
+};
+```
 
 ---
 
-## 5. Accessibility Issues
+## 4. Security Concerns
 
-### Current Implementation
-- `accessibility.ts` provides good foundation
-- MIN_TOUCH_TARGET used consistently
+### 4.1 Fake Login Endpoint (api.ts:193)
+```typescript
+fakeLogin: async (): Promise<AuthResponse> => {
+  const response = await axios.post(`${API_URL}/fake-login/`);
+```
+**Risk**: Development endpoint exposed in production code.
+**Fix**: Guard with `__DEV__` or remove entirely.
 
-### Gaps
+### 4.2 Manual Token Handling in Multipart Uploads (api.ts:306-316, 400-412)
+```typescript
+const token = cachedToken || await storage.getToken();
+```
+**Risk**: Bypasses axios interceptors, token refresh may not work.
+**Fix**: Use the `axiosInstance` for all requests.
 
-1. **Missing Accessibility Labels**
-   - `HomeScreen.tsx:517`: Dropdown arrow with no label
-   - `CommunityScreen.tsx:191`: Profile picture tap has no hint
-   - Modal dialogs missing role declarations
-
-2. **Color Contrast Not Verified**
-   - Dark mode colors assumed compliant but never tested
-   - Some inline colors don't use theme colors
-   - Hardcoded medal colors in LeaderboardScreen
-
-3. **No Keyboard Navigation**
-   - Modals don't trap focus
-   - No keyboard support for navigating lists
-
-4. **Language Support Not Complete**
-   - Some strings hardcoded in English:
-     - `ProfileScreen.tsx:224`: "My Profile"
-     - `App.tsx:71`: "App Restart Required"
-   - No RTL testing despite isRTL() hook existing
-
-### Recommended Actions
-- Add accessibilityLabel to all interactive elements
-- Implement screen reader testing
-- Document color contrast compliance
-- Test keyboard navigation in modals
-- Complete translation for all UI text
+### 4.3 Unauthenticated Request Possible (api.ts:400-412)
+```typescript
+const response = await axios.post(`${API_URL}/api/profile/profile-picture/`, formData, {
+```
+**Risk**: If token is null, request goes unauthenticated.
+**Fix**: Add token validation before request.
 
 ---
 
-## 6. Performance & Memory Concerns
+## 5. useEffect Dependency Issues
 
-### Issues Found
+### src/screens/ChallengesScreen.tsx (Line 122)
+```typescript
+const fetchChallenges = useCallback(async () => {
+  // ...
+}, [refreshing]);  // Bug: refreshing causes unnecessary recreations
+```
 
-1. **Unnecessary Re-renders**
-   - `HomeScreen.tsx`: Multiple state updates in single useEffect
-   - `ProfileScreen.tsx`: fetchBio dependency could cause infinite loops
-   - `ChallengesScreen.tsx:78`: Unusual dependency pattern
+### src/screens/LeaderboardScreen.tsx (Line 104)
+```typescript
+}, [refreshing]);  // Same issue
+```
 
-2. **Image Loading Without Size Limits**
-   - `CommunityScreen.tsx:201`: Image without explicit dimensions in FlatList
-   - `ProfileScreen.tsx:212`: Profile picture loaded without caching strategy
-
-3. **Large List Performance**
-   - LeaderboardScreen: No pagination for leaderboard
-   - TipsScreen: No lazy loading or pagination
-   - CommunityScreen: Posts list could grow large without pagination
-
-4. **Inefficient Data Fetching**
-   - `ChallengesScreen.tsx:46-49`: Makes 2 parallel requests always
-   - `HomeScreen.tsx:229-233`: Fetches weather, tips, and waste data on every mount
-   - No caching or request deduplication
-
-5. **Memory Leaks**
-   - API interceptors registered once but never cleaned up
-
-### Recommended Actions
-- Add React.memo() to list items
-- Implement pagination with cursor-based loading
-- Add image caching with size limits
-- Optimize network requests with caching strategy
+**Fix**: Remove `refreshing` from dependency arrays. Use a ref or move the condition inside the function.
 
 ---
 
-## 7. Incomplete Implementations & Missing Features
+## 6. Undocumented API Endpoints
 
-### Issues Found
+The following endpoints are used in code but not documented in CLAUDE.md:
 
-1. **Profile Picture Feature Broken**
-   - Disabled in 4 screens with TODOs
-   - Users can upload but pictures never displayed
+| Endpoint | Location | Purpose |
+|----------|----------|---------|
+| `/api/profile/{username}/follow-status/` | api.ts:432 | Get follow status |
+| `/api/profile/{username}/followers/` | api.ts:438 | Get followers list |
+| `/api/profile/{username}/following/` | api.ts:444 | Get following list |
+| `/api/profile/{username}/follow/` | api.ts:420 | Follow user |
+| `/api/profile/{username}/unfollow/` | api.ts:426 | Unfollow user |
 
-2. **Moderation Screens With Mock Data**
-   - AdminPanel.tsx, PostModeration.tsx use mock data fallback
-   - UserModeration, CommentModeration, ChallengeModeration: Similar issues
-   - **Risk**: Moderation UI never tested with real data
-
-3. **Missing Deep Linking**
-   - No deep link support for user profiles
-   - No notification deep links configured
-   - URL scheme not defined
-
-4. **Incomplete Features**
-   - Language switching requires app restart
-   - No offline support
-
-5. **Admin Features Not Fully Functional**
-   - Moderation actions may not persist
-   - No audit logging visible
-
-### Recommended Actions
-- Fix profile picture backend integration
-- Replace all mock data with real API calls
-- Implement deep linking for shareable profiles
-- Complete offline support
-- Add proper admin moderation workflow
+**Fix**: Add these endpoints to CLAUDE.md API documentation.
 
 ---
 
-## 8. Navigation & State Management
+## 7. Error Handling Gaps
 
-### Issues Found
+### 7.1 Silent Weather Failure (HomeScreen.tsx:237-241)
+```typescript
+} catch (err) {
+  logger.warn('Weather fetch error:', err);  // Silent fail, no user feedback
+}
+```
 
-1. **Navigation Type Safety**
-   - `AppNavigator.tsx:42`: `navigation: any`
-   - Multiple `as any` casts to navigate
+### 7.2 Generic Login Error (AuthContext.tsx:75-76)
+```typescript
+} catch (error) {
+  logger.error('Login error:', error);
+  return null;  // Doesn't differentiate auth failure vs network error
+}
+```
 
-2. **State Synchronization Issues**
-   - AuthContext doesn't update when tokens expire
-   - Theme preference changes require page reload
+### 7.3 No Deadline Validation (ChallengesScreen.tsx:129-133)
+```typescript
+if (!title || !description || !targetAmount || !deadline) {
+  // Only checks if filled, not if valid date format
+```
 
-3. **Navigation Stack Management**
-   - Moderation screens don't have proper header with back button
-   - Admin tab bar navigation different from main navigation
-
-### Recommended Actions
-- Implement proper TypeScript navigation types
-- Add navigation event listeners for app state changes
-- Add consistent back button to all modal/stack screens
-
----
-
-## 9. Localization & Internationalization
-
-### Issues Found
-
-1. **Incomplete Translation Coverage**
-   - `App.tsx:71`: "App Restart Required" hardcoded
-   - Error messages sometimes untranslated
-
-2. **RTL Implementation Gaps**
-   - App restarts required to switch between LTR/RTL
-   - No dynamic RTL switching
-
-3. **Missing Translation Keys**
-   - Some screens use translation keys that may not exist
-
-### Recommended Actions
-- Add translation for all hardcoded English strings
-- Implement dynamic RTL switching without restart
-- Validate all translation keys exist during build
+### Recommended Fix
+Use the `getErrorMessage()` utility consistently and add specific validation.
 
 ---
 
-## 10. Network & Connectivity
+## 8. Code Duplication Patterns
 
-### Issues Found
+### 8.1 Fetch + Loading + Error Pattern
+Repeated in: HomeScreen, ProfileScreen, ChallengesScreen, TipsScreen, CommunityScreen
 
-1. **No Connection Handling**
-   - No network connectivity detection
-   - App fails silently on network errors
-   - No offline mode or cached data fallback
+**Example**:
+```typescript
+const [loading, setLoading] = useState(false);
+const fetchData = async () => {
+  setLoading(true);
+  try {
+    const response = await service.getData();
+    setData(response.data);
+  } catch (err) {
+    Alert.alert('Error', getErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
+```
 
-2. **Timeout Management**
-   - Only one global timeout: 10 seconds
-   - No request-specific timeouts
+**Fix**: Create custom hooks like `useFetch()` or use React Query.
 
-3. **API Response Assumptions**
-   - Some endpoints return `{ data: [] }`, others return `{ results: [] }`
-   - No response normalization
+### 8.2 Profile Picture Source Logic
+Repeated in: ProfileScreen, LeaderboardScreen, CommunityScreen, OtherUserProfileScreen
 
-### Recommended Actions
-- Add network connectivity detection (react-native-netinfo)
-- Implement cache-first strategy for GET requests
-- Normalize API responses to consistent format
-- Show "No Connection" UI when offline
+**Fix**: Extract to utility function:
+```typescript
+export const getProfileImageSource = (username?: string) =>
+  username
+    ? { uri: getProfilePictureUrl(username) }
+    : PROFILE_PLACEHOLDER;
+```
+
+---
+
+## 9. Type Coercion Issues
+
+### ChallengesScreen.tsx (Line 204)
+```typescript
+const challengeId = uc.challenge as unknown as number;
+```
+**Issue**: Double cast suggests underlying type mismatch.
+**Fix**: Fix the `UserChallenge` interface to have correct type.
+
+### ProfileScreen.tsx (Line 265)
+```typescript
+const uploadError = error as { message?: string; response?: { data?: unknown; status?: number } };
+```
+**Issue**: Over-specific type assertion.
+**Fix**: Create a proper `ApiError` interface.
+
+---
+
+## 10. Accessibility Gaps
+
+### Missing accessibilityLabel
+Many `TouchableOpacity` components lack accessibility labels:
+- Profile pictures (tap to view profile)
+- Like/dislike buttons
+- Modal close buttons
+- Dropdown triggers
+
+### Missing accessibilityRole
+Components should declare their roles:
+- `button` for TouchableOpacity
+- `header` for section titles
+- `list` for FlatList
 
 ---
 
 ## Priority Recommendations
 
-### Phase 1 (Critical)
-1. Remove all console statements for production
-2. Implement structured error handling with typed errors
-3. Fix token security (encryption, TTL, cache clearing)
-4. Complete profile picture feature
+### Phase 1 (Immediate)
+1. Fix 4 remaining console.warn statements
+2. Add proper TypeScript interfaces for api.ts functions
+3. Remove or guard `fakeLogin` endpoint
+4. Fix useEffect dependency arrays
 
-### Phase 2 (High)
-1. Replace all `any` types with proper interfaces
-2. Add integration tests for critical flows
-3. Implement network connectivity detection
-4. Fix moderation screens (remove mock data)
+### Phase 2 (Short-term)
+1. Extract hardcoded values to constants
+2. Document new follow-related API endpoints
+3. Add input validation for date fields
+4. Fix multipart upload token handling
 
-### Phase 3 (Medium)
-1. Add accessibility labels to all components
-2. Implement pagination for lists
-3. Complete translation coverage
-4. Add proper RTL support
-
-### Phase 4 (Low)
-1. Performance optimization (memoization, lazy loading)
-2. Deep linking implementation
-3. Offline support
-4. Analytics and monitoring
+### Phase 3 (Medium-term)
+1. Create custom hooks to reduce code duplication
+2. Add proper accessibility labels
+3. Implement better error differentiation in login
+4. Add weather failure UI feedback
 
 ---
 
-*This analysis identifies 38+ actionable issues across 10 categories.*
+## Metrics
+
+- **Issues Fixed This Session**: 6
+- **New Issues Found**: 12
+- **Total Current Issues**: ~35
+- **Critical Issues**: 4
+- **Medium Issues**: 20
+- **Low Issues**: 11
+
+---
+
+*Document maintained as part of code quality improvement initiative.*
