@@ -93,7 +93,11 @@
     "failedToLoadFollowers": "Failed to load followers.",
     "failedToLoadFollowing": "Failed to load following list.",
     "loginToFollow": "Please login to follow users.",
-    "posts": "Posts"
+    "posts": "Posts",
+    "privacySettings": "Privacy Settings",
+    "anonymousMode": "Anonymous Mode",
+    "anonymousModeDesc": "Show as anonymous in leaderboards, posts, and comments",
+    "privacyUpdated": "Privacy settings updated"
   },
   "community": {
     "title": "Community",
