@@ -5,6 +5,7 @@ import { profilePublicService, postService, getProfilePictureUrl } from '../serv
 import { colors, spacing, typography } from '../utils/theme';
 import { useTranslation } from 'react-i18next';
 import { ScreenWrapper } from '../components/ScreenWrapper';
+import { logger } from '../utils/logger';
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 
@@ -30,7 +31,7 @@ export const OtherUserProfileScreen: React.FC = () => {
       const data = await profilePublicService.getUserBio(username);
       setBio(data.bio || '');
     } catch (error) {
-      console.warn('Error fetching user bio:', error);
+      logger.warn('Error fetching user bio:', error);
       Alert.alert('Error', 'Failed to load user profile.');
     } finally {
       setLoading(false);
@@ -43,10 +44,10 @@ export const OtherUserProfileScreen: React.FC = () => {
     try {
       const response = await postService.getAllPosts();
       const allPosts = response.data || [];
-      const userPosts = allPosts.filter((p: any) => p.creator_username === username);
+      const userPosts = allPosts.filter((p: { creator_username: string }) => p.creator_username === username);
       setPosts(userPosts);
     } catch (error) {
-      console.warn('Error fetching posts for user:', error);
+      logger.warn('Error fetching posts for user:', error);
       Alert.alert('Error', 'Failed to load posts.');
     } finally{
       setLoadingPosts(false);

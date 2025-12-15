@@ -12,6 +12,7 @@ import {colors, spacing, typography, commonStyles} from '../../utils/theme';
 import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
 import {authService} from '../../services/api';
 import {useTranslation} from 'react-i18next';
+import {logger} from '../../utils/logger';
 
 interface SignupScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
@@ -25,7 +26,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    console.log('Signup button pressed', email, username, password);
+    logger.log('Signup button pressed');
     if (!email || !username || !password) {
       Alert.alert(t('common.error'), t('auth.allFieldsRequired'));
       return;
@@ -48,11 +49,12 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
           },
         ]);
       }
-    } catch (error: any) {
-      console.log('Signup error:', error.response?.data, error.message, error);
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { error?: string } }; message?: string };
+      logger.log('Signup error:', axiosError.message);
       Alert.alert(
         t('common.error'),
-        error.response?.data?.error || t('auth.invalidCredentials'),
+        axiosError.response?.data?.error || t('auth.invalidCredentials'),
       );
     } finally {
       setLoading(false);

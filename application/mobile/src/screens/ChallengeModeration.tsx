@@ -15,6 +15,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface ChallengeReport {
   id: number;
@@ -53,9 +54,10 @@ export const ChallengeModeration: React.FC = () => {
       const response = await adminService.getReports('challenges');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch challenge reports');
-      console.error('Error fetching challenge reports:', err);
+    } catch (err: unknown) {
+      const challengeErr = err as { message?: string };
+      setError(challengeErr.message || 'Failed to fetch challenge reports');
+      logger.error('Error fetching challenge reports:', err);
       
       // Fallback to mock data for development
       const mockReports: ChallengeReport[] = [
@@ -120,7 +122,7 @@ export const ChallengeModeration: React.FC = () => {
       Alert.alert('Success', `Challenge ${action} successfully`);
       fetchChallengeReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate challenge');
     }
   };

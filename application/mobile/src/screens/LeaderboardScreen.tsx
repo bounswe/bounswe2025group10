@@ -18,6 +18,7 @@ import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../utils/logger';
 
 interface LeaderboardUser {
   rank: number;
@@ -92,9 +93,10 @@ export const LeaderboardScreen: React.FC = () => {
       } else {
         setCurrentUser(null);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch leaderboard');
-      console.error('Error fetching leaderboard:', err);
+    } catch (err: unknown) {
+      const leaderboardErr = err as { message?: string };
+      setError(leaderboardErr.message || 'Failed to fetch leaderboard');
+      logger.error('Error fetching leaderboard:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -118,7 +120,7 @@ export const LeaderboardScreen: React.FC = () => {
       setSelectedUserBio(response);
       setShowBioModal(true);
     } catch (error) {
-      console.error(`Failed to fetch bio for ${username}:`, error);
+      logger.error(`Failed to fetch bio for ${username}:`, error);
       setSelectedUserBio({ username, bio: 'Bio could not be loaded.' });
       setShowBioModal(true);
     } finally {

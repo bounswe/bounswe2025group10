@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
 import { API_URL } from '@env';
+import { logger } from '../utils/logger';
 
 
 // Types
@@ -70,12 +71,12 @@ api.interceptors.request.use(
       }
       return config;
     } catch (error) {
-      console.error('Error in request interceptor:', error);
+      logger.error('Error in request interceptor:', error);
       return Promise.reject(error);
     }
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    logger.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -141,7 +142,7 @@ api.interceptors.response.use(
             }
           }
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          logger.error('Token refresh failed:', refreshError);
           processQueue(refreshError as Error, null);
           // Clear tokens on refresh failure
           await storage.clearTokens();
@@ -179,7 +180,7 @@ export const authService = {
 
   getUserInfo: async (): Promise<any> => {
     const response = await api.get('/me/');
-    console.log('Full user info response:', JSON.stringify(response.data, null, 2));
+    logger.log('User info response received');
     return response.data;
   },
 
@@ -196,15 +197,15 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<any> => {
-    console.log('Fetching user wastes...');
+    logger.log('Fetching user wastes...');
     const response = await api.get('/api/waste/get/');
-    console.log('Waste data response:', response.status, response.data);
+    logger.log('Waste data response:', response.status);
     return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
-    console.log('Adding user waste:', { waste_type, amount });
+    logger.log('Adding user waste:', { waste_type, amount });
     const response = await api.post('/api/waste/', { waste_type, amount });
-    console.log('Add waste response:', response.status, response.data);
+    logger.log('Add waste response:', response.status);
     return response.data;
   },
 };
@@ -222,23 +223,21 @@ export const tipService = {
    * Fetch all tips (could be used for paginated lists later)
    */
   getAllTips: async (): Promise<any> => {
-    console.log('[Tips API] Fetching all tips...');
+    logger.log('[Tips API] Fetching all tips...');
     try {
       // Try the all endpoint first
       const response = await api.get('/api/tips/all');
-      console.log('[Tips API] Response from /all:', JSON.stringify(response.data, null, 2).slice(0, 500));
       const data = response.data;
       const tips = data.results || data.data || (Array.isArray(data) ? data : []);
-      console.log('[Tips API] Extracted tips count:', tips.length);
+      logger.log('[Tips API] Extracted tips count:', tips.length);
       return { data: tips };
-    } catch (error: any) {
-      console.log('[Tips API] /all endpoint failed, trying getRecentTips...');
+    } catch (error: unknown) {
+      logger.log('[Tips API] /all endpoint failed, trying getRecentTips...');
       // Fallback to getRecentTips if /all doesn't exist
       const response = await api.get('/api/tips/get_recent_tips');
-      console.log('[Tips API] Response from getRecentTips:', JSON.stringify(response.data, null, 2).slice(0, 500));
       const data = response.data;
       const tips = data.data || (Array.isArray(data) ? data : []);
-      console.log('[Tips API] Extracted tips count:', tips.length);
+      logger.log('[Tips API] Extracted tips count:', tips.length);
       return { data: tips };
     }
   },

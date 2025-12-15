@@ -16,6 +16,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface CommentReport {
   id: number;
@@ -53,9 +54,10 @@ export const CommentModeration: React.FC = () => {
       const response = await adminService.getReports('comments');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch comment reports');
-      console.error('Error fetching comment reports:', err);
+    } catch (err: unknown) {
+      const commentErr = err as { message?: string };
+      setError(commentErr.message || 'Failed to fetch comment reports');
+      logger.error('Error fetching comment reports:', err);
       
       // Fallback to mock data for development
       const mockReports: CommentReport[] = [
@@ -118,7 +120,7 @@ export const CommentModeration: React.FC = () => {
       Alert.alert('Success', `Comment ${action} successfully`);
       fetchCommentReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate comment');
     }
   };

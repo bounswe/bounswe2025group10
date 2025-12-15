@@ -17,6 +17,7 @@ import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../utils/logger';
 
 interface Achievement {
   id: number;
@@ -61,9 +62,10 @@ export const AchievementsScreen: React.FC = () => {
       const response = await achievementService.getUserAchievements();
       const data = response.data?.achievements || [];
       setAchievements(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch achievements');
-      console.error('Error fetching achievements:', err);
+    } catch (err: unknown) {
+      const achievementErr = err as { message?: string };
+      setError(achievementErr.message || 'Failed to fetch achievements');
+      logger.error('Error fetching achievements:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -91,7 +93,7 @@ export const AchievementsScreen: React.FC = () => {
             resizeMode="cover"
             onError={() => {
               // Fallback to emoji if image fails to load
-              console.log('Failed to load achievement icon');
+              logger.log('Failed to load achievement icon');
             }}
           />
         </View>

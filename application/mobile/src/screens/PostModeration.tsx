@@ -16,6 +16,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface PostReport {
   id: number;
@@ -53,9 +54,10 @@ export const PostModeration: React.FC = () => {
       const response = await adminService.getReports('posts');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch post reports');
-      console.error('Error fetching post reports:', err);
+    } catch (err: unknown) {
+      const postErr = err as { message?: string };
+      setError(postErr.message || 'Failed to fetch post reports');
+      logger.error('Error fetching post reports:', err);
       
       // Fallback to mock data for development
       const mockReports: PostReport[] = [
@@ -118,7 +120,7 @@ export const PostModeration: React.FC = () => {
       Alert.alert('Success', `Post ${action} successfully`);
       fetchPostReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate post');
     }
   };

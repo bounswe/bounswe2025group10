@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../utils/logger';
 
 interface ReportItem {
   id: number;
@@ -56,9 +57,10 @@ export const AdminPanel: React.FC = () => {
       const response = await adminService.getReports(activeTab);
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch reports');
-      console.error('Error fetching reports:', err);
+    } catch (err: unknown) {
+      const reportErr = err as { message?: string };
+      setError(reportErr.message || 'Failed to fetch reports');
+      logger.error('Error fetching reports:', err);
       
       // Fallback to mock data for development
       const mockReports: ReportItem[] = [
@@ -100,7 +102,7 @@ export const AdminPanel: React.FC = () => {
       Alert.alert('Success', `Content ${action} successfully`);
       fetchReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate content');
     }
   };

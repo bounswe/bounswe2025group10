@@ -4,6 +4,7 @@ import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nManager, Alert } from 'react-native';
 import * as Updates from 'expo-updates';
+import { logger } from '../utils/logger';
 
 // Import translation files
 import en from './locales/en.json';
@@ -42,7 +43,7 @@ const languageDetector = {
       const language = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'en';
       callback(language);
     } catch (error) {
-      console.error('Error detecting language:', error);
+      logger.error('Error detecting language:', error);
       callback('en');
     }
   },
@@ -51,7 +52,7 @@ const languageDetector = {
     try {
       await AsyncStorage.setItem(LANGUAGE_KEY, language);
     } catch (error) {
-      console.error('Error saving language:', error);
+      logger.error('Error saving language:', error);
     }
   },
 };
@@ -93,14 +94,14 @@ export const changeLanguage = async (language: string, autoRestart = true) => {
       I18nManager.allowRTL(shouldBeRTL);
       I18nManager.forceRTL(shouldBeRTL);
 
-      console.log('[i18n] RTL changed, restarting app...');
+      logger.log('[i18n] RTL changed, restarting app...');
 
       if (autoRestart) {
         // Auto restart the app to apply RTL changes
         try {
           await Updates.reloadAsync();
         } catch (reloadError) {
-          console.warn('[i18n] Could not auto-restart:', reloadError);
+          logger.warn('[i18n] Could not auto-restart:', reloadError);
           // Fallback to manual restart alert
           Alert.alert(
             'Restart Required',
@@ -111,7 +112,7 @@ export const changeLanguage = async (language: string, autoRestart = true) => {
       }
     }
   } catch (error) {
-    console.error('Error changing language:', error);
+    logger.error('Error changing language:', error);
   }
 };
 
@@ -122,26 +123,26 @@ export const getCurrentLanguage = () => i18n.language;
 export const initializeRTL = async () => {
   try {
     const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
-    console.log('[RTL] Saved language:', savedLanguage);
-    console.log('[RTL] Current I18nManager.isRTL:', I18nManager.isRTL);
+    logger.log('[RTL] Saved language:', savedLanguage);
+    logger.log('[RTL] Current I18nManager.isRTL:', I18nManager.isRTL);
 
     if (savedLanguage) {
       const shouldBeRTL = isRTL(savedLanguage);
-      console.log('[RTL] Should be RTL:', shouldBeRTL);
+      logger.log('[RTL] Should be RTL:', shouldBeRTL);
 
       // Always set RTL settings to ensure consistency
       I18nManager.allowRTL(shouldBeRTL);
       I18nManager.forceRTL(shouldBeRTL);
 
-      console.log('[RTL] After setting - I18nManager.isRTL:', I18nManager.isRTL);
+      logger.log('[RTL] After setting - I18nManager.isRTL:', I18nManager.isRTL);
 
       // If mismatch persists, the app needs a full restart
       if (shouldBeRTL !== I18nManager.isRTL) {
-        console.log('[RTL] RTL mismatch detected - app needs restart');
+        logger.log('[RTL] RTL mismatch detected - app needs restart');
       }
     }
   } catch (error) {
-    console.error('Error initializing RTL:', error);
+    logger.error('Error initializing RTL:', error);
   }
 };
 

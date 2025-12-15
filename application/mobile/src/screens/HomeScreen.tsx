@@ -29,6 +29,7 @@ import { MoreDropdown } from '../components/MoreDropdown';
 import { useTranslation } from 'react-i18next';
 import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components/WasteFilterModal';
 import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
+import { logger } from '../utils/logger';
 
 // Dynamic chart config based on theme
 const getChartConfig = (isDarkMode: boolean) => ({
@@ -192,7 +193,7 @@ export const HomeScreen: React.FC = () => {
       const response = await wasteService.getUserWastes();
       setWasteData(response.data);
     } catch (err) {
-      console.error('Error fetching waste data:', err);
+      logger.error('Error fetching waste data:', err);
       Alert.alert('Error', 'Failed to load waste data. Please pull to refresh.');
     } finally {
       setLoadingWaste(false);
@@ -206,7 +207,7 @@ export const HomeScreen: React.FC = () => {
       const response = await tipService.getRecentTips();
       setTips(response.data);
     } catch (err) {
-      console.error('Error fetching tips:', err);
+      logger.error('Error fetching tips:', err);
       Alert.alert('Error', 'Failed to load tips. Please try again.');
     } finally {
       setLoadingTips(false);
@@ -221,7 +222,7 @@ export const HomeScreen: React.FC = () => {
       const data = await weatherService.getCurrentWeather(lat, lon);
       setWeather(data);
     } catch (err) {
-      console.warn('Weather fetch error:', err);
+      logger.warn('Weather fetch error:', err);
     }
   };
 

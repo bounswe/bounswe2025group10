@@ -16,6 +16,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
 import { adminService } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface UserReport {
   id: number;
@@ -52,9 +53,10 @@ export const UserModeration: React.FC = () => {
       const response = await adminService.getReports('users');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch user reports');
-      console.error('Error fetching user reports:', err);
+    } catch (err: unknown) {
+      const userErr = err as { message?: string };
+      setError(userErr.message || 'Failed to fetch user reports');
+      logger.error('Error fetching user reports:', err);
       
       // Fallback to mock data for development
       const mockReports: UserReport[] = [
@@ -115,7 +117,7 @@ export const UserModeration: React.FC = () => {
       Alert.alert('Success', `User ${action} successfully`);
       fetchUserReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate user');
     }
   };

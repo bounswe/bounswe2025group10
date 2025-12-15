@@ -15,6 +15,7 @@ import {authService} from '../../services/api';
 import {useAuth} from '../../context/AuthContext';
 import axios from 'axios';
 import {useTranslation} from 'react-i18next';
+import {logger} from '../../utils/logger';
 
 interface LoginScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
@@ -40,7 +41,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
         setJokePunchline(res.data.punchline);
       })
       .catch(err => {
-        console.error('Joke API error:', err);
+        logger.error('Joke API error:', err);
         setJokeSetup('Welcome to the app!');
         setJokePunchline('');
       });
@@ -54,55 +55,53 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
     try {
       setLoading(true);
-      console.log('Attempting login with email:', email);
+      logger.log('Attempting login with email:', email);
 
       // First try to get the token
       const response = await authService.login({email, password});
-      console.log('Login response received:', response);
+      logger.log('Login response received');
 
       if (!response || !response.token) {
-        console.error('Invalid response format:', response);
+        logger.error('Invalid response format');
         Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
-      console.log('Token received:', response.token.access ? 'Yes' : 'No');
+      logger.log('Token received:', response.token.access ? 'Yes' : 'No');
 
       // Then try to login with the context
       const loginResult = await login(email, password);
-      console.log('Context login result:', loginResult);
+      logger.log('Context login result:', loginResult ? 'success' : 'failed');
 
       if (!loginResult) {
         Alert.alert(t('common.error'), t('auth.invalidCredentials'));
         return;
       }
 
-      console.log('Login completed successfully!');
-    } catch (error: any) {
-      console.error('Login error:', error);
+      logger.log('Login completed successfully!');
+    } catch (error: unknown) {
+      logger.error('Login error:', error);
 
       let errorMessage = t('auth.invalidCredentials');
 
-      if (error.response) {
+      const axiosError = error as { response?: { status: number; data?: { error?: string; message?: string } }; request?: unknown; message?: string };
+      if (axiosError.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        console.error('Server error response:', {
-          status: error.response.status,
-          data: error.response.data,
-        });
+        logger.error('Server error response:', axiosError.response.status);
         errorMessage =
-          error.response.data?.error ||
-          error.response.data?.message ||
+          axiosError.response.data?.error ||
+          axiosError.response.data?.message ||
           errorMessage;
-      } else if (error.request) {
+      } else if (axiosError.request) {
         // The request was made but no response was received
-        console.error('No response received:', error.request);
+        logger.error('No response received');
         errorMessage =
           'No response from server. Please check your internet connection.';
       } else {
         // Something happened in setting up the request that triggered an Error
-        console.error('Request setup error:', error.message);
-        errorMessage = error.message || errorMessage;
+        logger.error('Request setup error:', axiosError.message);
+        errorMessage = axiosError.message || errorMessage;
       }
 
       Alert.alert(t('common.error'), errorMessage);

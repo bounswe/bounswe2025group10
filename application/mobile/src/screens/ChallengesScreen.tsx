@@ -8,6 +8,7 @@ import { challengeService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
+import { logger } from '../utils/logger';
 
 interface Challenge {
   id: number;
@@ -94,24 +95,22 @@ export const ChallengesScreen = () => {
       
       const allChallenges = challengesResponse;
       const enrolled = enrolledResponse;
-      
+
       // Debug the structure first
-      console.log('Raw enrolled response:', enrolled);
-      console.log('First enrolled item:', enrolled[0]);
-      
+      logger.log('Raw enrolled response count:', enrolled?.length);
+
       // Mark challenges as enrolled
       const enrolledChallengeIds = new Set(enrolled.map((uc: UserChallenge) => uc.challenge).filter(Boolean));
       const challengesWithEnrollment = allChallenges.map((challenge: Challenge) => ({
         ...challenge,
         is_enrolled: enrolledChallengeIds.has(challenge.id)
       }));
-      
+
       setChallenges(challengesWithEnrollment);
       setEnrolledChallenges(enrolled);
-      
+
       // Debug logging
-      console.log('Enrolled challenge IDs:', Array.from(enrolledChallengeIds));
-      console.log('Challenges with enrollment status:', challengesWithEnrollment.map((c: Challenge) => ({ id: c.id, title: c.title, is_enrolled: c.is_enrolled })));
+      logger.log('Enrolled challenge IDs:', Array.from(enrolledChallengeIds));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch challenges');
     } finally {
@@ -197,12 +196,12 @@ export const ChallengesScreen = () => {
         .filter(uc => challenges.some(c => c.id === uc.challenge)) // Filter out any null/undefined challenges
         .map(uc => {
           const challengeId = uc.challenge as unknown as number;
-          console.log('Processing enrolled challenge ID:', challengeId);
-          
+          logger.log('Processing enrolled challenge ID:', challengeId);
+
           // Find the full challenge data from the all challenges list
           const fullChallenge = challenges.find((c: Challenge) => c.id === challengeId);
-          console.log('Found full challenge:', fullChallenge);
-          
+          logger.log('Found full challenge:', fullChallenge?.title);
+
           if (fullChallenge) {
             return {
               ...fullChallenge,

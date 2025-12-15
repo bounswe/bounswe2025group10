@@ -19,6 +19,7 @@ import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
+import { logger } from '../utils/logger';
 
 interface Tip {
   id: number;
@@ -75,20 +76,19 @@ export const TipsScreen: React.FC = () => {
 
   // Fetch tips
   const fetchTips = useCallback(async (isRefresh = false) => {
-    console.log('[TipsScreen] fetchTips called, isRefresh:', isRefresh);
+    logger.log('[TipsScreen] fetchTips called, isRefresh:', isRefresh);
     if (!isRefresh) setLoading(true);
     setError(null);
     try {
       const response = await tipService.getAllTips();
-      console.log('[TipsScreen] Got response:', response);
-      console.log('[TipsScreen] Tips data:', response?.data);
       const tipsData = response?.data || [];
-      console.log('[TipsScreen] Setting tips, count:', tipsData.length);
+      logger.log('[TipsScreen] Setting tips, count:', tipsData.length);
       setTips(tipsData);
-    } catch (err: any) {
-      console.error('[TipsScreen] Error fetching tips:', err);
-      setError(err.message);
-      Alert.alert('Error', 'Failed to fetch tips: ' + (err.message || 'Unknown error'));
+    } catch (err: unknown) {
+      const tipError = err as { message?: string };
+      logger.error('[TipsScreen] Error fetching tips:', tipError.message);
+      setError(tipError.message || 'Unknown error');
+      Alert.alert('Error', 'Failed to fetch tips: ' + (tipError.message || 'Unknown error'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -171,7 +171,7 @@ export const TipsScreen: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    console.log('[TipsScreen] useEffect running, calling fetchTips');
+    logger.log('[TipsScreen] useEffect running, calling fetchTips');
     fetchTips();
   }, [fetchTips]);
 

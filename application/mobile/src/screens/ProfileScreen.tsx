@@ -16,6 +16,7 @@ import { changeLanguage, LANGUAGES, isRTL } from '../i18n';
 import { I18nManager } from 'react-native';
 import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components/WasteFilterModal';
 import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
+import { logger } from '../utils/logger';
 
 // Chart config will be computed dynamically based on theme
 const getChartConfig = (colors: typeof defaultColors, isDarkMode: boolean) => ({
@@ -76,7 +77,7 @@ const ProfileMain: React.FC = () => {
     (async () => {
       const token = await storage.getToken();
       setAuthToken(token);
-      console.log('Auth token loaded');
+      logger.log('Auth token loaded');
     })();
   }, []);
 
@@ -86,7 +87,7 @@ const ProfileMain: React.FC = () => {
       const data = await profilePublicService.getUserBio(userData.username);
       setBio(data.bio || '');
     } catch (err) {
-      console.warn('Error fetching bio');
+      logger.warn('Error fetching bio');
     }
   }, [userData?.username]);
 
@@ -112,7 +113,7 @@ const ProfileMain: React.FC = () => {
         })));
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
       Alert.alert('Error', 'Failed to load profile data. Please pull to refresh.');
     } finally {
       setLoading(false);
@@ -155,13 +156,13 @@ const ProfileMain: React.FC = () => {
       });
 
       if (result.canceled) {
-        console.log('User cancelled image picker');
+        logger.log('User cancelled image picker');
         return;
       }
 
       const asset = result.assets[0];
       if (!asset?.uri) {
-        console.error('No image URI available');
+        logger.error('No image URI available');
         Alert.alert('Error', 'Could not obtain image URI');
         return;
       }
@@ -175,7 +176,7 @@ const ProfileMain: React.FC = () => {
       } as any);
 
       const uploadResponse = await profileService.uploadProfilePicture(formData);
-      console.log('Upload response:', JSON.stringify(uploadResponse, null, 2));
+      logger.log('Upload response received');
 
       // Force reload user data
       await fetchUserData();
@@ -185,12 +186,9 @@ const ProfileMain: React.FC = () => {
 
       await fetchData();
       Alert.alert('Success', 'Profile picture updated');
-    } catch (error: any) {
-      console.error('Upload error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+    } catch (error: unknown) {
+      const uploadError = error as { message?: string; response?: { data?: unknown; status?: number } };
+      logger.error('Upload error details:', uploadError.message);
       Alert.alert('Error', 'Could not upload profile picture');
     } finally {
       setUploading(false);
