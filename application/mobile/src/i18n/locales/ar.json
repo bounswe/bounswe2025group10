@@ -215,6 +215,24 @@
       "foodScraps": "بقايا طعام"
     }
   },
+  "activity": {
+    "title": "موجز النشاط",
+    "followingFeed": "المتابَعون",
+    "myActivity": "نشاطي",
+    "filterAll": "الكل",
+    "noFollowingActivity": "لا يوجد نشاط من المستخدمين المتابَعين",
+    "noOwnActivity": "لا يوجد نشاط بعد",
+    "followUsersHint": "تابع مستخدمين لرؤية نشاطهم هنا",
+    "startActivityHint": "سجل النفايات، انضم للتحديات",
+    "types": {
+      "all": "الكل",
+      "posts": "المنشورات",
+      "waste": "سجل نفايات",
+      "achievement": "إنجاز",
+      "challenge": "تحدي",
+      "follow": "متابعة"
+    }
+  },
   "filter": {
     "title": "تصفية البيانات",
     "timeRange": "النطاق الزمني",
