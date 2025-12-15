@@ -2,8 +2,9 @@ import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
-import {colors, spacing, typography} from '../utils/theme';
+import {spacing, typography} from '../utils/theme';
 import {MIN_TOUCH_TARGET} from '../utils/accessibility';
+import {useTheme} from '../context/ThemeContext';
 
 interface CustomTabBarProps {
   activeTab?: string;
@@ -21,6 +22,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
 }) => {
   const navigation = useNavigation();
   const {t} = useTranslation();
+  const {colors, isDarkMode} = useTheme();
 
   const tabs = [
     {key: 'Home', label: t('home.title'), screen: 'MainTabs'},
@@ -38,7 +40,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
   };
 
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { backgroundColor: colors.background, borderTopColor: colors.lightGray }]}>
       {tabs.map(tab => {
         const isActive = activeTab === tab.key;
         return (
@@ -53,6 +55,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
                 width: 24,
                 height: 24,
                 opacity: isActive ? 1 : 0.6,
+                tintColor: isDarkMode ? (isActive ? colors.primary : colors.textSecondary) : undefined,
               }}
               resizeMode="contain"
               accessibilityLabel={`${tab.label} tab`}
@@ -74,9 +77,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
     minHeight: 60,
     paddingBottom: spacing.sm,
     paddingTop: spacing.sm,

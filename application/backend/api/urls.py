@@ -4,6 +4,7 @@ from django.urls import path
 from api.invite import invite_views
 # Import JWT token views from rest_framework_simplejwt
 from .activities.views.user_activity_view import UserActivityEventsView
+from .activities.views.following_activity_view import FollowingActivityEventsView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from .login_and_signup import login_views
 from .report_system.report_views import ReportCreateView
@@ -196,6 +197,11 @@ urlpatterns = [
     # GET: Retrieve a specific user's achievements by username
     path("api/achievements/<str:username>/", achievement_views.get_user_achievements, name="get_user_achievements_by_username"),
 
+    # Notifications
+    path("api/notifications/", NotificationListView.as_view(), name="list-notifications"),
+    path("api/notifications/<int:notification_id>/read/", NotificationMarkReadView.as_view(), name="mark-notification-read"),
+    path("api/notifications/read-all/", NotificationMarkAllReadView.as_view(), name="mark-all-notifications-read"),
+
     # Badge System Endpoints
     # ----------------------------------------
     
@@ -225,6 +231,7 @@ urlpatterns = [
     #get activity events
     path("api/activity-events/", ActivityEventViewSet.as_view({'get': 'list'}), name="activity-event-list"),
     path("api/user-activity-events/", UserActivityEventsView.as_view(), name="user-activity-events"),
+    path("api/following-activity-events/", FollowingActivityEventsView.as_view(), name="following-activity-events"),
 
     path("api/invite/send/", invite_views.send_invitation_email, name="send_invitation_email"),
     

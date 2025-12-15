@@ -199,6 +199,10 @@ export const HomeScreen: React.FC = () => {
     navigateToScreen(SCREEN_NAMES.LEADERBOARD);
   };
 
+  const handleActivityFeedPress = () => {
+    navigateToScreen(SCREEN_NAMES.ACTIVITY_FEED);
+  };
+
   // fetch user waste totals
   const fetchWasteData = async () => {
     setLoadingWaste(true);
@@ -390,6 +394,7 @@ export const HomeScreen: React.FC = () => {
           onTipsPress={handleTipsPress}
           onAchievementsPress={handleAchievementsPress}
           onLeaderboardPress={handleLeaderboardPress}
+          onActivityFeedPress={handleActivityFeedPress}
           testID="home-more-dropdown"
         />
       }
