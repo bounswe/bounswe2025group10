@@ -81,3 +81,42 @@ yarn-error.log
 # Docker build outputs
 build-output/
 dist/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+*.expo-updates/
+
+# EAS Build
+.eas/
+
+# Jest
+.jest/
+jest-results/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.swp
+*.bak
+
+# APK/IPA builds
+*.apk
+!debug.apk
+
+# Bundle maps
+*.jsbundle.map
+*.bundle.map
+
+# React Native cache
+.react-native/
+
+# Watchman
+.watchmanconfig.bak
