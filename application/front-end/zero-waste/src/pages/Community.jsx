@@ -64,6 +64,7 @@ export default function Community() {
   const [shouldScrollToTop, setShouldScrollToTop] = useState(false);
   const [processingPosts, setProcessingPosts] = useState(new Set());
   const postsContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fetch posts on mount
   useEffect(() => {
@@ -624,14 +625,27 @@ export default function Community() {
                   <input
                     type="file"
                     accept="image/*"
+                    ref={fileInputRef}
                     onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
-                    style={{
-                      backgroundColor: currentTheme.background,
-                      borderColor: currentTheme.border,
-                      color: currentTheme.text
-                    }}
+                    className="hidden"
                   />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      style={{
+                        backgroundColor: currentTheme.hover,
+                        color: currentTheme.text,
+                        borderColor: currentTheme.border
+                      }}
+                    >
+                      {t('community.chooseFile', 'Choose File')}
+                    </button>
+                    <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+                      {newPost.image ? newPost.image.name : t('community.noFileSelected', 'No file selected')}
+                    </span>
+                  </div>
                 </div>
               </div>
 

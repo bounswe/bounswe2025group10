@@ -119,6 +119,8 @@
     "description": "Açıklama",
     "writeSomething": "Bir şeyler yazın...",
     "uploadImage": "Resim Yükle (isteğe bağlı)",
+    "chooseFile": "Dosya Seç",
+    "noFileSelected": "Dosya seçilmedi",
     "create": "Oluştur",
     "writeComment": "Yorum yazın...",
     "postComment": "Yorum Gönder",

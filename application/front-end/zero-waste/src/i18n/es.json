@@ -132,6 +132,8 @@
     "description": "Descripción",
     "writeSomething": "Escribe algo...",
     "uploadImage": "Subir imagen (opcional)",
+    "chooseFile": "Seleccionar archivo",
+    "noFileSelected": "Ningún archivo seleccionado",
     "create": "Crear",
     "writeComment": "Escribir un comentario...",
     "postComment": "Publicar comentario",
