@@ -373,6 +373,7 @@ export const challengeService = {
     description: string;
     target_amount: number;
     is_public: boolean;
+    deadline: string;
   }): Promise<any> => {
     const response = await api.post('/api/challenges/', data);
     return response.data;

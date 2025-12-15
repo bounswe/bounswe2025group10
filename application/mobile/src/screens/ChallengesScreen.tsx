@@ -16,16 +16,58 @@ interface Challenge {
   target_amount: number;
   current_progress: number;
   is_public: boolean;
+  deadline?: string; // ISO date string
   reward?: any;
   creator?: any;
   is_enrolled?: boolean;
 }
 
 interface UserChallenge {
-  id: number;
-  challenge: Challenge;
+  challenge: number; // challenge ID
   joined_date: string;
 }
+
+// Helper function to calculate days remaining
+const getDaysRemaining = (deadline: string): number => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const diffTime = deadlineDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+// Helper function to format deadline display
+const formatDeadline = (deadline: string): string => {
+  const daysRemaining = getDaysRemaining(deadline);
+  
+  if (daysRemaining < 0) {
+    return `Overdue by ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) !== 1 ? 's' : ''}`;
+  } else if (daysRemaining === 0) {
+    return 'Due today';
+  } else if (daysRemaining === 1) {
+    return 'Due tomorrow';
+  } else if (daysRemaining <= 7) {
+    return `${daysRemaining} days left`;
+  } else {
+    const date = new Date(deadline);
+    return `Due ${date.toLocaleDateString()}`;
+  }
+};
+
+// Helper function to get deadline urgency color
+const getDeadlineUrgencyColor = (deadline: string, colors: any): string => {
+  const daysRemaining = getDaysRemaining(deadline);
+  
+  if (daysRemaining < 0) {
+    return colors.error; // Overdue - red
+  } else if (daysRemaining <= 1) {
+    return colors.error; // Due today/tomorrow - red
+  } else if (daysRemaining <= 3) {
+    return colors.warning; // 1-3 days - yellow/orange
+  } else {
+    return colors.success; // > 3 days - green
+  }
+};
 
 export const ChallengesScreen = () => {
   const { t } = useTranslation();
@@ -39,6 +81,7 @@ export const ChallengesScreen = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   const fetchChallenges = useCallback(async () => {
@@ -83,7 +126,7 @@ export const ChallengesScreen = () => {
   }, [fetchChallenges]);
 
   const createChallenge = async () => {
-    if (!title || !description || !targetAmount) {
+    if (!title || !description || !targetAmount || !deadline) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -93,6 +136,7 @@ export const ChallengesScreen = () => {
         description,
         target_amount: parseFloat(targetAmount),
         is_public: isPublic,
+        deadline,
       });
       setTitle('');
       setDescription('');
@@ -119,9 +163,9 @@ export const ChallengesScreen = () => {
   const leaveChallenge = async (challengeId: number) => {
     try {
       // Find the UserChallenge record to delete
-      const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge.id === challengeId);
+      const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge === challengeId);
       if (enrolledChallenge) {
-        await challengeService.leaveChallenge(enrolledChallenge.id);
+        await challengeService.leaveChallenge(enrolledChallenge.challenge);
         fetchChallenges();
         Alert.alert('Success', 'Successfully left the challenge!');
       }
@@ -150,7 +194,7 @@ export const ChallengesScreen = () => {
 
   const filteredChallenges = showEnrolledOnly 
     ? enrolledChallenges
-        .filter(uc => uc.challenge) // Filter out any null/undefined challenges
+        .filter(uc => challenges.some(c => c.id === uc.challenge)) // Filter out any null/undefined challenges
         .map(uc => {
           const challengeId = uc.challenge as unknown as number;
           console.log('Processing enrolled challenge ID:', challengeId);
@@ -219,8 +263,21 @@ export const ChallengesScreen = () => {
         <View style={styles.challengeFooter}>
           <View style={styles.challengeInfo}>
             <Text style={[styles.challengeType, { color: colors.textSecondary }]}>
-              {item.is_public === true ? '🌍 ' + t('challenges.join') : '🔒 ' + t('challenges.leave')}
+              {item.is_public === true ? '🌍 Public' : '🔒 Private'}
             </Text>
+            {item.deadline && (
+              <View style={styles.deadlineContainer}>
+                <Text style={styles.deadlineIcon}>⏰</Text>
+                <Text 
+                  style={[
+                    styles.deadlineText, 
+                    { color: getDeadlineUrgencyColor(item.deadline, colors) }
+                  ]}
+                >
+                  {formatDeadline(item.deadline)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <TouchableOpacity
@@ -231,9 +288,10 @@ export const ChallengesScreen = () => {
                 : [styles.joinButton, { backgroundColor: colors.primary }]
             ]}
             onPress={() => item.is_enrolled === true
-              ? leaveChallenge(item.id)
+              ? null
               : joinChallenge(item.id)
             }
+            disabled={item.is_enrolled === true}
           >
             <Text style={[
               styles.actionButtonText,
@@ -241,7 +299,7 @@ export const ChallengesScreen = () => {
                 ? [styles.leaveButtonText, { color: colors.textSecondary }]
                 : [styles.joinButtonText, { color: colors.textOnPrimary }]
             ]}>
-              {item.is_enrolled === true ? t('challenges.completed') : t('challenges.join')}
+              {item.is_enrolled === true ? 'Already Joined' : t('challenges.join')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -288,6 +346,8 @@ export const ChallengesScreen = () => {
           renderItem={renderChallengeCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
 
@@ -353,9 +413,21 @@ export const ChallengesScreen = () => {
                 />
               </View>
 
+              {/* Deadline */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>{t('challenges.endDate')}</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.lightGray, color: colors.textPrimary }]}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textSecondary}
+                  value={deadline}
+                  onChangeText={setDeadline}
+                />
+              </View>
+
               {/* Public Toggle */}
               <View style={styles.publicToggle}>
-                <Text style={[styles.publicLabel, { color: colors.textPrimary }]}>{t('challenges.join')}</Text>
+                <Text style={[styles.publicLabel, { color: colors.textPrimary }]}>{t('challenges.public')}</Text>
                 <Switch
                   value={isPublic}
                   onValueChange={setIsPublic}
@@ -479,6 +551,19 @@ const styles = StyleSheet.create({
   challengeType: {
     ...typography.caption,
     color: defaultColors.gray,
+  },
+  deadlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  deadlineIcon: {
+    fontSize: 14,
+    marginRight: spacing.xs,
+  },
+  deadlineText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   actionButton: {
     paddingHorizontal: spacing.md,
