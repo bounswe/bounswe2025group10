@@ -16,6 +16,7 @@ interface Challenge {
   target_amount: number;
   current_progress: number;
   is_public: boolean;
+  deadline?: string; // ISO date string
   reward?: any;
   creator?: any;
   is_enrolled?: boolean;
@@ -25,6 +26,48 @@ interface UserChallenge {
   challenge: number; // challenge ID
   joined_date: string;
 }
+
+// Helper function to calculate days remaining
+const getDaysRemaining = (deadline: string): number => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const diffTime = deadlineDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+// Helper function to format deadline display
+const formatDeadline = (deadline: string): string => {
+  const daysRemaining = getDaysRemaining(deadline);
+  
+  if (daysRemaining < 0) {
+    return `Overdue by ${Math.abs(daysRemaining)} day${Math.abs(daysRemaining) !== 1 ? 's' : ''}`;
+  } else if (daysRemaining === 0) {
+    return 'Due today';
+  } else if (daysRemaining === 1) {
+    return 'Due tomorrow';
+  } else if (daysRemaining <= 7) {
+    return `${daysRemaining} days left`;
+  } else {
+    const date = new Date(deadline);
+    return `Due ${date.toLocaleDateString()}`;
+  }
+};
+
+// Helper function to get deadline urgency color
+const getDeadlineUrgencyColor = (deadline: string, colors: any): string => {
+  const daysRemaining = getDaysRemaining(deadline);
+  
+  if (daysRemaining < 0) {
+    return colors.error; // Overdue - red
+  } else if (daysRemaining <= 1) {
+    return colors.error; // Due today/tomorrow - red
+  } else if (daysRemaining <= 3) {
+    return colors.warning; // 1-3 days - yellow/orange
+  } else {
+    return colors.success; // > 3 days - green
+  }
+};
 
 export const ChallengesScreen = () => {
   const { t } = useTranslation();
@@ -222,6 +265,19 @@ export const ChallengesScreen = () => {
             <Text style={[styles.challengeType, { color: colors.textSecondary }]}>
               {item.is_public === true ? '🌍 Public' : '🔒 Private'}
             </Text>
+            {item.deadline && (
+              <View style={styles.deadlineContainer}>
+                <Text style={styles.deadlineIcon}>⏰</Text>
+                <Text 
+                  style={[
+                    styles.deadlineText, 
+                    { color: getDeadlineUrgencyColor(item.deadline, colors) }
+                  ]}
+                >
+                  {formatDeadline(item.deadline)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <TouchableOpacity
@@ -495,6 +551,19 @@ const styles = StyleSheet.create({
   challengeType: {
     ...typography.caption,
     color: defaultColors.gray,
+  },
+  deadlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  deadlineIcon: {
+    fontSize: 14,
+    marginRight: spacing.xs,
+  },
+  deadlineText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   actionButton: {
     paddingHorizontal: spacing.md,
