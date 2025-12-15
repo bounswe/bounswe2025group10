@@ -7,6 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import generics
 from django.conf import settings
 from django.http import FileResponse
+from django.http import HttpResponseRedirect
 from datetime import datetime
 import mimetypes
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
@@ -117,7 +118,6 @@ def upload_profile_picture(request):
         request.user.save(update_fields=['profile_image'])
         
         # Build absolute HTTPS URL for profile picture
-        from django.conf import settings
         profile_picture_url = None
         if request.user.profile_image:
             if request.user.profile_image.startswith(('http://', 'https://')):
@@ -480,7 +480,10 @@ class AccountDeletionCancelByTokenView(generics.GenericAPIView):
 
 @extend_schema(
     summary="Download user profile picture",
-    description="Download the profile picture file for a specific user. Returns the actual image file (JPEG/PNG) as binary data with appropriate content-type headers. Use this endpoint to retrieve and display profile pictures.",
+    description=(
+        "Download the profile picture for a specific user. If the stored `profile_image` is an external URL, "
+        "this endpoint redirects (302) to that URL. Otherwise, it streams the file from MEDIA_ROOT."
+    ),
     parameters=[
         OpenApiParameter(
             name='username',
@@ -495,6 +498,9 @@ class AccountDeletionCancelByTokenView(generics.GenericAPIView):
             response={'type': 'string', 'format': 'binary'},
             description="Profile picture file (binary image data with content-type: image/jpeg or image/png)"
         ),
+        302: OpenApiResponse(
+            description="Redirect to external profile picture URL (Location header)"
+        ),
         404: OpenApiResponse(
             description="User not found or no profile picture available",
             examples=[
@@ -505,6 +511,10 @@ class AccountDeletionCancelByTokenView(generics.GenericAPIView):
                 OpenApiExample(
                     'No profile picture',
                     value={'error': 'No profile picture found.'}
+                ),
+                OpenApiExample(
+                    'Missing file on server',
+                    value={'error': 'Profile picture not found on server.'}
                 )
             ]
         )
@@ -525,12 +535,30 @@ def download_profile_picture_public(request, username):
     if not user.profile_image:
         return Response({'error': 'No profile picture found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    file_path = os.path.join(settings.MEDIA_ROOT, user.profile_image)
+    # If profile_image is an external URL (e.g., seeded mock data), redirect to it.
+    if user.profile_image.startswith(('http://', 'https://')):
+        return HttpResponseRedirect(user.profile_image)
+
+    # Normalize relative path (handle "/media/..." or leading "/")
+    rel_path = user.profile_image
+    media_url = getattr(settings, "MEDIA_URL", "/media/")
+    if rel_path.startswith(media_url):
+        rel_path = rel_path[len(media_url):]
+    rel_path = rel_path.lstrip("/\\")
+
+    media_root = os.path.abspath(os.fspath(settings.MEDIA_ROOT))
+    file_path = os.path.abspath(os.path.normpath(os.path.join(media_root, rel_path)))
+    if not file_path.startswith(media_root + os.sep) and file_path != media_root:
+        return Response({'error': 'Invalid profile picture path.'}, status=status.HTTP_404_NOT_FOUND)
+
     if not os.path.exists(file_path):
         return Response({'error': 'Profile picture not found on server.'}, status=status.HTTP_404_NOT_FOUND)
 
     content_type, _ = mimetypes.guess_type(file_path)
-    response = FileResponse(open(file_path, 'rb'),
-                            content_type=content_type or 'application/octet-stream')
+    try:
+        response = FileResponse(open(file_path, 'rb'),
+                                content_type=content_type or 'application/octet-stream')
+    except OSError:
+        return Response({'error': 'Profile picture not found on server.'}, status=status.HTTP_404_NOT_FOUND)
     response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
     return response
