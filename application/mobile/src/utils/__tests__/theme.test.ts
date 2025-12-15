@@ -85,15 +85,15 @@ describe('theme utility', () => {
     });
 
     it('should have decreasing font sizes for headings', () => {
-      expect(typography.h1.fontSize).toBeGreaterThan(typography.h2.fontSize);
-      expect(typography.h2.fontSize).toBeGreaterThan(typography.h3.fontSize);
+      expect(typography.h1.fontSize).toBeGreaterThan(typography.h2.fontSize!);
+      expect(typography.h2.fontSize).toBeGreaterThan(typography.h3.fontSize!);
     });
 
     it('should have consistent line height ratio', () => {
       // Line height should be proportional to font size
-      const h1Ratio = typography.h1.lineHeight / typography.h1.fontSize;
-      const h2Ratio = typography.h2.lineHeight / typography.h2.fontSize;
-      const bodyRatio = typography.body.lineHeight / typography.body.fontSize;
+      const h1Ratio = typography.h1.lineHeight! / typography.h1.fontSize!;
+      const h2Ratio = typography.h2.lineHeight! / typography.h2.fontSize!;
+      const bodyRatio = typography.body.lineHeight! / typography.body.fontSize!;
       
       expect(h1Ratio).toBeCloseTo(1.25, 1);
       expect(h2Ratio).toBeCloseTo(1.33, 1);

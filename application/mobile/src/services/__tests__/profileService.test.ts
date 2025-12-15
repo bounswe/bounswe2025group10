@@ -234,11 +234,11 @@ describe('Follow/Unfollow Logic', () => {
     });
 
     it('should detect other profile correctly', () => {
-      const currentUsername = 'myuser';
-      const profileUsername = 'otheruser';
-      
+      const currentUsername: string = 'myuser';
+      const profileUsername: string = 'otheruser';
+
       const isOwnProfile = currentUsername === profileUsername;
-      
+
       expect(isOwnProfile).toBe(false);
     });
   });

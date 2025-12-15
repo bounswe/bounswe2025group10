@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { ActivityIndicator } from 'react-native';
 import { LeaderboardScreen } from '../LeaderboardScreen';
 import { leaderboardService } from '../../services/api';
 
@@ -71,7 +72,7 @@ describe('LeaderboardScreen', () => {
 
     const { UNSAFE_getByType } = render(<LeaderboardScreen />);
 
-    const indicator = UNSAFE_getByType('ActivityIndicator');
+    const indicator = UNSAFE_getByType(ActivityIndicator);
     expect(indicator).toBeTruthy();
   });
 

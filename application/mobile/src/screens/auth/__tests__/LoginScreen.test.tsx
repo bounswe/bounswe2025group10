@@ -311,13 +311,15 @@ describe('LoginScreen', () => {
     );
 
     const signupLink = getByText(/Sign up/);
-    fireEvent.press(signupLink.parent);
+    if (signupLink.parent) {
+      fireEvent.press(signupLink.parent);
+    }
 
     expect(mockNavigate).toHaveBeenCalledWith('Signup');
   });
 
   it('should disable login button while loading', async () => {
-    let resolveLogin;
+    let resolveLogin: ((value: unknown) => void) | undefined;
     authService.login.mockImplementation(
       () => new Promise((resolve) => { resolveLogin = resolve; })
     );
@@ -328,7 +330,7 @@ describe('LoginScreen', () => {
 
     const emailInput = getByPlaceholderText('Email');
     const passwordInput = getByPlaceholderText('Password');
-    
+
     fireEvent.changeText(emailInput, 'test@example.com');
     fireEvent.changeText(passwordInput, 'password123');
 

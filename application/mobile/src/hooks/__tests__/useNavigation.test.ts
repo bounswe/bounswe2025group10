@@ -32,7 +32,7 @@ describe('useAppNavigation', () => {
 
     it('should navigate to a screen with params', () => {
       const { result } = renderHook(() => useAppNavigation());
-      const params = { userId: 123 };
+      const params = { username: 'testuser' };
 
       result.current.navigateToScreen(SCREEN_NAMES.OTHER_PROFILE, params);
 
@@ -87,13 +87,13 @@ describe('useAppNavigation', () => {
 
     it('should reset navigation to a screen with params', () => {
       const { result } = renderHook(() => useAppNavigation());
-      const params = { resetToken: 'abc123' };
+      const params = { username: 'testuser' };
 
-      result.current.resetToScreen(SCREEN_NAMES.LOGIN, params);
+      result.current.resetToScreen(SCREEN_NAMES.OTHER_PROFILE, params);
 
       expect(mockReset).toHaveBeenCalledWith({
         index: 0,
-        routes: [{ name: SCREEN_NAMES.LOGIN, params }],
+        routes: [{ name: SCREEN_NAMES.OTHER_PROFILE, params }],
       });
     });
   });

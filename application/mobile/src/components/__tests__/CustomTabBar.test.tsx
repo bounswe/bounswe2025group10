@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { Image } from 'react-native';
 import { CustomTabBar } from '../CustomTabBar';
 
 // Mock navigation
@@ -109,7 +110,7 @@ describe('CustomTabBar', () => {
     const { UNSAFE_getAllByType } = render(<CustomTabBar />);
 
     // Should render 4 Image components for icons
-    const images = UNSAFE_getAllByType('Image');
+    const images = UNSAFE_getAllByType(Image);
     expect(images.length).toBe(4);
   });
 });

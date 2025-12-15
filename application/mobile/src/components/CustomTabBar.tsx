@@ -1,12 +1,18 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, NavigationProp, ParamListBase} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {colors, spacing, typography} from '../utils/theme';
 import {MIN_TOUCH_TARGET} from '../utils/accessibility';
 
 interface CustomTabBarProps {
   activeTab?: string;
+}
+
+interface TabItem {
+  key: string;
+  label: string;
+  screen: string;
 }
 
 const iconMap: Record<string, any> = {
@@ -19,17 +25,17 @@ const iconMap: Record<string, any> = {
 export const CustomTabBar: React.FC<CustomTabBarProps> = ({
   activeTab = 'Tips',
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const {t} = useTranslation();
 
-  const tabs = [
+  const tabs: TabItem[] = [
     {key: 'Home', label: t('home.title'), screen: 'MainTabs'},
     {key: 'Community', label: t('community.title'), screen: 'MainTabs'},
     {key: 'Challenges', label: t('challenges.title'), screen: 'MainTabs'},
     {key: 'Profile', label: t('profile.title'), screen: 'MainTabs'},
   ];
 
-  const handleTabPress = (tab: any) => {
+  const handleTabPress = (tab: TabItem) => {
     if (tab.screen === 'MainTabs') {
       navigation.navigate('MainTabs', {screen: tab.key});
     } else {
