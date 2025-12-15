@@ -58,7 +58,7 @@
     "enterReason": "Entrez la raison...",
     "description": "Description",
     "enterDescription": "Entrez la description...",
-    "loginRequired": "Veuillez vous connecter pour signaler",
+    "loginRequired": "Veuillez vous connecter pour continuer",
     "notifications": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "noNotifications": "Pas de notifications"
@@ -249,7 +249,13 @@
     "earned": "Obtenue",
     "profileImageAlt": "Image de profil",
     "yourPosts": "Vos Publications",
-    "noPosts": "Aucune publication pour le moment"
+    "noPosts": "Aucune publication pour le moment",
+    "followers": "Abonnés",
+    "following": "Abonnements",
+    "follow": "Suivre",
+    "unfollow": "Ne plus suivre",
+    "followed": "Suivi avec succès",
+    "unfollowed": "Abonnement annulé avec succès"
   },
   "wasteHelper": {
     "title": "Ajouter un Déchet",

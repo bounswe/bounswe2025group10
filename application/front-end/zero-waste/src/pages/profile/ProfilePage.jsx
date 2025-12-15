@@ -1,6 +1,7 @@
 // src/pages/profile/ProfilePage.jsx
 import React, { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom"; 
 import Navbar from "../../components/layout/Navbar";
 import { useAuth } from "../../providers/AuthContext";
 import { useTheme } from "../../providers/ThemeContext";
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   const { token, username, logout } = useAuth();
   const { currentTheme } = useTheme();
   const { t } = useLanguage();
+  const navigate = useNavigate(); 
 
   // State
   const [profile, setProfile] = useState(null);
@@ -32,6 +34,12 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_PROFILE_IMAGE);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Following Modal State
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [followingList, setFollowingList] = useState([]);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
+
   const fileInputRef = useRef(null);
 
   // Fetch profile and posts on mount
@@ -39,6 +47,7 @@ export default function ProfilePage() {
     if (token && username) {
       loadProfile();
       loadPosts();
+      loadFollowStats(); // Fetch stats on load
     }
   }, [token, username]);
 
@@ -81,6 +90,36 @@ export default function ProfilePage() {
       setPosts([]);
     } finally {
       setPostsLoading(false);
+    }
+  };
+
+  // Load Follow Stats (Count)
+  const loadFollowStats = async () => {
+    try {
+      const data = await profileService.getFollowing(username, token);
+      if (data && data.data) {
+        setFollowingCount(data.data.following_count);
+      }
+    } catch (error) {
+      console.error("Failed to load follow stats", error);
+    }
+  };
+
+  // Handle Opening Following Modal
+  const handleOpenFollowing = async () => {
+    setShowFollowingModal(true);
+    setLoadingFollowing(true);
+    try {
+      const data = await profileService.getFollowing(username, token);
+      if (data && data.data && data.data.following) {
+        setFollowingList(data.data.following);
+        setFollowingCount(data.data.following_count); // Update count to be sure
+      }
+    } catch (error) {
+      console.error("Failed to load following list", error);
+      showToast(t('common.error', 'Failed to load following list'), "error");
+    } finally {
+      setLoadingFollowing(false);
     }
   };
 
@@ -170,6 +209,18 @@ export default function ProfilePage() {
                 </button>
               </div>
 
+              {/* Following Count Button */}
+              <div className="flex items-center gap-4">
+                 <button 
+                    onClick={handleOpenFollowing}
+                    className="flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-opacity"
+                    style={{ color: currentTheme.text }}
+                 >
+                    <span className="font-bold text-lg">{followingCount}</span>
+                    <span className="opacity-80">{t('profile.following', 'Following')}</span>
+                 </button>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium opacity-70" style={{ color: currentTheme.text }}>
                   {t('profile.bio', 'Bio')}
@@ -237,6 +288,84 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/*Following List Modal */}
+        <AnimatePresence>
+          {showFollowingModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              onClick={() => setShowFollowingModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-md rounded-2xl border shadow-xl p-6 max-h-[80vh] flex flex-col"
+                style={{
+                  backgroundColor: currentTheme.background,
+                  borderColor: currentTheme.border
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold" style={{ color: currentTheme.text }}>
+                    {t('profile.following', 'Following')}
+                  </h2>
+                  <button 
+                    onClick={() => setShowFollowingModal(false)}
+                    className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+                  {loadingFollowing ? (
+                    <div className="flex justify-center py-8">
+                       <div className="h-8 w-8 animate-spin rounded-full border-b-2" style={{ borderColor: currentTheme.secondary }}></div>
+                    </div>
+                  ) : followingList.length === 0 ? (
+                    <p className="text-center opacity-60 py-4" style={{ color: currentTheme.text }}>
+                      {t('profile.noFollowing', 'You are not following anyone yet.')}
+                    </p>
+                  ) : (
+                    followingList.map((user) => (
+                      <div 
+                        key={user.id} 
+                        className="flex items-center gap-3 p-3 rounded-xl border hover:opacity-80 transition-all cursor-pointer"
+                        style={{ borderColor: currentTheme.border, backgroundColor: currentTheme.background }}
+                        onClick={() => navigate(`/profile/${user.username}`)}
+                      >
+                        <img 
+                          src={user.profile_image || DEFAULT_PROFILE_IMAGE} 
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full object-cover border"
+                          style={{ borderColor: currentTheme.border }}
+                          onError={(e) => e.target.src = DEFAULT_PROFILE_IMAGE}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate" style={{ color: currentTheme.text }}>
+                            {user.username}
+                          </h4>
+                          {user.bio && (
+                             <p className="text-xs truncate opacity-70" style={{ color: currentTheme.text }}>
+                               {user.bio}
+                             </p>
+                          )}
+                        </div>
+                        <span className="text-lg opacity-40">›</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </motion.main>
     </Navbar>
   );

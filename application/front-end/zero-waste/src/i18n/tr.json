@@ -48,7 +48,7 @@
     "enterReason": "Sebep girin...",
     "description": "Açıklama",
     "enterDescription": "Açıklama girin...",
-    "loginRequired": "Bildirmek için lütfen giriş yapın",
+    "loginRequired": "Bu işlemi yapmak için lütfen giriş yapın",
     "notifications": "Bildirimler",
     "markAllRead": "Tümünü okundu işaretle",
     "noNotifications": "Bildirim yok"
@@ -240,7 +240,13 @@
     "yourPosts": "Gönderileriniz",
     "noPosts": "Henüz gönderi yok.",
     "earned": "Kazanıldı",
-    "profileImageAlt": "Profil resmi"
+    "profileImageAlt": "Profil resmi",
+    "followers": "Takipçi",
+    "following": "Takip Edilen",
+    "follow": "Takip Et",
+    "unfollow": "Takibi Bırak",
+    "followed": "Başarıyla takip edildi",
+    "unfollowed": "Takip başarıyla bırakıldı"
   },
   "wasteHelper": {
     "title": "Atık Ekle",

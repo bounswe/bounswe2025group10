@@ -77,5 +77,84 @@ export const profileService = {
     }
 
     return { success: true };
+  },
+
+  // Follow a user
+  followUser: async (username, token) => {
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/follow/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to follow user');
+    }
+    return await response.json();
+  },
+
+  // Unfollow a user
+  unfollowUser: async (username, token) => {
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/unfollow/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to unfollow user');
+    }
+    return await response.json();
+  },
+
+  // Check follow status and get counts
+  getFollowStatus: async (username, token) => {
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/follow-status/`, {
+      headers
+    });
+    
+    if (!response.ok) return null;
+    return await response.json();
+  },
+
+  // NEW: Get list of users following a profile
+  getFollowers: async (username, token) => {
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/followers/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch followers');
+    }
+    return await response.json();
+  },
+
+  // NEW: Get list of users a profile is following
+  getFollowing: async (username, token) => {
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/following/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch following list');
+    }
+    return await response.json();
   }
 };

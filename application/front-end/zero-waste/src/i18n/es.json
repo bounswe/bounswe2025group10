@@ -48,7 +48,7 @@
     "enterReason": "Ingrese la razón...",
     "description": "Descripción",
     "enterDescription": "Ingrese la descripción...",
-    "loginRequired": "Por favor inicie sesión para reportar",
+    "loginRequired": "Por favor inicie sesión para continuar",
     "notifications": "Notificaciones",
     "markAllRead": "Marcar todo como leído",
     "noNotifications": "No hay notificaciones"
@@ -238,7 +238,13 @@
     "earned": "Obtenido",
     "profileImageAlt": "Imagen de perfil",
     "yourPosts": "Tus Publicaciones",
-    "noPosts": "Aún no hay publicaciones"
+    "noPosts": "Aún no hay publicaciones",
+    "followers": "Seguidores",
+    "following": "Siguiendo",
+    "follow": "Seguir",
+    "unfollow": "Dejar de seguir",
+    "followed": "Seguido exitosamente",
+    "unfollowed": "Dejado de seguir exitosamente"
   },
   "wasteHelper": {
     "title": "Agregar Residuo",

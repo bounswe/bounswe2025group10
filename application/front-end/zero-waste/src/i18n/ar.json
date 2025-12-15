@@ -57,7 +57,7 @@
     "enterReason": "أدخل السبب...",
     "description": "الوصف",
     "enterDescription": "أدخل الوصف...",
-    "loginRequired": "يرجى تسجيل الدخول للإبلاغ",
+    "loginRequired": "يرجى تسجيل الدخول للمتابعة",
     "notifications": "إشعارات",
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات"
@@ -249,7 +249,13 @@
     "yourPosts": "منشوراتك",
     "noPosts": "لا توجد منشورات بعد.",
     "earned": "تم الحصول عليها",
-    "profileImageAlt": "صورة الملف الشخصي"
+    "profileImageAlt": "صورة الملف الشخصي",
+    "followers": "المتابعين",
+    "following": "تتابعهم",
+    "follow": "متابعة",
+    "unfollow": "إلغاء المتابعة",
+    "followed": "تمت المتابعة بنجاح",
+    "unfollowed": "تم إلغاء المتابعة بنجاح"
   },
   "wasteHelper": {
     "title": "إضافة نفايات",
