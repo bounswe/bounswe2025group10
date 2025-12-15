@@ -253,8 +253,19 @@ def get_all_posts(request):
         paginated_posts = paginator.paginate_queryset(posts, request)
         serializer = PostSerializer(paginated_posts, many=True, context={'request': request})
         
-        # Return paginated response
-        return paginator.get_paginated_response(serializer.data)
+        # Provide unified response shape expected by tests/clients
+        pagination_meta = {
+            'count': paginator.page.paginator.count if hasattr(paginator, 'page') else len(posts),
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'page_size': paginator.page_size,
+        }
+
+        return Response({
+            'message': 'Posts retrieved successfully',
+            'data': serializer.data,
+            'pagination': pagination_meta
+        }, status=status.HTTP_200_OK)
     
     except Exception as e:
         return Response(
