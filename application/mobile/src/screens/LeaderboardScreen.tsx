@@ -12,27 +12,13 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { leaderboardService, getProfilePictureUrl } from '../services/api';
+import { leaderboardService, getProfilePictureUrl, LeaderboardUser, UserBio } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
-
-interface LeaderboardUser {
-  rank: number;
-  username: string;
-  total_waste: string;
-  points: number;
-  profile_picture?: string;
-  isCurrentUser?: boolean;
-}
-
-interface UserBio {
-  username: string;
-  bio?: string;
-}
 
 export const LeaderboardScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -302,7 +288,7 @@ export const LeaderboardScreen: React.FC = () => {
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>{t('leaderboard.failedToLoad')}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderboard}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchLeaderboard()}>
             <Text style={styles.retryButtonText}>{t('leaderboard.retry')}</Text>
           </TouchableOpacity>
         </View>

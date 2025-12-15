@@ -11,26 +11,13 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { achievementService } from '../services/api';
+import { achievementService, UserAchievement } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
-
-interface Achievement {
-  id: number;
-  title: string;
-  description: string;
-  icon?: string;
-}
-
-interface UserAchievement {
-  id: number;
-  achievement: Achievement;
-  earned_at: string;
-}
 
 export const AchievementsScreen: React.FC = () => {
   const { t } = useTranslation();

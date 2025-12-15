@@ -171,9 +171,14 @@ const ProfileMain: React.FC = () => {
         achievementService.getUserAchievements(),
       ]);
 
-      // Handle waste data
+      // Handle waste data - map WasteEntry to WasteDataItem
       if (wasteResponse.message === 'User wastes retrieved successfully') {
-        setWasteData(wasteResponse.data);
+        const mappedData: WasteDataItem[] = wasteResponse.data.map(entry => ({
+          waste_type: entry.waste_type,
+          total_amount: entry.total_amount,
+          records: [],
+        }));
+        setWasteData(mappedData);
       }
 
       // Handle challenges/achievements data

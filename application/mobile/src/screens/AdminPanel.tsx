@@ -15,35 +15,17 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
-import { adminService } from '../services/api';
+import { adminService, Report } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
-
-interface ReportItem {
-  id: number;
-  content_type: string;
-  reason: string;
-  description: string;
-  created_at: string;
-  reporter: {
-    username: string;
-  };
-  content: {
-    id: number;
-    title?: string;
-    content?: string;
-    username?: string;
-    profile_picture?: string;
-  };
-}
 
 export const AdminPanel: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
-  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +45,7 @@ export const AdminPanel: React.FC = () => {
       logger.error('Error fetching reports:', err);
       
       // Fallback to mock data for development
-      const mockReports: ReportItem[] = [
+      const mockReports: Report[] = [
         {
           id: 1,
           content_type: 'posts',
@@ -127,7 +109,7 @@ export const AdminPanel: React.FC = () => {
     );
   };
 
-  const renderReportItem = ({ item }: { item: ReportItem }) => (
+  const renderReportItem = ({ item }: { item: Report }) => (
     <View style={styles.reportCard}>
       <View style={styles.reportHeader}>
         <Text style={styles.reportType}>{item.content_type.toUpperCase()}</Text>

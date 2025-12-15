@@ -4,30 +4,12 @@ import {
 } from 'react-native';
 import { colors as defaultColors, spacing, typography, commonStyles, ThemeColors } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { challengeService } from '../services/api';
+import { challengeService, Challenge, UserChallenge } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/errors';
-
-interface Challenge {
-  id: number;
-  title: string;
-  description: string;
-  target_amount: number;
-  current_progress: number;
-  is_public: boolean;
-  deadline?: string; // ISO date string
-  reward?: { id: number; title?: string; points?: number };
-  creator?: { id: number; username: string };
-  is_enrolled?: boolean;
-}
-
-interface UserChallenge {
-  challenge: number; // challenge ID
-  joined_date: string;
-}
 
 // Helper function to calculate days remaining
 const getDaysRemaining = (deadline: string): number => {

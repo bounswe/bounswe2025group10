@@ -206,7 +206,13 @@ export const HomeScreen: React.FC = () => {
     setLoadingWaste(true);
     try {
       const response = await wasteService.getUserWastes();
-      setWasteData(response.data);
+      // Map WasteEntry to WasteDataItem with empty records array for filtering support
+      const mappedData: WasteDataItem[] = response.data.map(entry => ({
+        waste_type: entry.waste_type,
+        total_amount: entry.total_amount,
+        records: [], // No individual records from this endpoint
+      }));
+      setWasteData(mappedData);
     } catch (err) {
       logger.error('Error fetching waste data:', err);
       Alert.alert(t('common.error'), getErrorMessage(err));

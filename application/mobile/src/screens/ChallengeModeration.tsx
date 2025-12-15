@@ -14,39 +14,17 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
-import { adminService } from '../services/api';
+import { adminService, Report } from '../services/api';
 import { logger } from '../utils/logger';
-
-interface ChallengeReport {
-  id: number;
-  content_type: string;
-  reason: string;
-  description: string;
-  created_at: string;
-  reporter: {
-    username: string;
-  };
-  content: {
-    id: number;
-    title: string;
-    description: string;
-    creator: string;
-    target_amount: number;
-    current_progress: number;
-    is_public: boolean;
-    created_at: string;
-    participants_count: number;
-  };
-}
 
 export const ChallengeModeration: React.FC = () => {
   const navigation = useNavigation();
-  const [reports, setReports] = useState<ChallengeReport[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchChallengeReports = useCallback(async () => {
+  const fetchReports = useCallback(async () => {
     if (!refreshing) setLoading(true);
     setError(null);
 
@@ -60,7 +38,7 @@ export const ChallengeModeration: React.FC = () => {
       logger.error('Error fetching challenge reports:', err);
       
       // Fallback to mock data for development
-      const mockReports: ChallengeReport[] = [
+      const mockReports: Report[] = [
         {
           id: 1,
           content_type: 'challenges',
@@ -109,27 +87,29 @@ export const ChallengeModeration: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchChallengeReports();
-  }, [fetchChallengeReports]);
+    await fetchReports();
+  }, [fetchReports]);
 
   useEffect(() => {
-    fetchChallengeReports();
-  }, [fetchChallengeReports]);
+    fetchReports();
+  }, [fetchReports]);
 
   const handleModerate = async (reportId: number, action: string) => {
     try {
       await adminService.moderateContent(reportId, action);
       Alert.alert('Success', `Challenge ${action} successfully`);
-      fetchChallengeReports();
+      fetchReports();
     } catch (error) {
       logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate challenge');
     }
   };
 
-  const renderChallengeReport = ({ item }: { item: ChallengeReport }) => {
-    const progressPercentage = item.content.target_amount > 0 
-      ? Math.min((item.content.current_progress / item.content.target_amount) * 100, 100)
+  const renderReport = ({ item }: { item: Report }) => {
+    const targetAmount = item.content.target_amount ?? 0;
+    const currentProgress = item.content.current_progress ?? 0;
+    const progressPercentage = targetAmount > 0
+      ? Math.min((currentProgress / targetAmount) * 100, 100)
       : 0;
 
     return (
@@ -250,7 +230,7 @@ export const ChallengeModeration: React.FC = () => {
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>Failed to load challenge reports</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchChallengeReports}>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchReports}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -260,7 +240,7 @@ export const ChallengeModeration: React.FC = () => {
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderChallengeReport}
+          renderItem={renderReport}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
           refreshControl={

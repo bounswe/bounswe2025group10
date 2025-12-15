@@ -47,6 +47,7 @@ export interface WasteEntry {
 }
 
 export interface WasteResponse {
+  message?: string;
   data: WasteEntry[];
 }
 
@@ -73,23 +74,21 @@ export interface TipsResponse {
 }
 
 // Achievements
-export interface Achievement {
+export interface AchievementDetails {
   id: number;
-  title?: string;
-  description?: string;
-  progress?: number;
-  completed?: boolean;
-  achievement?: {
-    id: number;
-    title: string;
-    description: string;
-    icon?: string | null;
-  };
-  earned_at?: string;
+  title: string;
+  description: string;
+  icon?: string | null;
+}
+
+export interface UserAchievement {
+  id: number;
+  achievement: AchievementDetails;
+  earned_at: string;
 }
 
 export interface AchievementsData {
-  achievements: Achievement[];
+  achievements: UserAchievement[];
 }
 
 export interface AchievementsResponse {
@@ -126,7 +125,9 @@ export interface Post {
   text?: string;
   image?: string;
   image_url?: string;
+  date?: string;
   creator_username: string;
+  creator_profile_image?: string;
   like_count: number;
   dislike_count: number;
   is_user_liked?: boolean;
@@ -141,8 +142,11 @@ export interface PostsResponse {
 export interface Comment {
   id: number;
   content: string;
-  author_username: string;
   date: string;
+  post?: number;
+  author?: number;
+  author_username: string;
+  author_profile_image?: string;
 }
 
 export interface CommentsResponse {
@@ -155,22 +159,29 @@ export interface Challenge {
   title: string;
   description: string;
   target_amount: number;
-  current_progress?: number;
+  current_progress: number;
   is_public: boolean;
-  deadline: string;
+  deadline?: string;
+  reward?: {
+    id: number;
+    title?: string;
+    points?: number;
+  };
   creator?: {
     id: number;
     username: string;
   };
   participants_count?: number;
   created_at?: string;
+  is_enrolled?: boolean;
 }
 
 export interface UserChallenge {
-  id: number;
+  id?: number;
   challenge: number;
   progress?: number;
   joined_at?: string;
+  joined_date?: string;
 }
 
 // Profile
@@ -214,6 +225,30 @@ export interface FollowingResponse {
 }
 
 // Admin/Moderation
+export interface ReportContent {
+  id: number;
+  title?: string;
+  content?: string;
+  text?: string;
+  description?: string;
+  username?: string;
+  email?: string;
+  profile_picture?: string;
+  creator?: string;
+  target_amount?: number;
+  current_progress?: number;
+  is_public?: boolean;
+  created_at?: string;
+  participants_count?: number;
+  likes_count?: number;
+  comments_count?: number;
+  post_title?: string;
+  post_id?: number;
+  bio?: string;
+  followers_count?: number;
+  is_active?: boolean;
+}
+
 export interface Report {
   id: number;
   content_type: string;
@@ -223,7 +258,7 @@ export interface Report {
   reporter: {
     username: string;
   };
-  content: Record<string, unknown>;
+  content: ReportContent;
 }
 
 export interface ReportsResponse {
