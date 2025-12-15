@@ -1215,8 +1215,10 @@ const styles = StyleSheet.create({
   },
   // Privacy settings styles
   privacySection: {
+    width: '100%',
     borderRadius: 12,
     padding: spacing.md,
+    marginTop: spacing.md,
     marginBottom: spacing.md,
   },
   sectionTitleSmall: {
@@ -1234,14 +1236,17 @@ const styles = StyleSheet.create({
   privacySettingInfo: {
     flex: 1,
     marginRight: spacing.md,
+    flexShrink: 1,
   },
   privacySettingTitle: {
     ...typography.body,
     fontWeight: '600',
     marginBottom: spacing.xs / 2,
+    flexWrap: 'wrap',
   },
   privacySettingDesc: {
     ...typography.caption,
-    lineHeight: 16,
+    lineHeight: 18,
+    flexWrap: 'wrap',
   },
 });
