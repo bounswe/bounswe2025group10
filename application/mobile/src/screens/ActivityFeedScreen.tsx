@@ -135,7 +135,7 @@ export const ActivityFeedScreen: React.FC = () => {
     try {
       await postService.likePost(activity.data.id);
       // Refresh to update like count
-      fetchActivities();
+      loadActivities(false);
     } catch (error) {
       console.warn('Error liking post:', error);
     }
@@ -147,7 +147,7 @@ export const ActivityFeedScreen: React.FC = () => {
     try {
       await postService.dislikePost(activity.data.id);
       // Refresh to update dislike count
-      fetchActivities();
+      loadActivities(false);
     } catch (error) {
       console.warn('Error disliking post:', error);
     }
