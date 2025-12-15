@@ -167,7 +167,7 @@ def post_like_create_or_update(sender, instance: PostLikes, created: bool, **kwa
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Like",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="PostLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} liked post {instance.post.pk}",
             visibility=Visibility.PUBLIC,
@@ -177,7 +177,7 @@ def post_like_create_or_update(sender, instance: PostLikes, created: bool, **kwa
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Update",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="PostLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} changed reaction on post {instance.post.pk} to {instance.reaction_type}",
             visibility=Visibility.PUBLIC,
@@ -188,7 +188,7 @@ def post_like_deleted(sender, instance: PostLikes, **kwargs):
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",
         actor_id=uname(instance.user),
-        object_type="Like",
+        object_type="PostLike",
         object_id=str(instance.pk),
         summary=f"User {uname(instance.user)} removed reaction on post {instance.post.pk}",
         visibility=Visibility.PUBLIC,
@@ -204,7 +204,7 @@ def tip_like_create_or_update(sender, instance: TipLikes, created: bool, **kwarg
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Like",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="TipLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} liked tip {instance.tip.pk}",
             visibility=Visibility.PUBLIC,
@@ -213,7 +213,7 @@ def tip_like_create_or_update(sender, instance: TipLikes, created: bool, **kwarg
         transaction.on_commit(lambda: EventWriter.log_event(
             activity_type="Update",
             actor_id=uname(instance.user),
-            object_type="Like",
+            object_type="TipLike",
             object_id=str(instance.pk),
             summary=f"User {uname(instance.user)} changed reaction on tip {instance.tip.pk} to {instance.reaction_type}",
             visibility=Visibility.PUBLIC,
@@ -224,7 +224,7 @@ def tip_like_deleted(sender, instance: TipLikes, **kwargs):
     transaction.on_commit(lambda: EventWriter.log_event(
         activity_type="Undo",
         actor_id=uname(instance.user),
-        object_type="Like",
+        object_type="TipLike",
         object_id=str(instance.pk),
         summary=f"User {uname(instance.user)} removed reaction on tip {instance.tip.pk}",
         visibility=Visibility.PUBLIC,

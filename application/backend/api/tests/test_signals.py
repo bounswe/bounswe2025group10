@@ -55,7 +55,7 @@ class ActivitySignalTests(TransactionTestCase):
         user = self.User.objects.create_user(email="u1@example.com", password="pw", username="u1")
         event = latest_event_for(object_type="Person", object_id=str(user.pk))
         self.assertIsNotNone(event, "Expected Create event for user create")
-        self.assertEqual(event.type, "Create")
+        self.assertEqual(event.type, "create-user")
         self.assertEqual(event.actor_id, "u1")
         self.assertEqual(event.visibility, Visibility.PUBLIC)
 
@@ -66,7 +66,7 @@ class ActivitySignalTests(TransactionTestCase):
         user.delete()
         event = latest_event_for(object_type="Person", object_id=str(pk))
         self.assertIsNotNone(event, "Expected Delete event for user delete")
-        self.assertEqual(event.type, "Undo")
+        self.assertEqual(event.type, "delete-user")
 
     def test_post_create_delete(self):
         """Test that post creation and deletion log appropriate events."""
@@ -75,13 +75,13 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_create = latest_event_for(object_type="Note", object_id=str(post.pk))
         self.assertIsNotNone(ev_create, "Expected Create event for post create")
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-post")
 
         pk = post.pk
         post.delete()
         ev_delete = latest_event_for(object_type="Note", object_id=str(pk))
         self.assertIsNotNone(ev_delete, "Expected Delete event for post delete")
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-post")
 
     def test_comment_create_delete(self):
         """Test that comment creation and deletion log appropriate events."""
@@ -91,13 +91,13 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_create = latest_event_for(object_type="Comment", object_id=str(comment.pk))
         self.assertIsNotNone(ev_create, "Expected Create event for comment create")
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-comment")
 
         pk = comment.pk
         comment.delete()
         ev_delete = latest_event_for(object_type="Comment", object_id=str(pk))
         self.assertIsNotNone(ev_delete, "Expected Delete event for comment delete")
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-comment")
 
     def test_post_like_create_undo(self):
         """Test that post like creation and deletion log appropriate events."""
@@ -105,15 +105,15 @@ class ActivitySignalTests(TransactionTestCase):
         post = Posts.objects.create(creator=user, text="like host", date=timezone.now())
         like = PostLikes.objects.create(user=user, post=post, reaction_type="LIKE")
 
-        ev_like = latest_event_for(object_type="Like", object_id=str(like.pk))
+        ev_like = latest_event_for(object_type="PostLike", object_id=str(like.pk))
         self.assertIsNotNone(ev_like, "Expected Like event for post like create")
-        self.assertEqual(ev_like.type, "Like")
+        self.assertEqual(ev_like.type, "like-post")
 
         pk = like.pk
         like.delete()
-        ev_undo = latest_event_for(object_type="Like", object_id=str(pk))
+        ev_undo = latest_event_for(object_type="PostLike", object_id=str(pk))
         self.assertIsNotNone(ev_undo, "Expected Undo event for post like delete")
-        self.assertEqual(ev_undo.type, "Undo")
+        self.assertEqual(ev_undo.type, "delete-post")
 
     def test_tip_like_create_undo(self):
         """Test that tip like creation and deletion log appropriate events."""
@@ -123,16 +123,16 @@ class ActivitySignalTests(TransactionTestCase):
         tip = Tips.objects.create(title="be green", text="tip text")
         tip_like = TipLikes.objects.create(user=user, tip=tip, reaction_type="LIKE")
 
-        ev_like = latest_event_for(object_type="Like", object_id=str(tip_like.pk))
+        ev_like = latest_event_for(object_type="TipLike", object_id=str(tip_like.pk))
         self.assertIsNotNone(ev_like, "Expected Like event for tip like create")
-        self.assertEqual(ev_like.type, "Like")
+        self.assertEqual(ev_like.type, "like-tip")
 
         pk = tip_like.pk
         tip_like.delete()
 
-        ev_undo = latest_event_for(object_type="Like", object_id=str(pk))
+        ev_undo = latest_event_for(object_type="TipLike", object_id=str(pk))
         self.assertIsNotNone(ev_undo, "Expected Undo event for tip like delete")
-        self.assertEqual(ev_undo.type, "Undo")
+        self.assertEqual(ev_undo.type, "delete-tip")
 
     def test_report_create_delete(self):
         """Test that report creation and deletion log appropriate events."""
@@ -152,13 +152,13 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_create = latest_event_for(object_type="Report", object_id=str(report.pk))
         self.assertIsNotNone(ev_create, "Expected Create event for report create")
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-report")
 
         pk = report.pk
         report.delete()
         ev_delete = latest_event_for(object_type="Report", object_id=str(pk))
         self.assertIsNotNone(ev_delete, "Expected Delete event for report delete")
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-report")
 
     def test_user_waste_create_delete(self):
         """Test that user waste creation and deletion log appropriate events."""
@@ -168,13 +168,13 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_create = latest_event_for(object_type="UserWaste", object_id=str(user_waste.pk))
         self.assertIsNotNone(ev_create, "Expected Create event for waste create")
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-waste")
 
         pk = user_waste.pk
         user_waste.delete()
         ev_delete = latest_event_for(object_type="UserWaste", object_id=str(pk))
         self.assertIsNotNone(ev_delete, "Expected Delete event for waste delete")
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-waste")
 
     def test_user_achievement_create_delete(self):
         """Test that user achievement creation and deletion log appropriate events."""
@@ -188,13 +188,13 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_create = latest_event_for(object_type="UserAchievement", object_id=str(user_achievement.pk))
         self.assertIsNotNone(ev_create, "Expected Create event for user achievement create")
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-achievement")
 
         pk = user_achievement.pk
         user_achievement.delete()
         ev_delete = latest_event_for(object_type="UserAchievement", object_id=str(pk))
         self.assertIsNotNone(ev_delete, "Expected Delete event for user achievement delete")
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-achievement")
 
     def test_user_challenge_create_update_delete(self):
         """Test that user challenge creation and deletion log appropriate events."""
@@ -230,7 +230,7 @@ class ActivitySignalTests(TransactionTestCase):
         # Verify Challenge creation signal
         ev_create = latest_event_for(object_type="UserChallenge", object_id=str(user_challenge.pk))
         self.assertIsNotNone(ev_create)
-        self.assertEqual(ev_create.type, "Create")
+        self.assertEqual(ev_create.type, "create-challenge")
 
         # Delete the UserChallenge
         pk = user_challenge.pk
@@ -238,4 +238,4 @@ class ActivitySignalTests(TransactionTestCase):
 
         ev_delete = latest_event_for(object_type="UserChallenge")
         self.assertIsNotNone(ev_delete)
-        self.assertEqual(ev_delete.type, "Undo")
+        self.assertEqual(ev_delete.type, "delete-challenge")
