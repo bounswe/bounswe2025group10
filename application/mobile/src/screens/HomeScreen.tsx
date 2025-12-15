@@ -91,6 +91,17 @@ const UNIT_CONVERSIONS: Record<string, { labelKey: string; grams: number }[]> = 
 // Input method types
 type InputMethod = 'grams' | 'unit' | '';
 
+// Points per 100g for each waste type
+const WASTE_POINTS: Record<string, number> = {
+  PLASTIC: 30,
+  PAPER: 15,
+  GLASS: 20,
+  METAL: 35,
+  ELECTRONIC: 60,
+  'OIL&FATS': 45,
+  ORGANIC: 10,
+};
+
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const { isRTL, textStyle, rowStyle } = useRTL();
@@ -121,6 +132,9 @@ export const HomeScreen: React.FC = () => {
   const [selectedUnitOption, setSelectedUnitOption] = useState<string>('');
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [unitCount, setUnitCount] = useState('');
+  
+  // Points info toggle state
+  const [showPointsInfo, setShowPointsInfo] = useState(false);
 
   // Calculate grams when using unit method
   const calculatedGrams = inputMethod === 'unit' && selectedUnitOption && unitCount && selectedWasteType
@@ -481,6 +495,49 @@ export const HomeScreen: React.FC = () => {
 
       {/* Spacer */}
       <View style={{ height: spacing.xl + spacing.sm }} />
+
+      {/* Add Waste Section Header with Points Info Toggle */}
+      <View style={[styles.addWasteHeader, rowStyle]}>
+        <Text style={[styles.addWasteTitle, textStyle, { color: colors.primary }]}>
+          {t('home.addWaste')}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.pointsInfoButton,
+            { 
+              backgroundColor: showPointsInfo ? colors.primary : colors.backgroundSecondary,
+              borderColor: colors.primary,
+            }
+          ]}
+          onPress={() => setShowPointsInfo(!showPointsInfo)}
+        >
+          <Text style={[
+            styles.pointsInfoButtonText,
+            { color: showPointsInfo ? colors.textOnPrimary : colors.primary }
+          ]}>
+            ℹ️ {t('home.pointsInfo')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Points Info Panel (Collapsible) */}
+      {showPointsInfo && (
+        <View style={[styles.pointsInfoPanel, { backgroundColor: colors.backgroundSecondary, borderColor: colors.lightGray }]}>
+          <Text style={[styles.pointsInfoTitle, { color: colors.primary, borderBottomColor: colors.lightGray }]}>
+            {t('home.pointsPerLabel')}
+          </Text>
+          {Object.entries(WASTE_POINTS).map(([key, value]) => (
+            <View key={key} style={[styles.pointsInfoRow, rowStyle]}>
+              <Text style={[styles.pointsInfoType, { color: colors.textSecondary }]}>
+                {t(`home.wasteTypes.${key}`)}
+              </Text>
+              <Text style={[styles.pointsInfoValue, { color: colors.primary }]}>
+                {value} pts
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Warning Message for high amounts */}
       {showWarning && (
@@ -994,6 +1051,56 @@ const styles = StyleSheet.create({
   unitGramsText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  addWasteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  addWasteTitle: {
+    ...typography.h3,
+    fontWeight: 'bold',
+  },
+  pointsInfoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  pointsInfoButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  pointsInfoPanel: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  pointsInfoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingBottom: spacing.sm,
+    marginBottom: spacing.sm,
+    borderBottomWidth: 1,
+  },
+  pointsInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  pointsInfoType: {
+    fontSize: 13,
+  },
+  pointsInfoValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
   modalOverlay: {
     flex: 1,

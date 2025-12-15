@@ -44,6 +44,8 @@
     "weather": "Weather",
     "istanbulWeather": "Istanbul Weather: {{temperature}}°C",
     "noWasteLogged": "No waste logged yet",
+    "pointsInfo": "Points ⓘ",
+    "pointsPerLabel": "Points per 100g",
     "wasteTypes": {
       "PLASTIC": "Plastic",
       "PAPER": "Paper",
@@ -78,7 +80,20 @@
     "logout": "Logout",
     "saveChanges": "Save Changes",
     "uploadPhoto": "Upload Photo",
-    "changePhoto": "Change Photo"
+    "changePhoto": "Change Photo",
+    "followers": "Followers",
+    "following": "Following",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "followed": "Followed successfully",
+    "unfollowed": "Unfollowed successfully",
+    "noFollowers": "No followers yet.",
+    "noFollowing": "Not following anyone yet.",
+    "failedToLoad": "Failed to load profile.",
+    "failedToLoadFollowers": "Failed to load followers.",
+    "failedToLoadFollowing": "Failed to load following list.",
+    "loginToFollow": "Please login to follow users.",
+    "posts": "Posts"
   },
   "community": {
     "title": "Community",

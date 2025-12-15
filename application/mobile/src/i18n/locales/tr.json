@@ -44,6 +44,8 @@
     "weather": "Hava Durumu",
     "istanbulWeather": "İstanbul Hava Durumu: {{temperature}}°C",
     "noWasteLogged": "Henüz atık kaydedilmedi",
+    "pointsInfo": "Puanlar ⓘ",
+    "pointsPerLabel": "100g başına puan",
     "wasteTypes": {
       "PLASTIC": "Plastik",
       "PAPER": "Kağıt",
@@ -78,7 +80,20 @@
     "logout": "Çıkış Yap",
     "saveChanges": "Değişiklikleri Kaydet",
     "uploadPhoto": "Fotoğraf Yükle",
-    "changePhoto": "Fotoğrafı Değiştir"
+    "changePhoto": "Fotoğrafı Değiştir",
+    "followers": "Takipçi",
+    "following": "Takip Edilen",
+    "follow": "Takip Et",
+    "unfollow": "Takibi Bırak",
+    "followed": "Başarıyla takip edildi",
+    "unfollowed": "Takip başarıyla bırakıldı",
+    "noFollowers": "Henüz takipçi yok.",
+    "noFollowing": "Henüz kimseyi takip etmiyorsunuz.",
+    "failedToLoad": "Profil yüklenemedi.",
+    "failedToLoadFollowers": "Takipçiler yüklenemedi.",
+    "failedToLoadFollowing": "Takip edilenler yüklenemedi.",
+    "loginToFollow": "Takip etmek için giriş yapın.",
+    "posts": "Gönderiler"
   },
   "community": {
     "title": "Topluluk",
