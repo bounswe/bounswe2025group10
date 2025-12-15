@@ -25,8 +25,17 @@
     "admin": "Administrateur",
     "recyclingCenters": "Centres de Recyclage",
     "statistics": "Statistiques",
-    "inviteFriend": "Inviter un Ami"
+    "inviteFriend": "Inviter un Ami",
+    "impact": "Impact",
+    "adminPage": "Modération des Publications",
+    "userPage": "Modération des Utilisateurs",
+    "challengePage": "Modération des Défis",
+    "commentPage": "Modération des Commentaires",
+    "activityPage": "Journal d'Activité"
   },
+  "username": "Nom d'utilisateur",
+  "password": "Mot de passe",
+  "email": "Email",
   "common": {
     "language": "Langue",
     "theme": "Thème",
@@ -52,6 +61,8 @@
     "reportSuccess": "Utilisateur signalé avec succès",
     "next": "Suivant",
     "previous": "Précédent",
+    "of": "sur",
+    "filters": "Filtres",
     "total": "Total",
     "reason": "Raison",
     "reasonRequired": "Veuillez fournir une raison",
@@ -61,7 +72,42 @@
     "loginRequired": "Veuillez vous connecter pour continuer",
     "notifications": "Notifications",
     "markAllRead": "Tout marquer comme lu",
-    "noNotifications": "Pas de notifications"
+    "noNotifications": "Pas de notifications",
+    "preview": "Aperçu"
+  },
+  "admin": {
+    "postModeration": "Modération des Publications",
+    "managePosts": "Examiner et gérer les publications signalées.",
+    "failedToLoad": "Échec du chargement des éléments.",
+    "noPosts": "Aucune publication signalée trouvée.",
+    "reportedPost": "Publication Signalée",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette publication ?",
+    "deleteFailed": "Échec de la suppression de la publication.",
+    "userModeration": "Modération des Utilisateurs",
+    "manageUsers": "Examiner et gérer les utilisateurs signalés.",
+    "noUsers": "Aucun utilisateur signalé trouvé.",
+    "confirmBan": "Êtes-vous sûr de vouloir bannir cet utilisateur ?",
+    "banFailed": "Échec du bannissement de l'utilisateur.",
+    "challengeModeration": "Modération des Défis",
+    "manageChallenges": "Examiner et gérer les défis signalés.",
+    "noChallenges": "Aucun défi signalé trouvé.",
+    "confirmDeleteChallenge": "Êtes-vous sûr de vouloir supprimer ce défi ?",
+    "deleteChallengeFailed": "Échec de la suppression du défi.",
+    "commentModeration": "Modération des Commentaires",
+    "manageComments": "Examiner et gérer les commentaires signalés.",
+    "noComments": "Aucun commentaire signalé trouvé.",
+    "confirmDeleteComment": "Êtes-vous sûr de vouloir supprimer ce commentaire ?",
+    "deleteCommentFailed": "Échec de la suppression du commentaire.",
+    "activities": "Journal d'Activité",
+    "viewActivities": "Voir les événements d'activité à l'échelle du système (ActivityPub).",
+    "failedToLoadActivities": "Échec du chargement des événements d'activité.",
+    "filterType": "Type",
+    "allTypes": "Tous les Types",
+    "filterActorID": "ID de l'Acteur",
+    "enterActorID": "Entrez l'ID de l'acteur...",
+    "clearFilters": "Effacer les Filtres",
+    "noActivities": "Aucun événement d'activité trouvé.",
+    "totalEvents": "Total des Événements"
   },
   "leaderboard": {
     "title": "🌿 Top 10 des champions zéro déchet",
@@ -177,6 +223,8 @@
     "targetAmount": "Montant Cible",
     "targetAmountPlaceholder": "Entrez le montant cible",
     "makePublic": "Rendre le défi public",
+    "deadline": "Date limite",
+    "selectDeadline": "Sélectionner la date limite",
     "reportChallenge": "Signaler le Défi",
     "reportDescription": "Dites-nous ce qui ne va pas avec ce défi.",
     "reason": "Raison",
@@ -189,11 +237,25 @@
     "explainBriefly": "Veuillez expliquer brièvement…",
     "allFieldsRequired": "Tous les champs sauf la visibilité sont requis.",
     "joinedChallenge": "Vous avez rejoint le défi!",
+    "joinedDate": "Date d'adhésion",
     "alreadyParticipating": "Vous participez déjà ou vous n'êtes pas autorisé.",
     "errorJoining": "Erreur lors de la participation au défi",
     "provideReasonDescription": "Veuillez fournir à la fois la raison et la description",
     "reportedSuccess": "Défi signalé avec succès",
     "errorReporting": "Erreur lors du signalement du défi"
+  },
+  "auth": {
+    "loginTitle": "Connexion",
+    "signupTitle": "S'inscrire",
+    "subtitle": "Rejoignez le mouvement Zéro Déchet 🌱",
+    "agreeTerms": "J'accepte les conditions générales et la politique de confidentialité",
+    "loginSuccess": "Connexion réussie ! Redirection...",
+    "signupSuccess": "Inscription réussie ! Redirection vers la connexion...",
+    "loginFailed": "Échec de la connexion",
+    "signupFailed": "Échec de l'inscription",
+    "loggingIn": "Connexion en cours...",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "noAccount": "Vous n'avez pas de compte ?"
   },
   "achievements": {
     "title": "Réalisations",
@@ -206,6 +268,20 @@
     "light": "Clair",
     "dark": "Sombre",
     "highContrast": "Contraste Élevé"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "appearance": "Apparence",
+    "accessibility": "Accessibilité",
+    "fontSize": "Taille de Police",
+    "fontSizeDesc": "Ajustez la taille de police pour une meilleure lisibilité.",
+    "xs": "Très Petit",
+    "small": "Petit",
+    "medium": "Moyen",
+    "large": "Grand",
+    "xlarge": "Très Grand",
+    "fontSizePreview": "Voici à quoi ressemblera votre texte avec la taille de police sélectionnée.",
+    "about": "À propos"
   },
   "weather": {
     "tips": {
@@ -257,7 +333,7 @@
     "followed": "Suivi avec succès",
     "unfollowed": "Abonnement annulé avec succès",
     "noFollowing": "Vous ne suivez personne pour le moment.",
-"noFollowers": "Pas encore d'abonnés."
+    "noFollowers": "Pas encore d'abonnés."
   },
   "wasteHelper": {
     "title": "Ajouter un Déchet",
@@ -366,5 +442,24 @@
     "energySaved": "Énergie Économisée",
     "wasteEncouragement": "Excellent travail ! Chaque objet recyclé aide à réduire la pollution et à préserver les ressources naturelles. Continuez comme ça !",
     "communityEncouragement": "Merci d'être un membre actif de notre communauté ! Ensemble, nous construisons un avenir durable et inspirons les autres à faire la différence."
+  },
+  "landing": {
+    "title": "Faites la différence pour un avenir durable",
+    "subtitle": "Suivez vos déchets, gagnez des points et rejoignez une communauté d'acteurs du changement.",
+    "cta": "Commencez votre voyage",
+    "features": {
+      "track": {
+        "title": "Suivi des déchets",
+        "desc": "Enregistrez votre recyclage et vos déchets quotidiens pour visualiser votre impact au fil du temps."
+      },
+      "points": {
+        "title": "Gagnez des points",
+        "desc": "Grimpez dans le classement et gagnez des succès pour vos actions durables."
+      },
+      "community": {
+        "title": "Communauté",
+        "desc": "Connectez-vous avec les autres, partagez des conseils et participez à des éco-défis."
+      }
+    }
   }
 }

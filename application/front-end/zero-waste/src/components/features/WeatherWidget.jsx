@@ -79,7 +79,7 @@ const WeatherWidget = () => {
 
   return (
     <div 
-      className="rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm border max-w-sm"
+      className="rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm border w-full md:w-80"
       style={{
         backgroundColor: currentTheme.background,
         borderColor: currentTheme.border
