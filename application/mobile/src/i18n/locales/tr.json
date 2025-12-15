@@ -211,6 +211,24 @@
       "foodScraps": "Yemek Artığı"
     }
   },
+  "activity": {
+    "title": "Aktivite Akışı",
+    "followingFeed": "Takip Edilenler",
+    "myActivity": "Aktivitelerim",
+    "filterAll": "Tümü",
+    "noFollowingActivity": "Takip edilen kullanıcılardan aktivite yok",
+    "noOwnActivity": "Henüz aktivite yok",
+    "followUsersHint": "Aktivitelerini görmek için kullanıcıları takip edin",
+    "startActivityHint": "Atık kaydedin, challenge'lara katılın",
+    "types": {
+      "all": "Tümü",
+      "posts": "Gönderiler",
+      "waste": "Atık Kaydı",
+      "achievement": "Başarım",
+      "challenge": "Challenge",
+      "follow": "Takip"
+    }
+  },
   "filter": {
     "title": "Veriyi Filtrele",
     "timeRange": "Zaman Aralığı",

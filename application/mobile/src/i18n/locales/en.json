@@ -211,6 +211,24 @@
       "foodScraps": "Food Scraps"
     }
   },
+  "activity": {
+    "title": "Activity Feed",
+    "followingFeed": "Following",
+    "myActivity": "My Activity",
+    "filterAll": "All",
+    "noFollowingActivity": "No activity from followed users",
+    "noOwnActivity": "No activity yet",
+    "followUsersHint": "Follow users to see their activity here",
+    "startActivityHint": "Log waste, join challenges to see your activity",
+    "types": {
+      "all": "All",
+      "posts": "Posts",
+      "waste": "Waste Log",
+      "achievement": "Achievement",
+      "challenge": "Challenge",
+      "follow": "Follow"
+    }
+  },
   "filter": {
     "title": "Filter Data",
     "timeRange": "Time Range",

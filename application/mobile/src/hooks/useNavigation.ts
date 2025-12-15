@@ -52,6 +52,7 @@ export const SCREEN_NAMES = {
   TIPS: 'Tips',
   ACHIEVEMENTS: 'Achievements',
   LEADERBOARD: 'Leaderboard',
+  ACTIVITY_FEED: 'ActivityFeed',
   
   // Modal/Detail screens
   OTHER_PROFILE: 'OtherProfile',
