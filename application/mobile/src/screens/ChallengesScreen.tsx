@@ -9,6 +9,7 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errors';
 
 interface Challenge {
   id: number;
@@ -112,7 +113,8 @@ export const ChallengesScreen = () => {
       // Debug logging
       logger.log('Enrolled challenge IDs:', Array.from(enrolledChallengeIds));
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch challenges');
+      logger.error('Error fetching challenges:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -143,9 +145,10 @@ export const ChallengesScreen = () => {
       setIsPublic(true);
       setShowCreateModal(false);
       fetchChallenges();
-      Alert.alert('Success', 'Challenge created successfully!');
+      Alert.alert(t('common.success'), t('challenges.created'));
     } catch (error) {
-      Alert.alert('Error', 'Failed to create challenge');
+      logger.error('Error creating challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
@@ -153,10 +156,10 @@ export const ChallengesScreen = () => {
     try {
       await challengeService.joinChallenge(challengeId);
       fetchChallenges();
-      Alert.alert('Success', 'Successfully joined the challenge!');
+      Alert.alert(t('common.success'), t('challenges.joined'));
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } };
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to join challenge');
+      logger.error('Error joining challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
@@ -167,24 +170,24 @@ export const ChallengesScreen = () => {
       if (enrolledChallenge) {
         await challengeService.leaveChallenge(enrolledChallenge.challenge);
         fetchChallenges();
-        Alert.alert('Success', 'Successfully left the challenge!');
+        Alert.alert(t('common.success'), t('challenges.left'));
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } };
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to leave challenge');
+      logger.error('Error leaving challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
   const handleDelete = async (id: number) => {
-    Alert.alert('Delete Challenge', 'Are you sure you want to delete this challenge?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+    Alert.alert(t('challenges.deleteConfirm'), t('challenges.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
           try {
             await challengeService.deleteChallenge(id);
             fetchChallenges();
           } catch (error: unknown) {
-            const err = error as { response?: { data?: { detail?: string } } };
-            Alert.alert('Error', err.response?.data?.detail || 'Failed to delete');
+            logger.error('Error deleting challenge:', error);
+            Alert.alert(t('common.error'), getErrorMessage(error));
           }
         } },
     ]);

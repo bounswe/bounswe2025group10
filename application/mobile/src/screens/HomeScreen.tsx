@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components/WasteFilterModal';
 import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errors';
 
 // Dynamic chart config based on theme
 const getChartConfig = (isDarkMode: boolean) => ({
@@ -194,7 +195,7 @@ export const HomeScreen: React.FC = () => {
       setWasteData(response.data);
     } catch (err) {
       logger.error('Error fetching waste data:', err);
-      Alert.alert('Error', 'Failed to load waste data. Please pull to refresh.');
+      Alert.alert(t('common.error'), getErrorMessage(err));
     } finally {
       setLoadingWaste(false);
     }
@@ -208,7 +209,7 @@ export const HomeScreen: React.FC = () => {
       setTips(response.data);
     } catch (err) {
       logger.error('Error fetching tips:', err);
-      Alert.alert('Error', 'Failed to load tips. Please try again.');
+      Alert.alert(t('common.error'), getErrorMessage(err));
     } finally {
       setLoadingTips(false);
     }
@@ -281,11 +282,8 @@ export const HomeScreen: React.FC = () => {
       fetchWasteData();
       Alert.alert(t('common.success'), t('home.addWaste'));
     } catch (error: unknown) {
-      const err = error as { response?: { data?: unknown }; message?: string };
-      let message = 'Unknown error';
-      if (err.response?.data) {message = JSON.stringify(err.response.data);}
-      else if (err.message) {message = err.message;}
-      Alert.alert(t('common.error'), `${message}`);
+      logger.error('Error adding waste:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 

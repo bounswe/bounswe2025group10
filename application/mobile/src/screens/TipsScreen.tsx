@@ -20,6 +20,7 @@ import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errors';
 
 interface Tip {
   id: number;
@@ -85,10 +86,10 @@ export const TipsScreen: React.FC = () => {
       logger.log('[TipsScreen] Setting tips, count:', tipsData.length);
       setTips(tipsData);
     } catch (err: unknown) {
-      const tipError = err as { message?: string };
-      logger.error('[TipsScreen] Error fetching tips:', tipError.message);
-      setError(tipError.message || 'Unknown error');
-      Alert.alert('Error', 'Failed to fetch tips: ' + (tipError.message || 'Unknown error'));
+      logger.error('[TipsScreen] Error fetching tips:', err);
+      const message = getErrorMessage(err);
+      setError(message);
+      Alert.alert(t('common.error'), message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -113,9 +114,9 @@ export const TipsScreen: React.FC = () => {
       setNewTip({ title: '', description: '' });
       setIsCreating(false);
       await fetchTips();
-      Alert.alert('Success', 'Tip created successfully!');
-    } catch {
-      Alert.alert('Error', 'Failed to create tip');
+      Alert.alert(t('common.success'), t('tips.tipCreated'));
+    } catch (err) {
+      Alert.alert(t('common.error'), getErrorMessage(err));
     }
   };
 
@@ -124,8 +125,8 @@ export const TipsScreen: React.FC = () => {
     try {
       await tipService.likeTip(tipId);
       await fetchTips();
-    } catch {
-      Alert.alert('Error', 'Failed to like tip');
+    } catch (err) {
+      Alert.alert(t('common.error'), getErrorMessage(err));
     }
   };
 
@@ -134,8 +135,8 @@ export const TipsScreen: React.FC = () => {
     try {
       await tipService.dislikeTip(tipId);
       await fetchTips();
-    } catch {
-      Alert.alert('Error', 'Failed to dislike tip');
+    } catch (err) {
+      Alert.alert(t('common.error'), getErrorMessage(err));
     }
   };
 
@@ -151,9 +152,9 @@ export const TipsScreen: React.FC = () => {
     try {
       await tipService.reportTip(reportingId, reportReason, reportDescription.trim());
       closeReportModal();
-      Alert.alert('Success', 'Report submitted successfully');
-    } catch {
-      Alert.alert('Error', 'Failed to submit report');
+      Alert.alert(t('common.success'), t('common.reportSubmitted'));
+    } catch (err) {
+      Alert.alert(t('common.error'), getErrorMessage(err));
     }
   };
 

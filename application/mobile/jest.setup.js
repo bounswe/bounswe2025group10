@@ -128,3 +128,36 @@ jest.mock('./src/utils/logger', () => ({
   },
 }));
 
+// Mock error utility
+jest.mock('./src/utils/errors', () => ({
+  ErrorType: {
+    NETWORK: 'NETWORK',
+    AUTH: 'AUTH',
+    VALIDATION: 'VALIDATION',
+    NOT_FOUND: 'NOT_FOUND',
+    SERVER: 'SERVER',
+    TIMEOUT: 'TIMEOUT',
+    UNKNOWN: 'UNKNOWN',
+  },
+  AppError: class AppError extends Error {
+    constructor(type, message, userMessage, code, originalError) {
+      super(message);
+      this.type = type;
+      this.code = code;
+      this.userMessage = userMessage;
+      this.originalError = originalError;
+    }
+  },
+  parseError: jest.fn((error) => ({
+    type: 'UNKNOWN',
+    message: error?.message || 'Unknown error',
+    userMessage: 'An unexpected error occurred. Please try again.',
+    code: null,
+    originalError: error,
+  })),
+  getErrorMessage: jest.fn((error) => error?.message || 'An unexpected error occurred. Please try again.'),
+  isErrorType: jest.fn(() => false),
+  isAuthError: jest.fn(() => false),
+  isNetworkError: jest.fn(() => false),
+}));
+
