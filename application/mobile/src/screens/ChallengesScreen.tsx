@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert, Switch, Modal,
 } from 'react-native';
-import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
+import { colors as defaultColors, spacing, typography, commonStyles, ThemeColors } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { challengeService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
@@ -18,8 +18,8 @@ interface Challenge {
   current_progress: number;
   is_public: boolean;
   deadline?: string; // ISO date string
-  reward?: any;
-  creator?: any;
+  reward?: { id: number; title?: string; points?: number };
+  creator?: { id: number; username: string };
   is_enrolled?: boolean;
 }
 
@@ -56,7 +56,7 @@ const formatDeadline = (deadline: string): string => {
 };
 
 // Helper function to get deadline urgency color
-const getDeadlineUrgencyColor = (deadline: string, colors: any): string => {
+const getDeadlineUrgencyColor = (deadline: string, colors: ThemeColors): string => {
   const daysRemaining = getDaysRemaining(deadline);
   
   if (daysRemaining < 0) {
