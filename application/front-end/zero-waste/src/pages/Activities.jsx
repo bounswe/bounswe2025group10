@@ -9,10 +9,6 @@ function Activities() {
   const { currentTheme } = useTheme();
   const { t } = useLanguage();
 
-  console.log("Activities - Username:", username);
-  console.log("Activities - Token:", token ? "Present" : "Missing");
-  console.log("Activities - API URL:", import.meta.env.VITE_API_URL);
-
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,14 +20,14 @@ function Activities() {
   const [filterType, setFilterType] = useState("");
 
   const activityTypes = [
-    { value: "", label: "All Types" },
-    { value: "create-waste", label: "Create Waste" },
-    { value: "create-post", label: "Create Post" },
-    { value: "create-comment", label: "Create Comment" },
-    { value: "update-comment", label: "Update Comment" },
-    { value: "like-post", label: "Like Post" },
-    { value: "follow-user", label: "Follow User" },
-    { value: "unfollow-user", label: "Unfollow User" },
+    { value: "", label: t('activities.allTypes', 'All Types') },
+    { value: "create-waste", label: t('activities.activityTypes.createWaste', 'Create Waste') },
+    { value: "create-post", label: t('activities.activityTypes.createPost', 'Create Post') },
+    { value: "create-comment", label: t('activities.activityTypes.createComment', 'Create Comment') },
+    { value: "update-comment", label: t('activities.activityTypes.updateComment', 'Update Comment') },
+    { value: "like-post", label: t('activities.activityTypes.likePost', 'Like Post') },
+    { value: "follow-user", label: t('activities.activityTypes.followUser', 'Follow User') },
+    { value: "unfollow-user", label: t('activities.activityTypes.unfollowUser', 'Unfollow User') },
   ];
 
   const getActivities = async () => {
@@ -45,11 +41,8 @@ function Activities() {
     params.append("page_size", "100"); // Get more items for client-side pagination
 
     const queryString = params.toString();
-    const url = `${
-      import.meta.env.VITE_API_URL
-    }/api/following-activity-events/${queryString ? `?${queryString}` : ""}`;
-
-    console.log("Fetching activities from:", url);
+    const url = `${import.meta.env.VITE_API_URL
+      }/api/following-activity-events/${queryString ? `?${queryString}` : ""}`;
 
     try {
       const response = await fetch(url, {
@@ -60,11 +53,8 @@ function Activities() {
         },
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.log("Error response:", errorData);
         throw new Error(
           `HTTP error! status: ${response.status} - ${JSON.stringify(
             errorData
@@ -73,7 +63,6 @@ function Activities() {
       }
 
       const data = await response.json();
-      console.log("Activities data:", data);
 
       // ActivityStreams 2.0 OrderedCollection format
       if (data.items && Array.isArray(data.items)) {
@@ -164,91 +153,92 @@ function Activities() {
 
   return (
     <div
-      className="p-4"
+      className="p-4 md:p-6 min-h-screen"
       style={{
-        backgroundColor: currentTheme.backgroundColor,
-        color: currentTheme.textColor,
-        minHeight: "100vh",
+        backgroundColor: currentTheme.background,
+        color: currentTheme.text,
       }}
     >
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="display-6 mb-2">
-          <span className="me-2">🌟</span>
-          Activity Feed
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2 flex items-center">
+          <span className="mr-2">🌟</span>
+          {t('activities.title', 'Activity Feed')}
         </h1>
-        <p className="text-muted">
-          Your activities and activities from people you follow
+        <p className="opacity-70 mb-1">
+          {t('activities.subtitle', 'Your activities and activities from people you follow')}
         </p>
-        <p className="text-muted">
+        <p className="opacity-70 text-sm">
           {filterType
-            ? `Showing ${filteredActivities.length} of ${totalItems} events`
-            : `Total: ${totalItems} events`}
+            ? `${t('activities.totalEvents', 'Total events')}: ${filteredActivities.length}`
+            : `${t('activities.totalEvents', 'Total events')}: ${totalItems}`}
         </p>
       </div>
 
       {/* Filters */}
       <div
-        className="card mb-4"
+        className="rounded-xl border shadow-sm mb-6 p-4 md:p-6"
         style={{
-          backgroundColor: currentTheme.cardBackground,
-          borderColor: currentTheme.borderColor,
+          backgroundColor: currentTheme.background,
+          borderColor: currentTheme.border,
         }}
       >
-        <div className="card-body">
-          <h5 className="card-title mb-3">Filters</h5>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label htmlFor="activity-type-filter" className="form-label">
-                Activity Type
-              </label>
-              <select
-                id="activity-type-filter"
-                className="form-select"
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setCurrentPage(1);
-                }}
-                style={{
-                  backgroundColor: currentTheme.inputBackground,
-                  color: currentTheme.textColor,
-                  borderColor: currentTheme.borderColor,
-                }}
-              >
-                {activityTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-6 d-flex align-items-end">
-              <button
-                className="btn btn-outline-secondary w-100"
-                onClick={handleClearFilters}
-              >
-                Clear Filters
-              </button>
-            </div>
+        <h2 className="text-lg font-semibold mb-4">{t('activities.filterType', 'Filters')}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="activity-type-filter" className="block text-sm font-medium mb-1 opacity-90">
+              {t('activities.filterType', 'Activity Type')}
+            </label>
+            <select
+              id="activity-type-filter"
+              className="w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{
+                backgroundColor: currentTheme.background,
+                color: currentTheme.text,
+                borderColor: currentTheme.border,
+              }}
+            >
+              {activityTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              className="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80 transition-opacity"
+              onClick={handleClearFilters}
+              style={{
+                borderColor: currentTheme.border,
+                color: currentTheme.text,
+              }}
+            >
+              {t('activities.clearFilters', 'Clear Filters')}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="alert alert-danger" role="alert">
-          Failed to load activity events. Please try again.
+        <div className="mb-6 p-4 rounded-lg bg-red-100 border border-red-200 text-red-700">
+          {t('common.errorLoading', 'Failed to load activity events. Please try again.')}
         </div>
       )}
 
       {/* Loading State */}
       {loading && (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3">Loading activities...</p>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-t-transparent"
+            role="status"
+            style={{ borderColor: currentTheme.secondary, borderTopColor: 'transparent' }} />
+          <p className="mt-4 opacity-70">{t('common.loading', 'Loading activities...')}</p>
         </div>
       )}
 
@@ -256,83 +246,50 @@ function Activities() {
       {!loading && !error && (
         <>
           {currentActivities.length === 0 ? (
-            <div className="text-center py-5">
-              <p className="text-muted">No activities found.</p>
+            <div className="text-center py-12 opacity-70">
+              <p>{t('activities.noActivities', 'No activities found.')}</p>
             </div>
           ) : (
-            <div className="row g-3">
+            <div className="space-y-4">
               {currentActivities.map((activity, index) => (
-                <div key={activity.id || index} className="col-12">
-                  <UserActivityCard activity={activity} />
-                </div>
+                <UserActivityCard key={activity.id || index} activity={activity} />
               ))}
             </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <nav aria-label="Activity pagination" className="mt-4">
-              <ul className="pagination justify-content-center">
-                <li
-                  className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                    style={{
-                      backgroundColor:
-                        currentPage === 1
-                          ? currentTheme.cardBackground
-                          : currentTheme.buttonBackground,
-                      color:
-                        currentPage === 1
-                          ? currentTheme.mutedText
-                          : currentTheme.textColor,
-                      borderColor: currentTheme.borderColor,
-                    }}
-                  >
-                    Previous
-                  </button>
-                </li>
-                <li className="page-item disabled">
-                  <span
-                    className="page-link"
-                    style={{
-                      backgroundColor: currentTheme.cardBackground,
-                      color: currentTheme.textColor,
-                      borderColor: currentTheme.borderColor,
-                    }}
-                  >
-                    Page {currentPage} of {totalPages}
-                  </span>
-                </li>
-                <li
-                  className={`page-item ${
-                    currentPage === totalPages ? "disabled" : ""
+            <div className="flex justify-center items-center gap-2 mt-8">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'
                   }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      backgroundColor:
-                        currentPage === totalPages
-                          ? currentTheme.cardBackground
-                          : currentTheme.buttonBackground,
-                      color:
-                        currentPage === totalPages
-                          ? currentTheme.mutedText
-                          : currentTheme.textColor,
-                      borderColor: currentTheme.borderColor,
-                    }}
-                  >
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
+                style={{
+                  backgroundColor: currentTheme.secondary,
+                  color: currentTheme.background,
+                }}
+              >
+                {t('common.previous', 'Previous')}
+              </button>
+
+              <span className="text-sm font-medium px-4" style={{ color: currentTheme.text }}>
+                {t('common.pageOf', `Page ${currentPage} of ${totalPages}`)}
+              </span>
+
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'
+                  }`}
+                style={{
+                  backgroundColor: currentTheme.secondary,
+                  color: currentTheme.background,
+                }}
+              >
+                {t('common.next', 'Next')}
+              </button>
+            </div>
           )}
         </>
       )}

@@ -55,22 +55,12 @@ vi.mock("../../components/features/AdminChallengeCard", () => ({
   ),
 }));
 
-// Mock useAdminReports
-const mockUseAdminReports = {
-  items: [],
-  loading: false,
-  error: null,
-  currentPage: 1,
-  totalPages: 1,
-  nextPage: null,
-  previousPage: null,
-  handleNextPage: vi.fn(),
-  handlePreviousPage: vi.fn(),
-  deleteItem: vi.fn(),
-};
-
-vi.mock("../../hooks/useAdminReports", () => ({
-  useAdminReports: vi.fn(() => mockUseAdminReports),
+// Mock adminService
+vi.mock("../../services/adminService", () => ({
+  default: {
+    getReports: vi.fn(),
+    moderateReport: vi.fn(),
+  },
 }));
 
 describe("<ChallengePanel />", () => {
@@ -80,16 +70,22 @@ describe("<ChallengePanel />", () => {
 
   it("fetches and displays ONLY challenge-type items", async () => {
     // Setup mock return
-    const { useAdminReports } = await import("../../hooks/useAdminReports");
-    useAdminReports.mockReturnValue({
-      ...mockUseAdminReports,
-      items: [
-        {
-          id: 1,
-          content_type: "challenge",
-          content: { title: "Recycle Marathon", current_progress: "50%" },
-        }
-      ]
+    const adminService = (await import("../../services/adminService")).default;
+
+    adminService.getReports.mockResolvedValue({
+      data: {
+        results: [
+          {
+            id: 1,
+            reason: "spam",
+            description: "inappropriate content",
+            content: { title: "Recycle Marathon", current_progress: "50%" },
+          }
+        ],
+        count: 1,
+        next: null,
+        previous: null
+      }
     });
 
     await act(async () => {
@@ -109,23 +105,30 @@ describe("<ChallengePanel />", () => {
   });
 
   it("calls deleteChallenge when Delete button is clicked", async () => {
-    const { useAdminReports } = await import("../../hooks/useAdminReports");
-    const mockDelete = vi.fn().mockResolvedValue(true);
+    const adminService = (await import("../../services/adminService")).default;
 
-    useAdminReports.mockReturnValue({
-      ...mockUseAdminReports,
-      items: [
-        {
-          id: 99,
-          content_type: "challenge",
-          content: {
-            title: "Eco Battle",
-            current_progress: "20%",
+    // Initial load
+    adminService.getReports.mockResolvedValue({
+      data: {
+        results: [
+          {
+            id: 99,
+            reason: "spam",
+            description: "bad",
+            content: {
+              title: "Eco Battle",
+              current_progress: "20%",
+            },
           },
-        },
-      ],
-      deleteItem: mockDelete
+        ],
+        count: 1,
+        next: null,
+        previous: null,
+      }
     });
+
+    // Mock delete success
+    adminService.moderateReport.mockResolvedValue({});
 
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
@@ -144,9 +147,9 @@ describe("<ChallengePanel />", () => {
     // Click delete
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
-    // Check deleteItem call
+    // Check moderateReport call
     await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledWith(99, "delete_media");
+      expect(adminService.moderateReport).toHaveBeenCalledWith(99, "delete_media");
     });
   });
 });

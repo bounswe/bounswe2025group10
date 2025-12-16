@@ -213,7 +213,7 @@ describe("<ActivityPanel />", () => {
     });
 
     expect(screen.getByRole("combobox")).toBeInTheDocument(); // Type select
-    expect(screen.getByPlaceholderText(/Enter actor ID/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/username/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /clear filters/i })
     ).toBeInTheDocument();
@@ -237,13 +237,13 @@ describe("<ActivityPanel />", () => {
     });
 
     const typeSelect = screen.getByRole("combobox");
-    await user.selectOptions(typeSelect, "Create");
+    await user.selectOptions(typeSelect, "create-waste");
 
     await waitFor(() => {
       // Check last call arguments
       const lastCall = adminService.getActivityEvents.mock.calls[adminService.getActivityEvents.mock.calls.length - 1];
       // getActivityEvents(page, filters)
-      expect(lastCall[1]).toEqual({ type: "Create" });
+      expect(lastCall[1]).toEqual({ type: "create-waste" });
     }, { timeout: 3000 });
   });
 
@@ -261,10 +261,10 @@ describe("<ActivityPanel />", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Enter actor ID/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/username/i)).toBeInTheDocument();
     });
 
-    const actorInput = screen.getByPlaceholderText(/Enter actor ID/i);
+    const actorInput = screen.getByPlaceholderText(/username/i);
     await user.type(actorInput, "user-123");
 
     await waitFor(() => {
@@ -291,9 +291,9 @@ describe("<ActivityPanel />", () => {
     });
 
     const typeSelect = screen.getByRole("combobox");
-    const actorInput = screen.getByPlaceholderText(/Enter actor ID/i);
+    const actorInput = screen.getByPlaceholderText(/username/i);
 
-    await user.selectOptions(typeSelect, "Create");
+    await user.selectOptions(typeSelect, "create-waste");
     await user.type(actorInput, "user-123");
 
     const clearButton = screen.getByRole("button", { name: /clear filters/i });
