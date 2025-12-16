@@ -2,12 +2,16 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ProtectedUserRoute from "./routes/ProtectedUserRoute";
+import PublicRoute from "./routes/PublicRoute";
+import UserLayout from "./components/layout/UserLayout";
 import MainPage from "./pages/MainPage";
+import LandingPage from "./pages/LandingPage";
 import AdminPanel from "./pages/admin/AdminPanel";
 import ChallengePanel from "./pages/admin/ChallengePanel";
 import CommentPanel from "./pages/admin/CommentPanel";
 import UserPanel from "./pages/admin/UserPanel";
 import ActivityPanel from "./pages/admin/ActivityPanel";
+import AdminLayout from './components/layout/AdminLayout';
 import ProtectedAdminRoute from "./routes/ProtectedAdminRoute"
 import Challenges from "./pages/Challenges.jsx";
 import Profile from "./pages/profile/ProfilePage.jsx"
@@ -19,6 +23,7 @@ import PublicProfile from "./pages/profile/PublicProfile.jsx";
 import RecyclingCenters from "./pages/RecyclingCenters.jsx";
 import Invite from "./pages/Invite.jsx";
 import Statistics from "./pages/Statistics.jsx";
+import Settings from "./pages/Settings.jsx";
 
 
 export default function App() {
@@ -26,36 +31,46 @@ export default function App() {
 
 
     <Routes>
+      {/* Public Routes (Redirect to MainPage/Admin if logged in) */}
+      <Route element={<PublicRoute />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+      </Route>
+
+      {/* Protected User Routes */}
       <Route element={<ProtectedUserRoute />}>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/tips" element={<Tips />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/challenges" element={<Challenges />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/recycling-centers" element={<RecyclingCenters />} />
-        <Route path="/statistics" element={<Statistics />} />
-        <Route path="/invite" element={<Invite />} />
-
-        <Route path="/profile" element={<Profile />}></Route>
-        <Route path="/profile/:username" element={<PublicProfile />} />
-        <Route path="*" element={<MainPage />} /> {/* Redirect to MainPage for any other routes */}
-
+        <Route element={<UserLayout />}>
+          <Route path="/mainPage" element={<MainPage />} />
+          <Route path="/tips" element={<Tips />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/challenges" element={<Challenges />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/recycling-centers" element={<RecyclingCenters />} />
+          <Route path="/statistics" element={<Statistics />} />
+          <Route path="/invite" element={<Invite />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:username" element={<PublicProfile />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
       </Route>
 
-
+      {/* Protected Admin Routes */}
       <Route element={<ProtectedAdminRoute />}>
-        <Route path="/adminPage" element={<AdminPanel />} />
-        <Route path="/userPage" element={<UserPanel></UserPanel>} />
-        <Route path="/challengePage" element={<ChallengePanel />} />
-        <Route path="/commentPage" element={<CommentPanel />} />
-        <Route path="/activityPage" element={<ActivityPanel />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/adminPage" element={<AdminPanel />} />
+          <Route path="/userPage" element={<UserPanel />} />
+          <Route path="/challengePage" element={<ChallengePanel />} />
+          <Route path="/commentPage" element={<CommentPanel />} />
+          <Route path="/activityPage" element={<ActivityPanel />} />
+          <Route path="/admin/profile" element={<Profile />} />
+          <Route path="/admin/settings" element={<Settings />} />
+        </Route>
       </Route>
 
-
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="*" element={<LoginPage />} />
+      {/* Catch all - redirect to Landing (PublicRoute will handle logged-in redirect) */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 

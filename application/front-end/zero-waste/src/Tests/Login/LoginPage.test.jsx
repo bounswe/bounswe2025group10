@@ -12,10 +12,32 @@ import { MemoryRouter } from "react-router-dom";
 const loginMock = vi.fn();
 const navigateMock = vi.fn();
 
+vi.mock("../../components/layout/LandingNavbar", () => ({
+  default: ({ children }) => <div>{children}</div>,
+}));
+
 
 vi.mock("../../providers/AuthContext", () => ({
   useAuth: () => ({
     login: loginMock,
+  }),
+}));
+
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#ffffff",
+      text: "#000000",
+      secondary: "#00ff00",
+      border: "#cccccc",
+    },
+  }),
+}));
+
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback || key,
+    language: "en",
   }),
 }));
 
@@ -26,6 +48,10 @@ vi.mock("react-router-dom", async () => {
     useNavigate: () => navigateMock,
   };
 });
+
+vi.mock("../../providers/FontSizeContext", () => ({
+  useFontSize: () => ({ fontSize: "medium" }),
+}));
 
 
 import LoginPage from "../../pages/auth/LoginPage";
@@ -58,7 +84,7 @@ describe("<LoginPage />", () => {
     renderWithRouter();
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /sign up/i })).toHaveAttribute(
       "href",
@@ -72,7 +98,7 @@ describe("<LoginPage />", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByPlaceholderText(/password/i), "pa55word");
+    await user.type(screen.getByLabelText(/password/i), "pa55word");
     await user.click(screen.getByRole("button", { name: /login/i }));
 
     expect(loginMock).toHaveBeenCalledTimes(1);

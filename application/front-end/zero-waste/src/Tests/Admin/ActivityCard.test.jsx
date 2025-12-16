@@ -8,6 +8,18 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import ActivityCard from "../../components/features/ActivityCard";
 
+// Mock ThemeContext
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#ffffff",
+      text: "#000000",
+      secondary: "#00ff00",
+      border: "#cccccc",
+    },
+  }),
+}));
+
 describe("<ActivityCard />", () => {
   const mockActivity = {
     id: "123",

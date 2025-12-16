@@ -15,7 +15,63 @@
     "admin": "Admin",
     "recyclingCenters": "Recycling Centers",
     "statistics": "Statistics",
-    "inviteFriend": "Invite Friend"
+    "inviteFriend": "Invite Friend",
+    "impact": "Impact",
+    "adminPage": "Post Moderation",
+    "userPage": "User Moderation",
+    "challengePage": "Challenge Moderation",
+    "commentPage": "Comment Moderation",
+    "activityPage": "Activity Log"
+  },
+  "username": "Username",
+  "password": "Password",
+  "email": "Email",
+  "auth": {
+    "loginTitle": "Login",
+    "signupTitle": "Sign Up",
+    "subtitle": "Join the Zero Waste Movement 🌱",
+    "agreeTerms": "I agree to the Terms and Conditions and Privacy Policy",
+    "loginSuccess": "Login successful! Redirecting...",
+    "signupSuccess": "Sign up successful! Redirecting to login...",
+    "loginFailed": "Login failed",
+    "signupFailed": "Sign up failed",
+    "loggingIn": "Logging in...",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?"
+  },
+  "admin": {
+    "postModeration": "Board Post Moderation",
+    "managePosts": "Review and manage reported posts.",
+    "failedToLoad": "Failed to load items.",
+    "noPosts": "No reported posts found.",
+    "reportedPost": "Reported Post",
+    "confirmDelete": "Are you sure you want to delete this post?",
+    "deleteFailed": "Failed to delete post.",
+    "userModeration": "User Moderation",
+    "manageUsers": "Review and manage reported users.",
+    "noUsers": "No reported users found.",
+    "confirmBan": "Are you sure you want to ban this user?",
+    "banFailed": "Failed to ban user.",
+    "challengeModeration": "Challenge Moderation",
+    "manageChallenges": "Review and manage reported challenges.",
+    "noChallenges": "No reported challenges found.",
+    "confirmDeleteChallenge": "Are you sure you want to delete this challenge?",
+    "deleteChallengeFailed": "Failed to delete challenge.",
+    "commentModeration": "Comment Moderation",
+    "manageComments": "Review and manage reported comments.",
+    "noComments": "No reported comments found.",
+    "confirmDeleteComment": "Are you sure you want to delete this comment?",
+    "deleteCommentFailed": "Failed to delete comment.",
+    "activities": "Activity Log",
+    "viewActivities": "View system-wide activity events (ActivityPub).",
+    "failedToLoadActivities": "Failed to load activity events.",
+    "filterType": "Type",
+    "allTypes": "All Types",
+    "filterActorID": "Actor ID",
+    "enterActorID": "Enter actor ID...",
+    "clearFilters": "Clear Filters",
+    "noActivities": "No activity events found.",
+    "totalEvents": "Total Events"
   },
   "common": {
     "language": "Language",
@@ -43,6 +99,8 @@
     "next": "Next",
     "previous": "Previous",
     "page": "Page",
+    "of": "of",
+    "filters": "Filters",
     "total": "Total",
     "reason": "Reason",
     "reasonRequired": "Please provide a reason",
@@ -51,8 +109,11 @@
     "enterDescription": "Enter description...",
     "loginRequired": "Please login to perform this action",
     "notifications": "Notifications",
-    "markAllRead": "Mark all as read",
-    "noNotifications": "No notifications"
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications",
+    "readMore": "Read More",
+    "showLess": "Show Less",
+    "preview": "Preview"
   },
   "leaderboard": {
     "title": "🌿 Top 10 Zero Waste Champions",
@@ -74,7 +135,8 @@
     "description": "Description",
     "writeSomething": "Write something...",
     "uploadImage": "Upload Image (optional)",
-    "create": "Create",
+    "chooseFile": "Choose File",
+    "noFileSelected": "No file selected",
     "writeComment": "Write a comment...",
     "postComment": "Post Comment",
     "viewComments": "View all comments",
@@ -168,6 +230,8 @@
     "targetAmount": "Target Amount",
     "targetAmountPlaceholder": "Enter target amount",
     "makePublic": "Make challenge public",
+    "deadline": "Deadline",
+    "selectDeadline": "Select deadline",
     "reportChallenge": "Report Challenge",
     "reportDescription": "Let us know what's wrong with this challenge.",
     "reason": "Reason",
@@ -180,11 +244,17 @@
     "explainBriefly": "Please explain briefly…",
     "allFieldsRequired": "All fields except visibility are required.",
     "joinedChallenge": "You joined the challenge!",
+    "joinedDate": "Joined Date",
     "alreadyParticipating": "You are already participating or not allowed.",
     "errorJoining": "Error joining challenge",
     "provideReasonDescription": "Please provide both reason and description",
     "reportedSuccess": "Challenge reported successfully",
-    "errorReporting": "Error reporting challenge"
+    "errorReporting": "Error reporting challenge",
+    "unit": "Unit"
+  },
+  "units": {
+    "grams": "grams",
+    "kilograms": "kilograms"
   },
   "achievements": {
     "title": "Achievements",
@@ -197,6 +267,20 @@
     "light": "Light",
     "dark": "Dark",
     "highContrast": "High Contrast"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "accessibility": "Accessibility",
+    "fontSize": "Font Size",
+    "fontSizeDesc": "Adjust the font size for better readability.",
+    "xs": "Extra Small",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "xlarge": "X-Large",
+    "fontSizePreview": "This is how your text will look with the selected font size.",
+    "about": "About"
   },
   "weather": {
     "tips": {
@@ -249,7 +333,7 @@
     "followed": "Followed successfully",
     "unfollowed": "Unfollowed successfully",
     "noFollowing": "You are not following anyone yet.",
-"noFollowers": "No followers yet."
+    "noFollowers": "No followers yet."
   },
   "wasteHelper": {
     "title": "Add Waste",
@@ -358,5 +442,24 @@
     "wasteEncouragement": "Amazing work! Every item you recycle helps reduce pollution and conserve natural resources. Keep up the great effort!",
     "communityEncouragement": "Thank you for being an active member of our community! Together, we're building a sustainable future and inspiring others to make a difference.",
     "historyTitle": "Recycling History"
+  },
+  "landing": {
+    "title": "Make a Difference for a Sustainable Future",
+    "subtitle": "Track your waste, earn points, and join a community of changemakers.",
+    "cta": "Start Your Journey",
+    "features": {
+      "track": {
+        "title": "Track Waste",
+        "desc": "Log your daily recycling and waste to visualize your impact over time."
+      },
+      "points": {
+        "title": "Earn Points",
+        "desc": "Climb the leaderboard and earn achievements for your sustainable actions."
+      },
+      "community": {
+        "title": "Community",
+        "desc": "Connect with others, share tips, and participate in eco-challenges."
+      }
+    }
   }
 }
