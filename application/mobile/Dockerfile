@@ -1,138 +1,126 @@
-# Zero Waste Challenge Mobile App - Docker Build
-# This Dockerfile allows building the Android APK without requiring local Android SDK setup
-
 # ==============================================================================
-# Stage 1: Base Node.js environment
+# Zero Waste Challenge - Mobile App Docker Build Environment
 # ==============================================================================
-FROM node:18-bullseye AS base
+# This Dockerfile provides a complete build environment for the React Native
+# Expo application, supporting both development and production APK builds.
+#
+# Usage:
+#   Development: docker build --target development -t zerowaste-mobile-dev .
+#   Production:  docker build --target production -t zerowaste-mobile-prod .
+#   APK Build:   docker build --target apk-builder -t zerowaste-apk-builder .
+# ==============================================================================
 
-WORKDIR /app
+# ------------------------------------------------------------------------------
+# Base Stage: Node.js environment with common dependencies
+# ------------------------------------------------------------------------------
+FROM node:20-bullseye AS base
 
-# Install required system dependencies
+# Install system dependencies required for React Native and Android SDK
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    wget \
     unzip \
     openjdk-17-jdk \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for consistent JAVA_HOME path (works on both amd64 and arm64)
-RUN ln -sf /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-17-openjdk
-
-# Set JAVA_HOME to the symlink
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-ENV PATH=$JAVA_HOME/bin:$PATH
-
-# ==============================================================================
-# Stage 2: Android SDK Setup
-# ==============================================================================
-FROM base AS android-sdk
-
-# Android SDK environment variables
+# Set Android SDK environment variables
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/34.0.0
 
-# Download and install Android command line tools
+# Install Android SDK command-line tools
 RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
     cd $ANDROID_HOME/cmdline-tools && \
-    curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip && \
-    unzip commandlinetools.zip && \
-    rm commandlinetools.zip && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip && \
+    unzip -q cmdline-tools.zip && \
+    rm cmdline-tools.zip && \
     mv cmdline-tools latest
 
-# Accept Android SDK licenses
-RUN yes | sdkmanager --licenses
-
-# Install required Android SDK packages
-RUN sdkmanager \
-    "platform-tools" \
+# Detect JAVA_HOME dynamically and install Android SDK components
+RUN export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) && \
+    echo "JAVA_HOME=$JAVA_HOME" && \
+    yes | sdkmanager --licenses && \
+    sdkmanager "platform-tools" \
     "platforms;android-34" \
     "build-tools;34.0.0" \
     "ndk;26.1.10909125"
 
-# ==============================================================================
-# Stage 3: Dependencies installation
-# ==============================================================================
-FROM android-sdk AS dependencies
+# Set JAVA_HOME for subsequent commands
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
 
+# Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
-# ==============================================================================
-# Stage 4: Development environment (for testing and linting)
-# ==============================================================================
-FROM dependencies AS development
-
-# Copy all source files
+# Copy the rest of the application
 COPY . .
+
+# ------------------------------------------------------------------------------
+# Development Stage: For local development with hot reloading
+# ------------------------------------------------------------------------------
+FROM base AS development
+
+# Expose Metro bundler port
+EXPOSE 8081
+
+# Expose Expo DevTools port
+EXPOSE 19000
+EXPOSE 19001
+EXPOSE 19002
 
 # Default command for development
 CMD ["npm", "start"]
 
-# ==============================================================================
-# Stage 5: Testing stage
-# ==============================================================================
-FROM dependencies AS test
+# ------------------------------------------------------------------------------
+# APK Builder Stage: For building production APK
+# ------------------------------------------------------------------------------
+FROM base AS apk-builder
 
-# Copy all source files
-COPY . .
+# Set build-time arguments for environment configuration
+ARG API_URL=https://zerowaste.ink
+ARG BUILD_TYPE=release
 
-# Run tests
-CMD ["npm", "test"]
+# Create .env file with build-time configuration
+RUN echo "API_URL=${API_URL}" > .env
 
-# ==============================================================================
-# Stage 6: Production APK build using EAS Build
-# ==============================================================================
-FROM dependencies AS build-apk
+# Generate native Android project using Expo prebuild
+RUN npx expo prebuild --platform android --clean
 
-# Copy all source files
-COPY . .
+# Build the APK
+WORKDIR /app/android
 
-# Copy environment file if provided, otherwise use example
-COPY .env* ./
-RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "API_URL=http://localhost:8000" > .env; fi
+# For release build
+RUN if [ "$BUILD_TYPE" = "release" ]; then \
+    ./gradlew assembleRelease --no-daemon; \
+    else \
+    ./gradlew assembleDebug --no-daemon; \
+    fi
 
-# Install EAS CLI globally
-RUN npm install -g eas-cli
+# Copy APK to output directory
+RUN mkdir -p /app/output && \
+    if [ "$BUILD_TYPE" = "release" ]; then \
+    cp /app/android/app/build/outputs/apk/release/*.apk /app/output/; \
+    else \
+    cp /app/android/app/build/outputs/apk/debug/*.apk /app/output/; \
+    fi
 
-# Create eas.json if it doesn't exist
-RUN if [ ! -f eas.json ]; then echo '{\
-  "cli": { "version": ">= 5.0.0" },\
-  "build": {\
-    "development": {\
-      "developmentClient": true,\
-      "distribution": "internal"\
-    },\
-    "preview": {\
-      "distribution": "internal",\
-      "android": { "buildType": "apk" }\
-    },\
-    "production": {\
-      "android": { "buildType": "apk" }\
-    }\
-  }\
-}' > eas.json; fi
+WORKDIR /app
 
-# Build APK (requires EAS account or use --local flag)
-# The actual build command will be run via docker-compose or docker run
-CMD ["npm", "run", "build:android:local"]
+# ------------------------------------------------------------------------------
+# Production Stage: Minimal image with just the built APK
+# ------------------------------------------------------------------------------
+FROM alpine:latest AS production
 
-# ==============================================================================
-# Stage 7: Web export (alternative for quick verification)
-# ==============================================================================
-FROM dependencies AS build-web
+WORKDIR /output
 
-COPY . .
+# Copy APK from builder stage
+COPY --from=apk-builder /app/output/*.apk ./
 
-# Copy environment file
-COPY .env* ./
-RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "API_URL=http://localhost:8000" > .env; fi
-
-# Export for web
-CMD ["npx", "expo", "export", "--platform", "web"]
+# Default command shows the built APK
+CMD ["ls", "-la", "/output"]
