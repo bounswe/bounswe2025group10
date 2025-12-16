@@ -22,7 +22,7 @@ class ActivityEventViewSet(viewsets.ModelViewSet):
     """
     queryset = ActivityEvent.objects.all().order_by("-published_at")
     serializer_class = ActivityEventSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = ActivityEventPagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]

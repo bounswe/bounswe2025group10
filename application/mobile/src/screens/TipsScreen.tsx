@@ -73,6 +73,10 @@ export const TipsScreen: React.FC = () => {
     navigation.navigateToScreen('Leaderboard');
   };
 
+  const handleActivityFeedPress = () => {
+    navigation.navigateToScreen('ActivityFeed');
+  };
+
   // Fetch tips
   const fetchTips = useCallback(async (isRefresh = false) => {
     console.log('[TipsScreen] fetchTips called, isRefresh:', isRefresh);
@@ -280,6 +284,7 @@ export const TipsScreen: React.FC = () => {
           onTipsPress={handleTipsPress}
           onAchievementsPress={handleAchievementsPress}
           onLeaderboardPress={handleLeaderboardPress}
+          onActivityFeedPress={handleActivityFeedPress}
           testID="tips-more-dropdown"
         />
       }
