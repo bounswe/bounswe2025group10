@@ -1,7 +1,6 @@
 // src/pages/profile/PublicProfile.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import Navbar from "../../components/layout/Navbar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../providers/ThemeContext";
 import { useLanguage } from "../../providers/LanguageContext";
@@ -68,7 +67,7 @@ export default function PublicProfile() {
           } else {
             setIsBioPrivate(false);
             setBio(bioData.bio || "");
-                  }
+          }
         } catch (err) {
           console.error("Failed to load bio:", err);
           setBio("");
@@ -391,7 +390,7 @@ export default function PublicProfile() {
             )}
 
         </div>
-        )}
+      )}
 
       {/* Achievements Section */}
         {achievements.length > 0 && (
@@ -523,6 +522,5 @@ export default function PublicProfile() {
           )}
         </AnimatePresence>
       </motion.main>
-    </Navbar>
   );
 }
