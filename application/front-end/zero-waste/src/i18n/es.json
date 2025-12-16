@@ -9,6 +9,7 @@
     "tips": "Consejos",
     "achievements": "Logros",
     "leaderboard": "Clasificación",
+    "activities": "Actividades",
     "profile": "Perfil",
     "login": "Iniciar Sesión",
     "signup": "Registrarse",
@@ -476,6 +477,33 @@
       }
     }
   },
+  "activities": {
+    "title": "Feed de Actividad",
+    "subtitle": "Tus actividades y actividades de las personas que sigues",
+    "totalEvents": "Total de eventos",
+    "filterType": "Tipo de Actividad",
+    "allTypes": "Todos los Tipos",
+    "clearFilters": "Borrar Filtros",
+    "noActivities": "No se encontraron actividades.",
+    "loadingActivities": "Cargando actividades...",
+    "failedToLoad": "Error al cargar eventos de actividad. Inténtalo de nuevo.",
+    "activityTypes": {
+      "createWaste": "Crear Residuo",
+      "updateWaste": "Actualizar Residuo",
+      "deleteWaste": "Eliminar Residuo",
+      "createPost": "Crear Publicación",
+      "updatePost": "Actualizar Publicación",
+      "deletePost": "Eliminar Publicación",
+      "createComment": "Crear Comentario",
+      "updateComment": "Actualizar Comentario",
+      "deleteComment": "Eliminar Comentario",
+      "likePost": "Me Gusta en Publicación",
+      "followUser": "Seguir Usuario",
+      "unfollowUser": "Dejar de Seguir Usuario",
+      "joinCommunity": "Unirse a Comunidad",
+      "leaveCommunity": "Abandonar Comunidad"
+    }
+  },
   "preferences": {
     "title": "Configuración",
     "saved": "Configuración actualizada",
@@ -510,11 +538,11 @@
     "followersOnly": "Solo Seguidores",
     "private": "Privado",
     "copy": "Copiar",
-"tokenCopied": "¡Token de recuperación copiado!",
-"deletionRequestedTitle": "Eliminación Solicitada",
-"deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
-"saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
-"tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
-"confirmLogout": "Lo he guardado, cerrar sesión"
+    "tokenCopied": "¡Token de recuperación copiado!",
+    "deletionRequestedTitle": "Eliminación Solicitada",
+    "deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
+    "saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
+    "tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
+    "confirmLogout": "Lo he guardado, cerrar sesión"
   }
 }

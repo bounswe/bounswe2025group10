@@ -9,6 +9,7 @@
     "tips": "Tips",
     "achievements": "Achievements",
     "leaderboard": "Leaderboard",
+    "activities": "Activities",
     "profile": "Profile",
     "login": "Login",
     "signup": "Sign Up",
@@ -22,7 +23,7 @@
     "challengePage": "Challenge Moderation",
     "commentPage": "Comment Moderation",
     "activityPage": "Activity Log",
-        "preferences": "Privacy & Account"
+    "preferences": "Privacy & Account"
   },
   "username": "Username",
   "password": "Password",
@@ -480,6 +481,33 @@
       }
     }
   },
+  "activities": {
+    "title": "Activity Feed",
+    "subtitle": "Your activities and activities from people you follow",
+    "totalEvents": "Total events",
+    "filterType": "Activity Type",
+    "allTypes": "All Types",
+    "clearFilters": "Clear Filters",
+    "noActivities": "No activities found.",
+    "loadingActivities": "Loading activities...",
+    "failedToLoad": "Failed to load activity events. Please try again.",
+    "activityTypes": {
+      "createWaste": "Create Waste",
+      "updateWaste": "Update Waste",
+      "deleteWaste": "Delete Waste",
+      "createPost": "Create Post",
+      "updatePost": "Update Post",
+      "deletePost": "Delete Post",
+      "createComment": "Create Comment",
+      "updateComment": "Update Comment",
+      "deleteComment": "Delete Comment",
+      "likePost": "Like Post",
+      "followUser": "Follow User",
+      "unfollowUser": "Unfollow User",
+      "joinCommunity": "Join Community",
+      "leaveCommunity": "Leave Community"
+    }
+  },
   "preferences": {
     "title": "Settings",
     "saved": "Settings updated",
@@ -514,11 +542,11 @@
     "followersOnly": "Followers Only",
     "private": "Private",
     "copy": "Copy",
-"tokenCopied": "Recovery token copied!",
-"deletionRequestedTitle": "Deletion Requested",
-"deactivationMessage": "Your account has been deactivated. You will be logged out now.",
-"saveTokenLabel": "SAVE THIS RECOVERY TOKEN:",
-"tokenInstructions": "If you want to cancel the deletion and recover your account within the next 30 days, you will need this token.",
-"confirmLogout": "I have saved it, Log me out"
+    "tokenCopied": "Recovery token copied!",
+    "deletionRequestedTitle": "Deletion Requested",
+    "deactivationMessage": "Your account has been deactivated. You will be logged out now.",
+    "saveTokenLabel": "SAVE THIS RECOVERY TOKEN:",
+    "tokenInstructions": "If you want to cancel the deletion and recover your account within the next 30 days, you will need this token.",
+    "confirmLogout": "I have saved it, Log me out"
   }
 }

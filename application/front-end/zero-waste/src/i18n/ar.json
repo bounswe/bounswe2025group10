@@ -19,6 +19,7 @@
     "tips": "نصائح",
     "achievements": "الإنجازات",
     "leaderboard": "قائمة المتصدرين",
+    "activities": "الأنشطة",
     "profile": "الملف الشخصي",
     "login": "تسجيل الدخول",
     "signup": "إنشاء حساب",
@@ -33,7 +34,6 @@
     "commentPage": "إدارة التعليقات",
     "activityPage": "سجل النشاط",
     "preferences": "الخصوصية والحساب"
-
   },
   "username": "اسم المستخدم",
   "password": "كلمة المرور",
@@ -264,7 +264,7 @@
     "signupFailed": "فشل التسجيل",
     "loggingIn": "جارٍ تسجيل الدخول...",
     "haveAccount": "هل لديك حساب بالفعل؟",
-    "noAccount": "ليس لديك حساب؟", 
+    "noAccount": "ليس لديك حساب؟",
     "recoverAcount": "استعادة الحساب المحذوف؟",
     "recoverTitle": "استعادة الحساب",
     "recoverSubtitle": "استعد رحلتك في صفر نفايات ♻️",
@@ -488,6 +488,33 @@
       }
     }
   },
+  "activities": {
+    "title": "موجز النشاط",
+    "subtitle": "أنشطتك وأنشطة الأشخاص الذين تتابعهم",
+    "totalEvents": "إجمالي الأحداث",
+    "filterType": "نوع النشاط",
+    "allTypes": "جميع الأنواع",
+    "clearFilters": "مسح المرشحات",
+    "noActivities": "لم يتم العثور على أنشطة.",
+    "loadingActivities": "جارٍ تحميل الأنشطة...",
+    "failedToLoad": "فشل تحميل أحداث النشاط. يرجى المحاولة مرة أخرى.",
+    "activityTypes": {
+      "createWaste": "إنشاء نفاية",
+      "updateWaste": "تحديث نفاية",
+      "deleteWaste": "حذف نفاية",
+      "createPost": "إنشاء منشور",
+      "updatePost": "تحديث منشور",
+      "deletePost": "حذف منشور",
+      "createComment": "إنشاء تعليق",
+      "updateComment": "تحديث تعليق",
+      "deleteComment": "حذف تعليق",
+      "likePost": "إعجاب بمنشور",
+      "followUser": "متابعة مستخدم",
+      "unfollowUser": "إلغاء متابعة مستخدم",
+      "joinCommunity": "الانضمام إلى المجتمع",
+      "leaveCommunity": "مغادرة المجتمع"
+    }
+  },
   "preferences": {
     "title": "الإعدادات",
     "saved": "تم تحديث الإعدادات",
@@ -522,11 +549,11 @@
     "followersOnly": "المتابعين فقط",
     "private": "خاص",
     "copy": "نسخ",
-"tokenCopied": "تم نسخ رمز الاسترداد!",
-"deletionRequestedTitle": "تم طلب الحذف",
-"deactivationMessage": "تم إلغاء تنشيط حسابك. سيتم تسجيل خروجك الآن.",
-"saveTokenLabel": "احفظ رمز الاسترداد هذا:",
-"tokenInstructions": "إذا كنت ترغب في إلغاء الحذف واستعادة حسابك خلال الـ 30 يومًا القادمة، ستحتاج إلى هذا الرمز.",
-"confirmLogout": "لقد حفظته، سجل خروجي"
+    "tokenCopied": "تم نسخ رمز الاسترداد!",
+    "deletionRequestedTitle": "تم طلب الحذف",
+    "deactivationMessage": "تم إلغاء تنشيط حسابك. سيتم تسجيل خروجك الآن.",
+    "saveTokenLabel": "احفظ رمز الاسترداد هذا:",
+    "tokenInstructions": "إذا كنت ترغب في إلغاء الحذف واستعادة حسابك خلال الـ 30 يومًا القادمة، ستحتاج إلى هذا الرمز.",
+    "confirmLogout": "لقد حفظته، سجل خروجي"
   }
 }

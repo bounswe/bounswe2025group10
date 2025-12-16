@@ -19,6 +19,7 @@
     "tips": "Conseils",
     "achievements": "Réalisations",
     "leaderboard": "Classement",
+    "activities": "Activités",
     "profile": "Profil",
     "login": "Se Connecter",
     "signup": "S'inscrire",
@@ -486,6 +487,33 @@
       }
     }
   },
+  "activities": {
+    "title": "Fil d'Activité",
+    "subtitle": "Vos activités et les activités des personnes que vous suivez",
+    "totalEvents": "Total des événements",
+    "filterType": "Type d'Activité",
+    "allTypes": "Tous les Types",
+    "clearFilters": "Effacer les Filtres",
+    "noActivities": "Aucune activité trouvée.",
+    "loadingActivities": "Chargement des activités...",
+    "failedToLoad": "Échec du chargement des événements d'activité. Veuillez réessayer.",
+    "activityTypes": {
+      "createWaste": "Créer Déchet",
+      "updateWaste": "Mettre à Jour Déchet",
+      "deleteWaste": "Supprimer Déchet",
+      "createPost": "Créer Publication",
+      "updatePost": "Mettre à Jour Publication",
+      "deletePost": "Supprimer Publication",
+      "createComment": "Créer Commentaire",
+      "updateComment": "Mettre à Jour Commentaire",
+      "deleteComment": "Supprimer Commentaire",
+      "likePost": "Aimer Publication",
+      "followUser": "Suivre Utilisateur",
+      "unfollowUser": "Ne Plus Suivre Utilisateur",
+      "joinCommunity": "Rejoindre Communauté",
+      "leaveCommunity": "Quitter Communauté"
+    }
+  },
   "preferences": {
     "title": "Paramètres",
     "saved": "Paramètres mis à jour",
@@ -520,11 +548,11 @@
     "followersOnly": "Abonnés uniquement",
     "private": "Privé",
     "copy": "Copier",
-"tokenCopied": "Jeton de récupération copié !",
-"deletionRequestedTitle": "Suppression Demandée",
-"deactivationMessage": "Votre compte a été désactivé. Vous allez être déconnecté maintenant.",
-"saveTokenLabel": "SAUVEGARDEZ CE JETON :",
-"tokenInstructions": "Si vous souhaitez annuler la suppression et récupérer votre compte dans les 30 jours, vous aurez besoin de ce jeton.",
-"confirmLogout": "Je l'ai sauvegardé, déconnectez-moi"
+    "tokenCopied": "Jeton de récupération copié !",
+    "deletionRequestedTitle": "Suppression Demandée",
+    "deactivationMessage": "Votre compte a été désactivé. Vous allez être déconnecté maintenant.",
+    "saveTokenLabel": "SAUVEGARDEZ CE JETON :",
+    "tokenInstructions": "Si vous souhaitez annuler la suppression et récupérer votre compte dans les 30 jours, vous aurez besoin de ce jeton.",
+    "confirmLogout": "Je l'ai sauvegardé, déconnectez-moi"
   }
 }
