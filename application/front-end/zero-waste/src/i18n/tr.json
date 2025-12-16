@@ -349,7 +349,12 @@
     "followed": "Başarıyla takip edildi",
     "unfollowed": "Takip başarıyla bırakıldı",
     "noFollowing": "Henüz kimseyi takip etmiyorsunuz.",
-    "noFollowers": "Henüz takipçi yok."
+    "noFollowers": "Henüz takipçi yok.",
+"bioPrivate": "Bu kullanıcının biyografisi gizli.",
+  "statsPrivate": "İstatistikler gizlilik ayarları nedeniyle gizli.",
+  "impactStats": "Çevresel Etki",
+  "totalWaste": "Azaltılan CO2",
+  "points": "Puanlar"
   },
   "wasteHelper": {
     "title": "Atık Ekle",

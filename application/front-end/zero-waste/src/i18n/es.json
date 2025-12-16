@@ -347,7 +347,12 @@
     "followed": "Seguido exitosamente",
     "unfollowed": "Dejado de seguir exitosamente",
     "noFollowing": "Aún no sigues a nadie.",
-    "noFollowers": "Aún no hay seguidores."
+    "noFollowers": "Aún no hay seguidores.", 
+"bioPrivate": "La biografía de este usuario es privada.",
+  "statsPrivate": "Las estadísticas están ocultas por la configuración de privacidad.",
+  "impactStats": "Impacto Ambiental",
+  "totalWaste": "CO2 Reducido",
+  "points": "Puntos"
   },
   "wasteHelper": {
     "title": "Agregar Residuo",
