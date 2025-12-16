@@ -352,7 +352,8 @@
   "statsPrivate": "Las estadísticas están ocultas por la configuración de privacidad.",
   "impactStats": "Impacto Ambiental",
   "totalWaste": "CO2 Reducido",
-  "points": "Puntos"
+  "points": "Puntos",
+  "noBio": "Este usuario no tiene una biografía pública."
   },
   "wasteHelper": {
     "title": "Agregar Residuo",

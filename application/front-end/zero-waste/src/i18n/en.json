@@ -356,7 +356,8 @@
   "statsPrivate": "Statistics are hidden by privacy settings.",
   "impactStats": "Environmental Impact",
   "totalWaste": "CO2 Reduced",
-  "points": "Points"
+  "points": "Points",
+  "noBio": "This user does not have a public bio."
   },
   "wasteHelper": {
     "title": "Add Waste",
