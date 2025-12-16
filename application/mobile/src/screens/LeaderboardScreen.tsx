@@ -15,7 +15,6 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { leaderboardService, getProfilePictureUrl, LeaderboardUser, UserBio } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
@@ -377,8 +376,6 @@ export const LeaderboardScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Custom Tab Bar */}
-      <CustomTabBar activeTab="Leaderboard" />
     </ScreenWrapper>
   );
 };

@@ -110,7 +110,12 @@ export const filterWasteData = (
   // Filter records by date and recalculate totals
   return filteredByType.map((item) => {
     const filteredRecords = filterRecordsByDate(item.records, startDate, endDate);
-    const totalAmount = filteredRecords.reduce((sum, record) => sum + record.amount, 0);
+
+    // If records array is empty (API doesn't provide individual records),
+    // use the original total_amount instead of recalculating
+    const totalAmount = item.records.length === 0
+      ? item.total_amount
+      : filteredRecords.reduce((sum, record) => sum + record.amount, 0);
 
     return {
       waste_type: item.waste_type,

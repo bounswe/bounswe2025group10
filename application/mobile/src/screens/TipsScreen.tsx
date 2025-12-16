@@ -16,9 +16,9 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { tipService } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/errors';
 
@@ -44,6 +44,7 @@ const REPORT_REASONS = [
 
 export const TipsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { colors: themeColors } = useTheme();
   const navigation = useAppNavigation();
   const [tips, setTips] = useState<Tip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,21 +208,21 @@ export const TipsScreen: React.FC = () => {
     const displayDescription = isTranslated ? translatedTips[item.id].description : item.description;
 
     return (
-      <View style={styles.tipCard}>
+      <View style={[styles.tipCard, { backgroundColor: themeColors.background }]}>
         <View style={styles.tipHeader}>
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>{displayTitle}</Text>
-            <Text style={styles.tipDescription}>{displayDescription}</Text>
+            <Text style={[styles.tipTitle, { color: themeColors.textPrimary }]}>{displayTitle}</Text>
+            <Text style={[styles.tipDescription, { color: themeColors.textSecondary }]}>{displayDescription}</Text>
           </View>
           <View style={{flexDirection: 'row'}}>
             <TouchableOpacity
-              style={[styles.translateButton, isTranslated && styles.translateButtonActive]}
+              style={[styles.translateButton, { backgroundColor: themeColors.backgroundSecondary }, isTranslated && { backgroundColor: themeColors.primary }]}
               onPress={() => toggleTranslation(item.id, item.title, item.description)}
             >
               <Text style={styles.translateButtonText}>🌐</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.reportButton}
+              style={[styles.reportButton, { backgroundColor: themeColors.backgroundSecondary }]}
               onPress={() => setReportingId(item.id)}
               accessibilityLabel="Report this tip"
               accessibilityRole="button"
@@ -231,17 +232,18 @@ export const TipsScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.tipActions}>
+        <View style={[styles.tipActions, { borderTopColor: themeColors.lightGray }]}>
         <TouchableOpacity
           style={[
             styles.actionButton,
-            item.is_user_liked && styles.actionButtonActive
+            item.is_user_liked && { backgroundColor: themeColors.backgroundSecondary }
           ]}
           onPress={() => handleLike(item.id)}
         >
           <Text style={[
             styles.actionButtonText,
-            item.is_user_liked && styles.actionButtonTextActive
+            { color: themeColors.textSecondary },
+            item.is_user_liked && { color: themeColors.primary, fontWeight: '600' }
           ]}>
             👍 {item.like_count}
           </Text>
@@ -250,13 +252,14 @@ export const TipsScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.actionButton,
-            item.is_user_disliked && styles.actionButtonActive
+            item.is_user_disliked && { backgroundColor: themeColors.backgroundSecondary }
           ]}
           onPress={() => handleDislike(item.id)}
         >
           <Text style={[
             styles.actionButtonText,
-            item.is_user_disliked && styles.actionButtonTextActive
+            { color: themeColors.textSecondary },
+            item.is_user_disliked && { color: themeColors.primary, fontWeight: '600' }
           ]}>
             👎 {item.dislike_count}
           </Text>
@@ -269,8 +272,8 @@ export const TipsScreen: React.FC = () => {
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>{t('tips.noTips')}</Text>
-      <Text style={styles.emptyStateSubtext}>{t('tips.createFirst')}</Text>
+      <Text style={[styles.emptyStateText, { color: themeColors.textPrimary }]}>{t('tips.noTips')}</Text>
+      <Text style={[styles.emptyStateSubtext, { color: themeColors.textSecondary }]}>{t('tips.createFirst')}</Text>
     </View>
   );
 
@@ -280,6 +283,16 @@ export const TipsScreen: React.FC = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      leftComponent={
+        <TouchableOpacity
+          style={styles.headerSubmitButton}
+          onPress={() => setIsCreating(true)}
+          accessibilityLabel="Create new tip"
+          accessibilityRole="button"
+        >
+          <Text style={styles.headerSubmitButtonText}>+</Text>
+        </TouchableOpacity>
+      }
       rightComponent={
         <MoreDropdown
           onTipsPress={handleTipsPress}
@@ -292,28 +305,21 @@ export const TipsScreen: React.FC = () => {
       testID="tips-screen"
       accessibilityLabel="Sustainability tips screen"
     >
-      {/* Submit button on the left */}
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={() => setIsCreating(true)}
-        accessibilityLabel="Create new tip"
-        accessibilityRole="button"
-      >
-        <Text style={styles.createButtonText}>+ {t('common.submit')}</Text>
-      </TouchableOpacity>
-
-      {loading && !refreshing ? (
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-      ) : (
-        <FlatList
-          data={tips}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderTipCard}
-          ListEmptyComponent={renderEmptyState}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
+      <View style={{flex: 1}}>
+        {loading && !refreshing ? (
+          <ActivityIndicator size="large" color={themeColors.primary} style={styles.loader} />
+        ) : (
+          <FlatList
+            data={tips}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderTipCard}
+            ListEmptyComponent={renderEmptyState}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            style={{flex: 1}}
+          />
+        )}
+      </View>
 
       {/* Create Tip Modal */}
       <Modal
@@ -321,33 +327,35 @@ export const TipsScreen: React.FC = () => {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('tips.title')}</Text>
+        <View style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: themeColors.lightGray }]}>
+            <Text style={[styles.modalTitle, { color: themeColors.textPrimary }]}>{t('tips.title')}</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={closeCreateModal}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: themeColors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.modalContent}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Title</Text>
+              <Text style={[styles.inputLabel, { color: themeColors.textPrimary }]}>Title</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: themeColors.backgroundSecondary, color: themeColors.textPrimary, borderColor: themeColors.lightGray }]}
                 placeholder="Enter tip title"
+                placeholderTextColor={themeColors.textSecondary}
                 value={newTip.title}
                 onChangeText={(text) => setNewTip({ ...newTip, title: text })}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description</Text>
+              <Text style={[styles.inputLabel, { color: themeColors.textPrimary }]}>Description</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: themeColors.backgroundSecondary, color: themeColors.textPrimary, borderColor: themeColors.lightGray }]}
                 placeholder="Enter tip description"
+                placeholderTextColor={themeColors.textSecondary}
                 value={newTip.description}
                 onChangeText={(text) => setNewTip({ ...newTip, description: text })}
                 multiline
@@ -357,17 +365,17 @@ export const TipsScreen: React.FC = () => {
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { borderColor: themeColors.primary, backgroundColor: themeColors.background }]}
                 onPress={closeCreateModal}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: themeColors.primary }]}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, { backgroundColor: themeColors.primary }]}
                 onPress={handleCreateTip}
               >
-                <Text style={styles.submitButtonText}>Create</Text>
+                <Text style={[styles.submitButtonText, { color: themeColors.textOnPrimary }]}>Create</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -380,37 +388,39 @@ export const TipsScreen: React.FC = () => {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Report Tip</Text>
+        <View style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: themeColors.lightGray }]}>
+            <Text style={[styles.modalTitle, { color: themeColors.textPrimary }]}>Report Tip</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={closeReportModal}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: themeColors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.modalContent}>
-            <Text style={styles.reportDescription}>
+            <Text style={[styles.reportDescription, { color: themeColors.textSecondary }]}>
               Let us know what's wrong with this tip.
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Reason</Text>
+              <Text style={[styles.inputLabel, { color: themeColors.textPrimary }]}>Reason</Text>
               <ScrollView style={styles.reasonList}>
                 {REPORT_REASONS.map((reason) => (
                   <TouchableOpacity
                     key={reason.value}
                     style={[
                       styles.reasonItem,
-                      reportReason === reason.value && styles.reasonItemSelected
+                      { borderColor: themeColors.lightGray },
+                      reportReason === reason.value && { borderColor: themeColors.primary, backgroundColor: themeColors.backgroundSecondary }
                     ]}
                     onPress={() => setReportReason(reason.value)}
                   >
                     <Text style={[
                       styles.reasonItemText,
-                      reportReason === reason.value && styles.reasonItemTextSelected
+                      { color: themeColors.textPrimary },
+                      reportReason === reason.value && { color: themeColors.primary, fontWeight: '600' }
                     ]}>
                       {reason.label}
                     </Text>
@@ -420,10 +430,11 @@ export const TipsScreen: React.FC = () => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description</Text>
+              <Text style={[styles.inputLabel, { color: themeColors.textPrimary }]}>Description</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: themeColors.backgroundSecondary, color: themeColors.textPrimary, borderColor: themeColors.lightGray }]}
                 placeholder="Please explain briefly..."
+                placeholderTextColor={themeColors.textSecondary}
                 value={reportDescription}
                 onChangeText={setReportDescription}
                 multiline
@@ -433,49 +444,46 @@ export const TipsScreen: React.FC = () => {
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { borderColor: themeColors.primary, backgroundColor: themeColors.background }]}
                 onPress={closeReportModal}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: themeColors.primary }]}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.submitButton,
-                  (!reportReason || !reportDescription.trim()) && styles.submitButtonDisabled
+                  { backgroundColor: themeColors.primary },
+                  (!reportReason || !reportDescription.trim()) && { backgroundColor: themeColors.lightGray, opacity: 0.6 }
                 ]}
                 onPress={handleReport}
                 disabled={!reportReason || !reportDescription.trim()}
               >
-                <Text style={styles.submitButtonText}>Submit</Text>
+                <Text style={[styles.submitButtonText, { color: themeColors.textOnPrimary }]}>Submit</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      
-      {/* Custom Tab Bar */}
-      <CustomTabBar activeTab="Tips" />
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  createButton: {
-    backgroundColor: colors.primary,
+  headerSubmitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
-    minHeight: MIN_TOUCH_TARGET,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    marginBottom: spacing.md,
+    backgroundColor: colors.primary,
+    flexShrink: 0,
   },
-  createButtonText: {
-    ...typography.button,
-    color: colors.white,
+  headerSubmitButtonText: {
+    ...typography.body,
     fontWeight: '600',
+    color: colors.white,
+    flexShrink: 0,
   },
   loader: {
     marginTop: spacing.xl,
