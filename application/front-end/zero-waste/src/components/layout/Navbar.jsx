@@ -86,13 +86,7 @@ export default function Navbar({
           flex flex-col
           ${isRTL ? "border-l" : "border-r"} shadow-lg
           transition-transform duration-300
-          ${
-            mobileMenuOpen
-              ? "translate-x-0"
-              : isRTL
-              ? "translate-x-full"
-              : "-translate-x-full"
-          }
+          ${mobileMenuOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')}
           lg:translate-x-0
           fixed lg:static
           z-40
@@ -159,9 +153,7 @@ export default function Navbar({
                 setShowThemeMenu(false);
                 setShowProfileMenu(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${
-                isRTL ? "flex-row-reverse" : ""
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
               style={{
                 color: currentTheme.primaryText,
               }}
@@ -219,25 +211,16 @@ export default function Navbar({
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b last:border-0 hover:opacity-90 cursor-pointer transition-colors ${
-                          !notification.read ? "bg-opacity-10 bg-blue-500" : ""
-                        }`}
-                        style={{ borderColor: currentTheme.border }}
+                        className={`p-3 border-b last:border-0 hover:opacity-90 cursor-pointer transition-colors`}
+                        style={{
+                          borderColor: currentTheme.border,
+                          backgroundColor: !notification.read ? (theme === 'dark' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'
+                        }}
                         onClick={() => markAsRead(notification.id)}
                       >
-                        <p
-                          className="text-sm mb-1"
-                          style={{ color: currentTheme.primaryText }}
-                        >
-                          {notification.message}
-                        </p>
-                        <p
-                          className="text-xs opacity-60"
-                          style={{ color: currentTheme.primaryText }}
-                        >
-                          {new Date(
-                            notification.created_at
-                          ).toLocaleDateString()}
+                        <p className={`text-sm mb-1 ${!notification.read ? 'font-semibold' : ''}`} style={{ color: currentTheme.primaryText }}>{notification.message}</p>
+                        <p className="text-xs opacity-60" style={{ color: currentTheme.primaryText }}>
+                          {new Date(notification.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     ))
@@ -250,9 +233,7 @@ export default function Navbar({
           <div className="relative">
             <Link
               to={isAdmin ? "/admin/settings" : "/settings"}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${
-                isRTL ? "flex-row-reverse" : ""
-              } no-underline`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''} no-underline`}
               style={{
                 color: currentTheme.primaryText,
                 textDecoration: "none",
@@ -270,9 +251,7 @@ export default function Navbar({
                 e.stopPropagation();
                 setShowProfileMenu(!showProfileMenu);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${
-                isRTL ? "flex-row-reverse" : ""
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
               style={{
                 color: currentTheme.primaryText,
               }}
@@ -347,26 +326,26 @@ export default function Navbar({
       </div>
 
       {/* Mobile Overlay - Must be after sidebar to not block it */}
-      {mobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-30"
-          style={{ backgroundColor: currentTheme.background, opacity: 0.7 }}
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+      {
+        mobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 z-30"
+            style={{ backgroundColor: currentTheme.background, opacity: 0.7 }}
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )
+      }
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Content */}
         <main
-          className={`flex-1 overflow-auto ${
-            fullWidth ? "" : "p-6"
-          } pt-20 lg:pt-6`}
+          className={`flex-1 overflow-auto ${fullWidth ? '' : 'p-6'} pt-20 lg:pt-6`}
           style={{ backgroundColor: currentTheme.background }}
         >
           {children}
         </main>
       </div>
-    </div>
+    </div >
   );
 }

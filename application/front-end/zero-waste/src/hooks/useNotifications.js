@@ -1,47 +1,83 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../providers/AuthContext';
+import { apiClient } from '../services/api';
+import { toast } from 'react-toastify';
 
-const WS_URL = import.meta.env.VITE_WS_URL;
+// Helper to determine the correct WebSocket URL synchronously
+const getWsUrl = () => {
+    let derivedUrl = '';
+
+    if (import.meta.env.VITE_WS_URL) {
+        derivedUrl = import.meta.env.VITE_WS_URL;
+    } else if (import.meta.env.VITE_API_URL) {
+        derivedUrl = import.meta.env.VITE_API_URL.replace(/^http/, 'ws');
+    } else {
+        derivedUrl = 'ws://localhost:8000';
+    }
+
+    // Clean up and append path
+    derivedUrl = derivedUrl.replace(/\/$/, '') + '/ws/notifications/';
+
+    // Security Upgrade: If page is HTTPS, force WSS to prevent Mixed Content blocking
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && derivedUrl.startsWith('ws:')) {
+        derivedUrl = derivedUrl.replace('ws:', 'wss:');
+    }
+
+    return derivedUrl;
+};
 
 export const useNotifications = () => {
-    const { token, user } = useAuth();
+    const { token, isAuthenticated } = useAuth();
     const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [isConnected, setIsConnected] = useState(false);
     const wsRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
+    // Initialize with the correct URL immediately
+    const [wsUrl] = useState(getWsUrl);
+
+    // Derive unread count from notifications list to ensure it's always in sync
+    // This prevents "ghost" counts or double counting duplicates
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     const connect = useCallback(() => {
-        if (!token || !user || !WS_URL) return;
+        if (!token || !isAuthenticated) return;
 
         // Close existing connection if any
         if (wsRef.current) {
+            if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+                return;
+            }
             wsRef.current.close();
         }
 
-        // Append token to query string for authentication
-        const ws = new WebSocket(`${WS_URL}/ws/notifications/?token=${token}`);
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             console.log('WebSocket Connected');
             setIsConnected(true);
-            // Fetch initial notifications
-            ws.send(JSON.stringify({ action: "fetch_notifications" }));
+            // Authenticate immediately after connection
+            ws.send(JSON.stringify({ action: "authenticate", token: token }));
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
 
-                if (data.notifications) {
+                if (data.type === 'auth_success') {
+                    // Once authenticated, fetch notifications
+                    ws.send(JSON.stringify({ action: "fetch_notifications" }));
+                } else if (data.notifications) {
                     // Initial fetch response
                     setNotifications(data.notifications);
-                    setUnreadCount(data.notifications.filter(n => !n.read).length);
-                } else {
+                } else if (data.message && data.id) {
                     // Real-time notification
-                    // Assuming data is the notification object itself
-                    setNotifications(prev => [data, ...prev]);
-                    setUnreadCount(prev => prev + 1);
+                    // Check if notification already exists to prevent duplicates
+                    setNotifications(prev => {
+                        if (prev.some(n => n.id === data.id)) return prev;
+                        return [data, ...prev];
+                    });
+
+                    // toast.info("You have a new notification");
                 }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
@@ -51,6 +87,7 @@ export const useNotifications = () => {
         ws.onclose = () => {
             console.log('WebSocket Disconnected');
             setIsConnected(false);
+            wsRef.current = null;
             // Attempt reconnect after 3 seconds
             reconnectTimeoutRef.current = setTimeout(connect, 3000);
         };
@@ -61,7 +98,7 @@ export const useNotifications = () => {
         };
 
         wsRef.current = ws;
-    }, [token, user]);
+    }, [token, isAuthenticated, wsUrl]);
 
     useEffect(() => {
         connect();
@@ -76,22 +113,28 @@ export const useNotifications = () => {
         };
     }, [connect]);
 
-    const markAsRead = useCallback((notificationId) => {
+    const markAsRead = useCallback(async (notificationId) => {
         // Optimistic update
         setNotifications(prev => prev.map(n =>
             n.id === notificationId ? { ...n, read: true } : n
         ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
 
-        // Ideally send a message to backend to mark as read
-        // if (wsRef.current && isConnected) {
-        //     wsRef.current.send(JSON.stringify({ action: "mark_read", id: notificationId }));
-        // }
+        try {
+            await apiClient.post(`/api/notifications/${notificationId}/read/`);
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+            // Revert on failure if strictly necessary, but usually acceptable to keep optimistic state
+        }
     }, []);
 
-    const markAllAsRead = useCallback(() => {
+    const markAllAsRead = useCallback(async () => {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-        setUnreadCount(0);
+
+        try {
+            await apiClient.post(`/api/notifications/read-all/`);
+        } catch (error) {
+            console.error('Failed to mark all notifications as read:', error);
+        }
     }, []);
 
     return {
