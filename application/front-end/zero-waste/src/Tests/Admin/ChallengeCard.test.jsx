@@ -7,30 +7,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import ChallengeCard from "@/components/features/ChallengeCard";
-import { vi } from "vitest";
-
-// Mock Theme and Language Contexts
-vi.mock("@/providers/ThemeContext", () => ({
-  useTheme: () => ({
-    currentTheme: {
-      background: "#ffffff",
-      text: "#000000",
-      secondary: "#00ff00",
-      border: "#cccccc",
-    },
-  }),
-}));
-
-vi.mock("@/providers/LanguageContext", () => ({
-  useLanguage: () => ({
-    t: (key, fallback) => fallback || key,
-    language: "en",
-  }),
-}));
-
-vi.mock("@/providers/FontSizeContext", () => ({
-  useFontSize: () => ({ fontSize: "medium" }),
-}));
 
 describe("<ChallengeCard /> (Tailwind version)", () => {
   const defaultProps = {

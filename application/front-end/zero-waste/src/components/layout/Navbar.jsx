@@ -1,23 +1,22 @@
 import React, { useState } from "react";
-import { useLocation, Link } from "react-router-dom";
 import { useLanguage } from "../../providers/LanguageContext";
 import { useTheme } from "../../providers/ThemeContext";
 import { useAuth } from "../../providers/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
 
-export default function Navbar({ active = "home", children, fullWidth = false, navItems: propsNavItems }) {
+export default function Navbar({ active = "home", children }) {
   const { t, changeLanguage, availableLanguages, language, isRTL } = useLanguage();
   const { changeTheme, availableThemes, theme, currentTheme } = useTheme();
-  const { logout, isAdmin } = useAuth();
+  const { logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
-  /* Custom nav items or default user items */
-  const defaultNavItems = [
-    { key: 'home', path: '/mainPage', icon: '🏠' },
+  const navItems = [
+    { key: 'home', path: '/', icon: '🏠' },
     { key: 'tips', path: '/tips', icon: '💡' },
     { key: 'challenges', path: '/challenges', icon: '🎯' },
     { key: 'community', path: '/community', icon: '👥' },
@@ -27,10 +26,10 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
     { key: 'statistics', path: '/statistics', icon: '📊' },
   ];
 
-  const navItems = propsNavItems || defaultNavItems;
-
   return (
     <div className="flex h-screen" onClick={() => {
+      setShowLanguageMenu(false);
+      setShowThemeMenu(false);
       setShowProfileMenu(false);
       setShowNotificationsMenu(false);
     }}>
@@ -56,7 +55,7 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
       {/* Sidebar */}
       <div
         className={`
-          w-56 h-full
+          w-64 h-full
           flex flex-col
           ${isRTL ? 'border-l' : 'border-r'} shadow-lg
           transition-transform duration-300
@@ -72,43 +71,40 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
         }}
       >
         {/* Logo Section */}
-        <div className="p-4 flex items-center justify-center border-b"
+        <div className="p-6 flex items-center justify-center border-b"
           style={{ borderColor: currentTheme.border }}
         >
-          <span className="text-3xl">🌱</span>
+          <span className="text-4xl">🌱</span>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.key}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`
-                flex items-center gap-3 px-4 py-2 rounded-lg no-underline
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <a
+              key={item.key}
+              href={item.path}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`
+                flex items-center gap-3 px-4 py-3 rounded-lg no-underline
                 transition-all duration-200
                 hover:opacity-80
-                ${isActive ? 'font-semibold' : ''}
+                ${active === item.key ? 'font-semibold' : ''}
                 ${isRTL ? 'flex-row-reverse' : ''}
               `}
-                style={{
-                  color: isActive ? currentTheme.secondary : currentTheme.primaryText,
-                  backgroundColor: isActive ? currentTheme.hover : 'transparent',
-                  textDecoration: 'none'
-                }}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.label || t(`nav.${item.key}`)}</span>
-              </Link>
-            );
-          })}
+              style={{
+                color: active === item.key ? currentTheme.secondary : currentTheme.primaryText,
+                backgroundColor: active === item.key ? currentTheme.hover : 'transparent',
+                textDecoration: 'none'
+              }}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span>{t(`nav.${item.key}`)}</span>
+            </a>
+          ))}
         </nav>
 
         {/* Bottom Section - User Controls */}
-        <div className="p-3 border-t-2 space-y-1.5" style={{ borderColor: currentTheme.border }}>
+        <div className="p-4 border-t space-y-2" style={{ borderColor: currentTheme.border }}>
 
           {/* Notifications */}
           <div className="relative">
@@ -121,9 +117,7 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
                 setShowProfileMenu(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
-              style={{
-                color: currentTheme.primaryText
-              }}
+              style={{ color: currentTheme.primaryText }}
             >
               <div className="relative">
                 <span className="text-lg">🔔</span>
@@ -182,19 +176,95 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
               </div>
             )}
           </div>
-          {/* Settings Link (Replaces Theme/Language) */}
+          {/* Language Selector */}
           <div className="relative">
-            <Link
-              to={isAdmin ? "/admin/settings" : "/settings"}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''} no-underline`}
-              style={{
-                color: currentTheme.primaryText,
-                textDecoration: 'none'
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLanguageMenu(!showLanguageMenu);
+                setShowThemeMenu(false);
+                setShowProfileMenu(false);
+                setShowNotificationsMenu(false);
               }}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
+              style={{ color: currentTheme.primaryText }}
             >
-              <span className="text-lg">⚙️</span>
-              <span>{t('settings.title', 'Settings')}</span>
-            </Link>
+              <span className="text-lg">
+                {availableLanguages.find((l) => l.code === language)?.flag}
+              </span>
+              <span>{t('common.language')}</span>
+            </button>
+            {showLanguageMenu && (
+              <div
+                className={`
+                  absolute bottom-full mb-2 rounded-lg shadow-lg p-2 min-w-max z-50
+                  ${isRTL ? 'right-0' : 'left-0'}
+                `}
+                style={{ backgroundColor: currentTheme.primary }}
+              >
+                {availableLanguages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded hover:opacity-80 transition-opacity"
+                    style={{
+                      color: language === lang.code ? currentTheme.secondary : currentTheme.primaryText,
+                      backgroundColor: language === lang.code ? currentTheme.hover : 'transparent',
+                    }}
+                  >
+                    {lang.flag} {lang.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Theme Selector */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowThemeMenu(!showThemeMenu);
+                setShowLanguageMenu(false);
+                setShowProfileMenu(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
+              style={{ color: currentTheme.primaryText }}
+            >
+              <span className="text-lg">
+                {availableThemes.find((t) => t.code === theme)?.icon}
+              </span>
+              <span>{t('common.theme')}</span>
+            </button>
+            {showThemeMenu && (
+              <div
+                className={`
+                  absolute bottom-full mb-2 rounded-lg shadow-lg p-2 min-w-max z-50
+                  ${isRTL ? 'right-0' : 'left-0'}
+                `}
+                style={{ backgroundColor: currentTheme.primary }}
+              >
+                {availableThemes.map((themeOption) => (
+                  <button
+                    key={themeOption.code}
+                    onClick={() => {
+                      changeTheme(themeOption.code);
+                      setShowThemeMenu(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded hover:opacity-80 transition-opacity"
+                    style={{
+                      color: theme === themeOption.code ? currentTheme.secondary : currentTheme.primaryText,
+                      backgroundColor: theme === themeOption.code ? currentTheme.hover : 'transparent',
+                    }}
+                  >
+                    {themeOption.icon} {t(`themes.${themeOption.code}`)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Profile Menu */}
@@ -203,11 +273,11 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
               onClick={(e) => {
                 e.stopPropagation();
                 setShowProfileMenu(!showProfileMenu);
+                setShowLanguageMenu(false);
+                setShowThemeMenu(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:opacity-80 transition-all duration-200 ${isRTL ? 'flex-row-reverse' : ''}`}
-              style={{
-                color: currentTheme.primaryText
-              }}
+              style={{ color: currentTheme.primaryText }}
             >
               <span className="text-lg">👤</span>
               <span>{t('nav.profile')}</span>
@@ -220,34 +290,30 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
                 `}
                 style={{ backgroundColor: currentTheme.primary }}
               >
-                <Link
-                  to={isAdmin ? "/admin/profile" : "/profile"}
+                <a
+                  href="/profile"
                   className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
                   style={{ color: currentTheme.primaryText, textDecoration: 'none' }}
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  👤 {t("nav.profile")}
-                </Link>
-
-                {/* --- ADDED: Preferences Link --- */}
-                <Link
-                  to="/preferences"
+                  {t("nav.profile")}
+                </a>
+                <a
+                  href="/settings"
                   className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
                   style={{ color: currentTheme.primaryText, textDecoration: 'none' }}
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  🛡️ {t("nav.preferences", "Privacy & Account")}
-                </Link>
-                {/* ------------------------------- */}
-
-                <Link
-                  to="/invite"
+                  {t("common.settings")}
+                </a>
+                <a
+                  href="/invite"
                   className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
                   style={{ color: currentTheme.primaryText, textDecoration: "none" }}
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  ✉️ {t("nav.inviteFriend")}
-                </Link>
+                  {t("nav.inviteFriend")}
+                </a>
 
                 <hr className="my-2" style={{ borderColor: currentTheme.border }} />
                 <button
@@ -258,7 +324,7 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
                     logout();
                   }}
                 >
-                  🚪 {t("common.logout")}
+                  {t("common.logout")}
                 </button>
               </div>
             )}
@@ -268,22 +334,18 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
 
       </div>
 
-      {/* Mobile Overlay - Must be after sidebar to not block it */}
-      {mobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-30"
-          style={{ backgroundColor: currentTheme.background, opacity: 0.7 }}
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Main Content */}
-        <main
-          className={`flex-1 overflow-auto ${fullWidth ? '' : 'p-6'} pt-20 lg:pt-6`}
-          style={{ backgroundColor: currentTheme.background }}
-        >
+        <main className="flex-1 overflow-auto p-6 pt-20 lg:pt-6" style={{ backgroundColor: currentTheme.background }}>
           {children}
         </main>
       </div>

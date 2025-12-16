@@ -10,20 +10,10 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 /* ---------- mock AuthContext ---------- */
 vi.mock("../../providers/AuthContext", () => ({
   useAuth: () => ({
-    token: "fake-token",
+    token: "mock-token",
     apiUrl: "http://mock-api.com",
-    logout: vi.fn(),
   }),
 }));
-
-// Mock LocalStorage
-const localStorageMock = {
-  getItem: vi.fn(() => "fake-token"),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 /* ---------- mock fetch ---------- */
 const mockUsers = {
@@ -42,27 +32,7 @@ beforeEach(() => {
 });
 
 /* ---------- component under test ---------- */
-import UserPanel from "@/pages/admin/UserPanel";
-
-// Mock LanguageContext
-vi.mock("@/providers/LanguageContext", () => ({
-  useLanguage: () => ({
-    t: (key, fallback) => fallback || key,
-    language: "en",
-  }),
-}));
-
-// Mock ThemeContext
-vi.mock("@/providers/ThemeContext", () => ({
-  useTheme: () => ({
-    currentTheme: {
-      background: "#ffffff",
-      text: "#000000",
-      secondary: "#00ff00",
-      border: "#cccccc",
-    },
-  }),
-}));
+import UserPanel from "../../pages/admin/UserPanel";
 
 /* ---------- helper ---------- */
 const renderUserPanel = () =>
@@ -74,11 +44,13 @@ const renderUserPanel = () =>
 
 /* ---------- TESTS ---------- */
 describe("<UserPanel />", () => {
+ 
 
-
-  it("renders the UserPanel heading", async () => {
+  it("shows the Post Moderation link in sidebar", async () => {
     renderUserPanel();
 
-    expect(screen.getByText("User Moderation")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /post moderation/i })
+    ).toBeInTheDocument();
   });
 });

@@ -19,20 +19,20 @@ export const usePosts = (language, pageSize) => {
   } = useApi(
     () => postsService.getAllPosts(token, language, pageSize),
     {
-      initialData: { data: [] },
+      initialData: { results: [] },
       showErrorToast: true,
       errorMessage: 'Failed to fetch posts',
-      onSuccess: (data) => setPostsData(data.data || []),
+      onSuccess: (data) => setPostsData(data.results || []),
     }
   );
 
   // Extract posts array from paginated response
-  const posts = postsResponse?.data || [];
+  const posts = postsResponse?.results || [];
 
-  // Sync postsData with postsResponse.data whenever it changes (for pagination)
+  // Sync postsData with postsResponse.results whenever it changes (for pagination)
   useEffect(() => {
-    if (postsResponse?.data) {
-      setPostsData(postsResponse.data);
+    if (postsResponse?.results) {
+      setPostsData(postsResponse.results);
     }
   }, [postsResponse]);
 
@@ -88,7 +88,7 @@ export const usePosts = (language, pageSize) => {
       // Also update postsResponse for immediate UI update
       setPostsResponse(prevResponse => ({
         ...prevResponse,
-        data: prevResponse.data.map(post =>
+        results: prevResponse.results.map(post =>
           post.id === postId ? result.data : post
         )
       }));
@@ -126,7 +126,7 @@ export const usePosts = (language, pageSize) => {
       // Also update postsResponse for immediate UI update
       setPostsResponse(prevResponse => ({
         ...prevResponse,
-        data: prevResponse.data.map(post =>
+        results: prevResponse.results.map(post =>
           post.id === postId ? result.data : post
         )
       }));
@@ -165,7 +165,7 @@ export const usePosts = (language, pageSize) => {
       // Update postsResponse to reflect saved status
       setPostsResponse(prevResponse => ({
         ...prevResponse,
-        data: prevResponse.data.map(post =>
+        results: prevResponse.results.map(post =>
           post.id === postId ? { ...post, is_saved: true } : post
         )
       }));
@@ -194,7 +194,7 @@ export const usePosts = (language, pageSize) => {
       // Update postsResponse to reflect unsaved status
       setPostsResponse(prevResponse => ({
         ...prevResponse,
-        data: prevResponse.data.map(post =>
+        results: prevResponse.results.map(post =>
           post.id === postId ? { ...post, is_saved: false } : post
         )
       }));

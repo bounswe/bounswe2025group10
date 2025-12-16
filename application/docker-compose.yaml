@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: backend-db-1
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_DATABASE=main_db
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=123456789
+      - MYSQL_ROOT_PASSWORD=123456789
+    volumes:
+      - ./backend/sql:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-p123456789"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: backend-redis-1
+    restart: always
+
+  backend-web:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: backend-web-1
+    command: >
+      sh -c "\
+        echo 'Waiting for database...' && \
+        python manage.py migrate --noinput && \
+        echo 'Database is ready!' && \
+        daphne -b 0.0.0.0 -p 8000 project.asgi:application"
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure--r&m3rfr3av2!+7x%vy32+pv%$r#$du@#mogm&51*0zktjt!1p
+      - DATABASE_URL=mysql://admin:123456789@db:3306/main_db
+    restart: always
+
+  frontend:
+    build:
+      context: ./front-end/zero-waste
+      dockerfile: Dockerfile
+    container_name: frontend-web-1
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend-web
+    restart: always
+
+
+volumes:
+  mysql_data:

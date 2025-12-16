@@ -114,7 +114,7 @@ beforeEach(() => {
 //                     TESTS
 // =====================================================
 describe("<MainPage />", () => {
-  it("renders welcome banner + weather widget", async () => {
+  it("renders welcome banner + weather widget", () => {
     render(
       <MemoryRouter>
         <MainPage />
@@ -125,9 +125,6 @@ describe("<MainPage />", () => {
     expect(screen.getByText("mainPage.title")).toBeInTheDocument();
     // Weather widget mock
     expect(screen.getByTestId("weather-widget")).toBeInTheDocument();
-
-    // Wait to avoid act warnings from async service calls
-    await waitFor(() => Promise.resolve());
   });
 
   it("renders sustainability tips heading", async () => {
