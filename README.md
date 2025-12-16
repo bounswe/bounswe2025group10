@@ -29,100 +29,147 @@ For detailed information on project requirements, design diagrams, and meeting n
 ### Prerequisites
 - Node.js (v18 or later)
 - npm (v8 or later)
-- Docker (optional, for running the application in a container)
+- Docker (for local deployment)
 
-### **Backend**
-1. **Stop the containers:**
-   In a terminal:
+---
+
+# 1. Web Application (Backend + Frontend)
+
+## Environment Variables
+
+- Copy and adapt the following files:
+  - `backend/.env.example` → `backend/.env` (create this file; see below for required variables)
+  - `front-end/zero-waste/.env.production` (already provided, edit if needed)
+  - `mobile/.env.example` → `mobile/.env`
+
+### Example backend/.env.example
+```
+SECRET_KEY=your-django-secret-key
+DEBUG=True
+MYSQL_DATABASE=main_db
+MYSQL_USER=admin
+MYSQL_PASSWORD=123456789
+MYSQL_ROOT_PASSWORD=123456789
+EMAIL_HOST_USER=your@email.com
+EMAIL_HOST_PASSWORD=your-email-password
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+---
+
+## Development Setup (Docker Compose)
+
+1. **Start all services:**
    ```bash
-   docker-compose down
+   docker compose up --build
    ```
+   - Backend: http://localhost:8000
+   - Frontend: http://localhost:3000
 
-2. **Build the backend:**
-   Inside the backend folder run this command:
+2. **Apply migrations and seed data:**
+   Open a shell in the backend container:
    ```bash
-   docker-compose up --build
+   docker compose exec backend-web python manage.py migrate
+   docker compose exec backend-web python manage.py create_badges
+   docker compose exec backend-web python manage.py create_mock_data
    ```
+   - This will create all required tables, badges, and mock/demo data.
 
-3. **Backend deployed:**
-   Now the backend is deployed at http://localhost:8000.
+3. **Default Test Users:**
+   - Regular User:  
+     - Username: `test_user`  
+     - Password: `test123`  
+     - Email: `test@gmail.com`
+   - Admin User:  
+     - Username: `admin`  
+     - Password: `admin123`  
+     - Email: `admin@example.com`
 
-### Frontend
-To start the development server, run:
-```
-npm run dev
-```
-This will start the application in development mode and open it in your default web browser.
-The application will be available at `http://localhost:5173` by default.
+---
 
-### Building the Application
-To build the application for production, run:
-```
-npm run build
-```
+## Production Setup
 
-This will create a `dist` directory with the production build of the application.
+- Adjust `.env` files for production (set `DEBUG=False`, use strong `SECRET_KEY`, set real email credentials, etc).
+- Use a production-ready database and configure allowed hosts.
+- Build and run with Docker Compose as above.
 
-## Docker
-To run the application in a Docker container, you can use the provided `Dockerfile`. This file is set up to build and run the application in a lightweight container.
-### Building the Docker Image
-To build the Docker image, run:
-```
-docker build -t zero-waste-frontend .
-```
-### Running the Docker Container
-To run the Docker container, use the following command:
-```
-docker run -p 80:80 zero-waste-frontend
-```
-This will start the application in a container and map port 80 of the container to port 80 of your host machine.
-You can then access the application in your web browser at `http://localhost`.
+---
 
-### Using local backend or domain
-The default settings uses our prod backend on zerowaste.ink. If you would like to use the local backend you deployed switch line 13 in Dockerfile in the zero-waste folder into
-```
-RUN npm run build
-```
+# 2. Frontend (Development)
 
-
-### ⚡️  Running Mobile App 
-
-1. **Build and run the the backend  server on docker:**
+1. Install dependencies:
    ```bash
-   docker-compose up --build
+   cd front-end/zero-waste
+   npm install
    ```
+2. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+   - App runs at http://localhost:5173 (default)
 
-2. **On a seperate terminal, start React Native**
+---
+
+# 3. Mobile Application
+
+1. Copy and edit `mobile/.env.example` to `mobile/.env`.
+2. Install dependencies:
+   ```bash
+   cd mobile
+   npm install
+   ```
+3. Start Metro bundler:
    ```bash
    npx react-native start
    ```
-
-3. **On yet another seperate terminal, start your emulator**
-   ```bash
-   emulator <YOUR_EMULATOR_DEVICE_NAME>
-   ```
-
-4. **On any terminal, start the app**
+4. Start emulator or connect device, then run:
    ```bash
    npm run android
+   # or
+   npm run ios
    ```
 
-### 🧱 Project Structure in Docker
+---
 
-- `Dockerfile`: Defines the base image and build process for backend/frontend
-- `docker-compose.yml`: Manages multi-container setup including services (e.g. web, db)
-- `volumes`: Sync local changes without restarting containers
-- `ports`: Exposes the app on your local environment (check `docker-compose.yml` for specific ports)
-
-### 📦 Common Commands
+# 4. Useful Docker Commands
 
 - View running containers:
-   ```bash
-   docker ps
-   ```
-- Enter container shell:
-   ```bash
-   docker exec -it <container_name> /bin/bash
-   ```
+  ```bash
+  docker ps
+  ```
+- Enter backend container shell:
+  ```bash
+  docker compose exec backend-web /bin/bash
+  ```
+- Stop all containers:
+  ```bash
+  docker compose down
+  ```
 
-Make sure Docker and Docker Compose are installed on your system. For installation, visit [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+---
+
+# 5. Data Seeding & Reset
+
+- To re-seed the database with mock/demo data:
+  ```bash
+  docker compose exec backend-web python manage.py create_badges
+  docker compose exec backend-web python manage.py create_mock_data
+  ```
+- To reset the database, stop containers, remove volumes, and restart:
+  ```bash
+  docker compose down -v
+  docker compose up --build
+  # Then re-run the seeding commands above
+  ```
+
+---
+
+# 6. Additional Notes
+
+- The backend and frontend are fully containerized for local and production use.
+- The backend mock data script creates a regular test user (`test_user`/`test123`) and at least one admin user.
+- For more details, see the documentation and comments in each service's README.
+
+---
+
+For any issues, please refer to the [Project Wiki](https://github.com/bounswe/bounswe2025group10/wiki) or contact the maintainers.

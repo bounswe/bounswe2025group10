@@ -351,7 +351,13 @@
     "followed": "Followed successfully",
     "unfollowed": "Unfollowed successfully",
     "noFollowing": "You are not following anyone yet.",
-    "noFollowers": "No followers yet."
+    "noFollowers": "No followers yet.",
+"bioPrivate": "This user's bio is private.",
+  "statsPrivate": "Statistics are hidden by privacy settings.",
+  "impactStats": "Environmental Impact",
+  "totalWaste": "CO2 Reduced",
+  "points": "Points",
+  "noBio": "This user does not have a public bio."
   },
   "wasteHelper": {
     "title": "Add Waste",
