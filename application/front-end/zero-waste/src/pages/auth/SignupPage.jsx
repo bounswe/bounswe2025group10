@@ -6,19 +6,32 @@ import { useLanguage } from "../../providers/LanguageContext";
 import { showToast } from "../../utils/toast.js";
 
 import LandingNavbar from "../../components/layout/LandingNavbar";
+import TermsModal from "../../components/features/TermsModal"; 
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const { currentTheme, theme } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  
+  // Form State
   const [email, setEmail] = useState("");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Terms State
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!acceptedTerms) {
+      showToast(t("auth.acceptTermsError", "Please accept the Terms and Conditions"), "error");
+      return;
+    }
+
     const { success, message } = await signup(email, user, password);
     if (success) {
       showToast(t("auth.signupSuccess", "Sign up successful! Redirecting to login..."), "success", 2000);
@@ -30,6 +43,12 @@ export default function SignupPage() {
 
   return (
     <LandingNavbar active="signup">
+      {/* Modal is rendered here, z-index in component handles overlay */}
+      <TermsModal 
+        show={showTermsModal} 
+        onClose={() => setShowTermsModal(false)} 
+      />
+
       <div
         className="min-h-full flex items-center justify-center p-4 transition-colors duration-300"
         style={{ backgroundColor: currentTheme.background }}
@@ -151,27 +170,44 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* Terms and Conditions Checkbox */}
             <div>
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
                   required
-                  className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 transition-colors"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 focus:ring-2 transition-colors cursor-pointer"
                   style={{
                     accentColor: currentTheme.secondary
                   }}
                 />
-                <span className="text-sm select-none" style={{ color: currentTheme.text }}>
-                  {t("auth.agreeTerms", "I agree to the Terms and Conditions and Privacy Policy")} *
+                <span className="text-sm select-none flex flex-wrap gap-1" style={{ color: currentTheme.text }}>
+                  <span>{t("auth.agreeTo", "I agree to the")}</span>
+                  <span 
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent clicking the label from toggling the checkbox
+                      setShowTermsModal(true);
+                    }}
+                    className="font-bold underline cursor-pointer hover:opacity-80"
+                    style={{ color: currentTheme.secondary }}
+                  >
+                    {t("auth.termsAndConditions", "Terms and Conditions")}
+                  </span>
+                  <span>*</span>
                 </span>
               </label>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 rounded-lg font-semibold shadow-md hover:opacity-90 transition-opacity"
+              disabled={!acceptedTerms}
+              className={`w-full py-3 rounded-lg font-semibold shadow-md transition-all duration-300 ${
+                !acceptedTerms ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+              }`}
               style={{
-                backgroundColor: currentTheme.secondary,
+                backgroundColor: acceptedTerms ? currentTheme.secondary : currentTheme.border,
                 color: theme === 'highContrast' ? '#000000' : (currentTheme.primaryText || '#ffffff')
               }}
             >

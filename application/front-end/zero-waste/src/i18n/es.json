@@ -139,7 +139,10 @@
     "recoverBtn": "Recuperar Cuenta",
     "cancelReturn": "Cancelar y volver a Iniciar Sesión",
     "createNewAccount": "Crear Nueva Cuenta",
-    "goToLogin": "Ir a Iniciar Sesión"
+    "goToLogin": "Ir a Iniciar Sesión",
+    "agreeTo": "Acepto los",
+    "termsAndConditions": "Términos y Condiciones",
+    "acceptTermsError": "Por favor acepte los Términos y Condiciones para registrarse"
   },
   "community": {
     "title": "Comunidad",

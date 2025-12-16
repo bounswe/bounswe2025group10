@@ -280,7 +280,10 @@
     "recoverBtn": "Récupérer le compte",
     "cancelReturn": "Annuler et retourner à la connexion",
     "createNewAccount": "Créer un nouveau compte",
-    "goToLogin": "Aller à la connexion"
+    "goToLogin": "Aller à la connexion",
+    "agreeTo": "J'accepte les",
+    "termsAndConditions": "Conditions Générales",
+    "acceptTermsError": "Veuillez accepter les Conditions Générales pour vous inscrire"
   },
   "achievements": {
     "title": "Réalisations",
