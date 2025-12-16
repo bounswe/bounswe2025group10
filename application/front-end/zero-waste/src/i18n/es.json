@@ -21,7 +21,8 @@
     "userPage": "Moderación de Usuarios",
     "challengePage": "Moderación de Desafíos",
     "commentPage": "Moderación de Comentarios",
-    "activityPage": "Registro de Actividad"
+    "activityPage": "Registro de Actividad",
+    "preferences": "Privacidad y Cuenta"
   },
   "username": "Nombre de usuario",
   "password": "Contraseña",
@@ -63,7 +64,8 @@
     "notifications": "Notificaciones",
     "markAllRead": "Marcar todo como leído",
     "noNotifications": "No hay notificaciones",
-    "preview": "Vista Previa"
+    "preview": "Vista Previa",
+    "verifying": "Verificando..."
   },
   "admin": {
     "postModeration": "Moderación de Publicaciones",
@@ -121,7 +123,23 @@
     "signupFailed": "Registro fallido",
     "loggingIn": "Iniciando sesión...",
     "haveAccount": "¿Ya tienes una cuenta?",
-    "noAccount": "¿No tienes una cuenta?"
+    "noAccount": "¿No tienes una cuenta?",
+    "recoverAcount": "¿Recuperar cuenta eliminada?",
+    "recoverTitle": "Recuperar Cuenta",
+    "recoverSubtitle": "Restaura tu viaje de cero residuos ♻️",
+    "recoverSuccess": "¡Cuenta restaurada exitosamente!",
+    "recoverError": "Token inválido o error de red.",
+    "reactivatedTitle": "¡Cuenta Reactivada!",
+    "reactivatedDesc": "Tu cuenta ha sido restaurada completamente. Ahora puedes iniciar sesión normalmente.",
+    "deletedTitle": "Cuenta Eliminada Permanentemente",
+    "deletedDesc": "El período de gracia de 30 días ha expirado. Esta cuenta no se puede recuperar.",
+    "recoverInstructions": "Ingresa el token de recuperación que guardaste al solicitar la eliminación para detener el proceso y reactivar tu cuenta.",
+    "recoveryToken": "Token de Recuperación",
+    "tokenPlaceholder": "Pega el token aquí...",
+    "recoverBtn": "Recuperar Cuenta",
+    "cancelReturn": "Cancelar y volver a Iniciar Sesión",
+    "createNewAccount": "Crear Nueva Cuenta",
+    "goToLogin": "Ir a Iniciar Sesión"
   },
   "community": {
     "title": "Comunidad",
@@ -453,7 +471,7 @@
       }
     }
   },
-  "settings": {
+  "preferences": {
     "title": "Configuración",
     "saved": "Configuración actualizada",
     "privacy": "Privacidad y Visibilidad",

@@ -31,7 +31,9 @@
     "userPage": "إدارة المستخدمين",
     "challengePage": "إدارة التحديات",
     "commentPage": "إدارة التعليقات",
-    "activityPage": "سجل النشاط"
+    "activityPage": "سجل النشاط",
+    "preferences": "الخصوصية والحساب"
+
   },
   "username": "اسم المستخدم",
   "password": "كلمة المرور",
@@ -73,7 +75,8 @@
     "notifications": "إشعارات",
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات",
-    "preview": "معاينة"
+    "preview": "معاينة",
+    "verifying": "جارٍ التحقق..."
   },
   "admin": {
     "postModeration": "إدارة المنشورات",
@@ -256,7 +259,23 @@
     "signupFailed": "فشل التسجيل",
     "loggingIn": "جارٍ تسجيل الدخول...",
     "haveAccount": "هل لديك حساب بالفعل؟",
-    "noAccount": "ليس لديك حساب؟"
+    "noAccount": "ليس لديك حساب؟", 
+    "recoverAcount": "استعادة الحساب المحذوف؟",
+    "recoverTitle": "استعادة الحساب",
+    "recoverSubtitle": "استعد رحلتك في صفر نفايات ♻️",
+    "recoverSuccess": "تمت استعادة الحساب بنجاح!",
+    "recoverError": "رمز غير صالح أو خطأ في الشبكة.",
+    "reactivatedTitle": "تم إعادة تنشيط الحساب!",
+    "reactivatedDesc": "تمت استعادة حسابك بالكامل. يمكنك الآن تسجيل الدخول بشكل طبيعي.",
+    "deletedTitle": "تم حذف الحساب نهائياً",
+    "deletedDesc": "انتهت فترة السماح البالغة 30 يوماً. لا يمكن استعادة هذا الحساب.",
+    "recoverInstructions": "أدخل رمز الاسترداد الذي حفظته عند طلب الحذف لإيقاف العملية وإعادة تنشيط حسابك.",
+    "recoveryToken": "رمز الاسترداد",
+    "tokenPlaceholder": "الصق الرمز هنا...",
+    "recoverBtn": "استعادة الحساب",
+    "cancelReturn": "إلغاء والعودة لتسجيل الدخول",
+    "createNewAccount": "إنشاء حساب جديد",
+    "goToLogin": "الذهاب لتسجيل الدخول"
   },
   "achievements": {
     "title": "الإنجازات",
@@ -464,7 +483,7 @@
       }
     }
   },
-  "settings": {
+  "preferences": {
     "title": "الإعدادات",
     "saved": "تم تحديث الإعدادات",
     "privacy": "الخصوصية والرؤية",

@@ -21,7 +21,8 @@
     "userPage": "User Moderation",
     "challengePage": "Challenge Moderation",
     "commentPage": "Comment Moderation",
-    "activityPage": "Activity Log"
+    "activityPage": "Activity Log",
+        "preferences": "Privacy & Account"
   },
   "username": "Username",
   "password": "Password",
@@ -37,7 +38,23 @@
     "signupFailed": "Sign up failed",
     "loggingIn": "Logging in...",
     "haveAccount": "Already have an account?",
-    "noAccount": "Don't have an account?"
+    "noAccount": "Don't have an account?",
+    "recoverAcount": "Recover deleted account?",
+    "recoverTitle": "Recover Account",
+    "recoverSubtitle": "Restore your zero-waste journey ♻️",
+    "recoverSuccess": "Account restored successfully!",
+    "recoverError": "Invalid token or network error.",
+    "reactivatedTitle": "Account Reactivated!",
+    "reactivatedDesc": "Your account has been fully restored. You can now log in normally.",
+    "deletedTitle": "Account Permanently Deleted",
+    "deletedDesc": "The 30-day grace period has expired. This account cannot be recovered.",
+    "recoverInstructions": "Enter the recovery token you saved when you requested deletion to stop the process and reactivate your account.",
+    "recoveryToken": "Recovery Token",
+    "tokenPlaceholder": "Paste token here...",
+    "recoverBtn": "Recover Account",
+    "cancelReturn": "Cancel and return to Login",
+    "createNewAccount": "Create New Account",
+    "goToLogin": "Go to Login"
   },
   "admin": {
     "postModeration": "Board Post Moderation",
@@ -113,7 +130,8 @@
     "noNotifications": "No notifications",
     "readMore": "Read More",
     "showLess": "Show Less",
-    "preview": "Preview"
+    "preview": "Preview",
+    "verifying": "Verifying..."
   },
   "leaderboard": {
     "title": "🌿 Top 10 Zero Waste Champions",
@@ -457,7 +475,7 @@
       }
     }
   },
-  "settings": {
+  "preferences": {
     "title": "Settings",
     "saved": "Settings updated",
     "privacy": "Privacy & Visibility",

@@ -31,7 +31,8 @@
     "userPage": "Modération des Utilisateurs",
     "challengePage": "Modération des Défis",
     "commentPage": "Modération des Commentaires",
-    "activityPage": "Journal d'Activité"
+    "activityPage": "Journal d'Activité",
+    "preferences": "Confidentialité et Compte"
   },
   "username": "Nom d'utilisateur",
   "password": "Mot de passe",
@@ -73,7 +74,8 @@
     "notifications": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "noNotifications": "Pas de notifications",
-    "preview": "Aperçu"
+    "preview": "Aperçu",
+    "verifying": "Vérification..."
   },
   "admin": {
     "postModeration": "Modération des Publications",
@@ -256,7 +258,23 @@
     "signupFailed": "Échec de l'inscription",
     "loggingIn": "Connexion en cours...",
     "haveAccount": "Vous avez déjà un compte ?",
-    "noAccount": "Vous n'avez pas de compte ?"
+    "noAccount": "Vous n'avez pas de compte ?",
+    "recoverAcount": "Récupérer un compte supprimé ?",
+    "recoverTitle": "Récupérer le compte",
+    "recoverSubtitle": "Restaurez votre voyage zéro déchet ♻️",
+    "recoverSuccess": "Compte restauré avec succès !",
+    "recoverError": "Jeton invalide ou erreur réseau.",
+    "reactivatedTitle": "Compte réactivé !",
+    "reactivatedDesc": "Votre compte a été entièrement restauré. Vous pouvez maintenant vous connecter normalement.",
+    "deletedTitle": "Compte supprimé définitivement",
+    "deletedDesc": "La période de grâce de 30 jours a expiré. Ce compte ne peut pas être récupéré.",
+    "recoverInstructions": "Entrez le jeton de récupération que vous avez enregistré lors de la demande de suppression pour arrêter le processus et réactiver votre compte.",
+    "recoveryToken": "Jeton de récupération",
+    "tokenPlaceholder": "Collez le jeton ici...",
+    "recoverBtn": "Récupérer le compte",
+    "cancelReturn": "Annuler et retourner à la connexion",
+    "createNewAccount": "Créer un nouveau compte",
+    "goToLogin": "Aller à la connexion"
   },
   "achievements": {
     "title": "Réalisations",
@@ -463,7 +481,7 @@
       }
     }
   },
-  "settings": {
+  "preferences": {
     "title": "Paramètres",
     "saved": "Paramètres mis à jour",
     "privacy": "Confidentialité et Visibilité",

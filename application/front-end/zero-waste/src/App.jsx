@@ -25,6 +25,7 @@ import Invite from "./pages/Invite.jsx";
 import Statistics from "./pages/Statistics.jsx";
 import Settings from "./pages/Settings.jsx";
 import RecoveryPage from "./pages/auth/RecoveryPage.jsx";
+import PreferencesPage from "./pages/settings/PreferencesPage.jsx";
 
 
 
@@ -57,6 +58,8 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:username" element={<PublicProfile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
+
         </Route>
       </Route>
 

@@ -21,7 +21,8 @@
     "userPage": "Kullanıcı Moderasyonu",
     "challengePage": "Meydan Okuma Moderasyonu",
     "commentPage": "Yorum Moderasyonu",
-    "activityPage": "Aktivite Günlüğü"
+    "activityPage": "Aktivite Günlüğü",
+    "preferences": "Gizlilik ve Hesap"
   },
   "username": "Kullanıcı Adı",
   "password": "Şifre",
@@ -97,7 +98,8 @@
     "notifications": "Bildirimler",
     "markAllRead": "Tümünü okundu işaretle",
     "noNotifications": "Bildirim yok",
-    "preview": "Önizleme"
+    "preview": "Önizleme",
+    "verifying": "Doğrulanıyor..."
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",
@@ -247,7 +249,23 @@
     "signupFailed": "Kayıt başarısız",
     "loggingIn": "Giriş yapılıyor...",
     "haveAccount": "Zaten hesabınız var mı?",
-    "noAccount": "Hesabınız yok mu?"
+    "noAccount": "Hesabınız yok mu?",
+    "recoverAcount": "Silinen hesabı kurtar?",
+    "recoverTitle": "Hesabı Kurtar",
+    "recoverSubtitle": "Sıfır atık yolculuğunuza geri dönün ♻️",
+    "recoverSuccess": "Hesap başarıyla geri yüklendi!",
+    "recoverError": "Geçersiz kod veya ağ hatası.",
+    "reactivatedTitle": "Hesap Yeniden Etkinleştirildi!",
+    "reactivatedDesc": "Hesabınız tamamen geri yüklendi. Artık normal şekilde giriş yapabilirsiniz.",
+    "deletedTitle": "Hesap Kalıcı Olarak Silindi",
+    "deletedDesc": "30 günlük bekleme süresi doldu. Bu hesap kurtarılamaz.",
+    "recoverInstructions": "Süreci durdurmak ve hesabınızı yeniden etkinleştirmek için silme talebinde bulunduğunuzda kaydettiğiniz kurtarma kodunu girin.",
+    "recoveryToken": "Kurtarma Kodu",
+    "tokenPlaceholder": "Kodu buraya yapıştırın...",
+    "recoverBtn": "Hesabı Kurtar",
+    "cancelReturn": "İptal et ve Girişe dön",
+    "createNewAccount": "Yeni Hesap Oluştur",
+    "goToLogin": "Giriş Yapmaya Git"
   },
   "achievements": {
     "title": "Başarılar",
@@ -455,7 +473,7 @@
       }
     }
   },
-  "settings": {
+  "preferences": {
     "title": "Ayarlar",
     "saved": "Ayarlar güncellendi",
     "privacy": "Gizlilik ve Görünürlük",
