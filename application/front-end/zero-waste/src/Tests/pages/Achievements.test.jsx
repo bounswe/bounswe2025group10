@@ -139,7 +139,9 @@ describe("<Achievements />", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Achievements & Badges/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Achievements & Badges/i)).toBeInTheDocument();
+    });
   });
 
   it("displays Challenges and Badges tabs", async () => {
@@ -217,7 +219,11 @@ describe("<Achievements />", () => {
     });
   });
 
-  it("shows loading state initially", () => {
+  it("shows loading state initially", async () => {
+    // Make promises unresolved initially to test loading state
+    achievementsService.getAchievements.mockReturnValue(new Promise(() => { }));
+    badgesService.getUserBadgeSummary.mockReturnValue(new Promise(() => { }));
+
     render(
       <MemoryRouter>
         <Achievements />
