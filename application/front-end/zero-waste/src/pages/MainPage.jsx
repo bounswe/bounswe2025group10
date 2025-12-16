@@ -16,6 +16,7 @@ import {
 import WeatherWidget from "../components/features/WeatherWidget";
 import wasteService from "../services/wasteService";
 import { tipsService } from "../services/tipsService";
+import { showToast } from "../utils/toast";
 
 // Constants
 const WASTE_POINTS = {
@@ -107,12 +108,14 @@ export default function MainPage() {
       await wasteService.addWaste(payload);
       // Refetch the updated data
       await fetchWasteData();
+      showToast(t("wasteHelper.successMessage"), "success");
     } catch (error) {
       console.error("Failed to add waste:", error);
+      showToast(t("wasteHelper.errorMessage"), "error");
     } finally {
       setIsLoading(false);
     }
-  }, [fetchWasteData]);
+  }, [fetchWasteData, t]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-5">
