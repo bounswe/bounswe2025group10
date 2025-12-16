@@ -270,7 +270,10 @@
     "recoverBtn": "Hesabı Kurtar",
     "cancelReturn": "İptal et ve Girişe dön",
     "createNewAccount": "Yeni Hesap Oluştur",
-    "goToLogin": "Giriş Yapmaya Git"
+    "goToLogin": "Giriş Yapmaya Git",
+    "agreeTo": "Okudum ve kabul ediyorum:",
+    "termsAndConditions": "Hizmet Şartları",
+    "acceptTermsError": "Kayıt olmak için lütfen Hizmet Şartlarını kabul edin"
   },
   "achievements": {
     "title": "Başarılar",

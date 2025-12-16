@@ -280,7 +280,10 @@
     "recoverBtn": "استعادة الحساب",
     "cancelReturn": "إلغاء والعودة لتسجيل الدخول",
     "createNewAccount": "إنشاء حساب جديد",
-    "goToLogin": "الذهاب لتسجيل الدخول"
+    "goToLogin": "الذهاب لتسجيل الدخول",
+    "agreeTo": "أوافق على",
+    "termsAndConditions": "الشروط والأحكام",
+    "acceptTermsError": "يرجى قبول الشروط والأحكام للتسجيل"
   },
   "achievements": {
     "title": "الإنجازات",
