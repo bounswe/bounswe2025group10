@@ -400,7 +400,7 @@ export default function Challenges() {
                         {/* Deadline */}
                         {challenge.deadline && (
                           <div
-                            className={`flex flex-col p-2 rounded-lg ${!isEnrolled ? 'col-span-2' : ''}`}
+                            className="flex flex-col p-2 rounded-lg"
                             style={{ backgroundColor: currentTheme.background === '#ffffff' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}
                           >
                             <span className="opacity-60 font-medium mb-0.5">{t('challenges.deadline', 'Deadline')}</span>
