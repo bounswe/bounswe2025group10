@@ -24,98 +24,120 @@ For detailed information, please refer to [Software Requirement Specifications](
 For detailed information on project requirements, design diagrams, and meeting notes, please refer to our [Project Wiki](https://github.com/bounswe/bounswe2025group10/wiki).
 
 
-## 🚀 Quick Start
+# 🚀 Quick Start
 
-### Prerequisites
+## Prerequisites
 - Node.js (v18 or later)
 - npm (v8 or later)
-- Docker (optional, for running the application in a container)
+- Docker & Docker Compose
 
-### **Backend**
-1. **Stop the containers:**
-   In a terminal:
+---
+
+# 1. Web Application (Backend + Frontend)
+
+## Environment Variables
+- Copy and adapt the following to create your `.env` files:
+
+### Backend `.env.example`
+```
+SECRET_KEY=your-django-secret-key
+DEBUG=True
+MYSQL_DATABASE=main_db
+MYSQL_USER=admin
+MYSQL_PASSWORD=123456789
+MYSQL_ROOT_PASSWORD=123456789
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@smtp-brevo.com
+EMAIL_HOST_PASSWORD=your-email-password
+DEFAULT_FROM_EMAIL=no_reply@zerowaste.ink
+```
+
+### Frontend `.env.example`
+```
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000
+```
+
+---
+
+## Development Setup
+
+1. **Start all services:**
    ```bash
-   docker-compose down
+   docker compose up --build
+   ```
+   - Backend: http://localhost:8000
+   - Frontend: http://localhost:3000
+
+2. **Apply migrations (if not auto-run):**
+   ```bash
+   docker compose exec backend-web python manage.py migrate
    ```
 
-2. **Build the backend:**
-   Inside the backend folder run this command:
+3. **Seed the database with mock data and badges:**
    ```bash
-   docker-compose up --build
+   docker compose exec backend-web python manage.py create_mock_data
+   docker compose exec backend-web python manage.py create_badges
    ```
+   This will populate the system with demo users, posts, achievements, badges, and more.
 
-3. **Backend deployed:**
-   Now the backend is deployed at http://localhost:8000.
+4. **Default Test Users:**
+   - Regular User:  
+     - Username: `test_user`  
+     - Password: `test123`  
+     - Email: `test@gmail.com`
+   - Admin User:  
+     - Username: `admin`  
+     - Password: `admin123`  
+     - Email: `admin@example.com`
 
-### Frontend
-To start the development server, run:
-```
-npm run dev
-```
-This will start the application in development mode and open it in your default web browser.
-The application will be available at `http://localhost:5173` by default.
+---
 
-### Building the Application
-To build the application for production, run:
-```
-npm run build
-```
+## Production Setup
+- Adjust `.env` files for production secrets and domains.
+- Build and run with:
+  ```bash
+  docker compose -f docker-compose.yml up --build -d
+  ```
+- For custom domains, update `ALLOWED_HOSTS` in backend settings and `VITE_API_URL` in frontend.
 
-This will create a `dist` directory with the production build of the application.
+---
 
-## Docker
-To run the application in a Docker container, you can use the provided `Dockerfile`. This file is set up to build and run the application in a lightweight container.
-### Building the Docker Image
-To build the Docker image, run:
-```
-docker build -t zero-waste-frontend .
-```
-### Running the Docker Container
-To run the Docker container, use the following command:
-```
-docker run -p 80:80 zero-waste-frontend
-```
-This will start the application in a container and map port 80 of the container to port 80 of your host machine.
-You can then access the application in your web browser at `http://localhost`.
+# 2. Mobile Application
 
-### Using local backend or domain
-The default settings uses our prod backend on zerowaste.ink. If you would like to use the local backend you deployed switch line 13 in Dockerfile in the zero-waste folder into
-```
-RUN npm run build
-```
+## Environment Variables
+- Copy `mobile/.env.example` to `mobile/.env` and set `API_URL` as needed.
 
-
-### ⚡️  Running Mobile App 
-
-1. **Build and run the the backend  server on docker:**
+## Running the Mobile App
+1. **Start backend (see above).**
+2. **Install dependencies:**
    ```bash
-   docker-compose up --build
+   cd mobile
+   npm install
+   npx expo install
    ```
-
-2. **On a seperate terminal, start React Native**
+3. **Start Metro bundler:**
    ```bash
    npx react-native start
    ```
-
-3. **On yet another seperate terminal, start your emulator**
-   ```bash
-   emulator <YOUR_EMULATOR_DEVICE_NAME>
-   ```
-
-4. **On any terminal, start the app**
+4. **Run on emulator or device:**
    ```bash
    npm run android
+   # or
+   npm run ios
    ```
 
-### 🧱 Project Structure in Docker
+---
 
+# 🧱 Project Structure in Docker
 - `Dockerfile`: Defines the base image and build process for backend/frontend
-- `docker-compose.yml`: Manages multi-container setup including services (e.g. web, db)
+- `docker-compose.yml`: Manages multi-container setup including services (web, db, redis)
 - `volumes`: Sync local changes without restarting containers
-- `ports`: Exposes the app on your local environment (check `docker-compose.yml` for specific ports)
+- `ports`: Exposes the app on your local environment (see `docker-compose.yml` for specifics)
 
-### 📦 Common Commands
-
+# 📦 Common Docker Commands
 - View running containers:
    ```bash
    docker ps
@@ -124,5 +146,17 @@ RUN npm run build
    ```bash
    docker exec -it <container_name> /bin/bash
    ```
+- Stop all containers:
+   ```bash
+   docker compose down
+   ```
 
-Make sure Docker and Docker Compose are installed on your system. For installation, visit [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+---
+
+# 📄 Further Documentation
+- See the [Project Wiki](https://github.com/bounswe/bounswe2025group10/wiki) for requirements, diagrams, and more.
+
+---
+
+# ❓ Need Help?
+- Open an issue or contact the maintainers via the project repository.
