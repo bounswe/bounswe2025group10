@@ -554,7 +554,7 @@ def like_post(request, post_id):
 
                 #create notification for post creator
                 if post.creator != request.user:
-                    from ...notifications.models import Notification
+                    from notifications.models import Notification
                     notif_message = f"{request.user.username} liked your post."
                     notif = Notification.objects.create(
                         user=post.creator,

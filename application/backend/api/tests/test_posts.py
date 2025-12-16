@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -9,6 +10,7 @@ from rest_framework.test import APIClient
 
 from api.models import PostLikes, Posts, SavedPosts, Users
 from api.post.post_views import create_post, get_all_posts, get_post_detail, get_user_posts
+from notifications.models import Notification
 
 
 class PostViewsTests(TestCase):
@@ -246,6 +248,26 @@ class PostViewsTests(TestCase):
         # Verify post like count was decremented
         post = Posts.objects.get(pk=self.posts[0].id)
         self.assertEqual(post.like_count, 0)
+
+    def test_like_post_creates_notification_for_creator(self):
+        """Liking someone else's post creates a Notification (and must not crash)."""
+        other_post = Posts.objects.create(
+            creator=self.user2,
+            text="Other user's post",
+            date=timezone.now(),
+            like_count=0,
+            dislike_count=0,
+        )
+
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('like_post', kwargs={'post_id': other_post.id})
+
+        with patch("api.post.post_views.send_realtime_notification", return_value=None):
+            response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Post liked successfully")
+        self.assertEqual(Notification.objects.filter(user=self.user2).count(), 1)
 
     def test_dislike_post_success(self):
         """Test successful disliking and toggling a post dislike"""

@@ -132,6 +132,25 @@ class AdminReportAPITests(APITestCase):
         self.assertFalse(self.media_owner.is_active)
         self.assertFalse(Report.objects.filter(id=report.id).exists())
 
+    def test_ban_user_action_when_target_is_user(self):
+        """Reporting a User and banning should deactivate that user (not 400)."""
+        reported_user = make_regular_user(email="reported@example.com", username="reported_user")
+        report = Report.objects.create(
+            reporter=self.reporter,
+            reason="SPAM",
+            content_type=ContentType.objects.get_for_model(User),
+            object_id=reported_user.id,
+        )
+        url = reverse("admin-reports-moderate", args=[report.id])
+
+        self.auth_as_admin()
+        response = self.client.post(url, {"action": "ban_user"}, content_type="application/json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        reported_user.refresh_from_db()
+        self.assertFalse(reported_user.is_active)
+        self.assertFalse(Report.objects.filter(id=report.id).exists())
+
     def test_ignore_action(self):
         """Test ignore moderation action."""
         post = Posts.objects.create(creator=self.media_owner, text="Minor issue")

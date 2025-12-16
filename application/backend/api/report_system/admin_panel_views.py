@@ -166,7 +166,10 @@ class ModerateReportsViewSet(viewsets.ReadOnlyModelViewSet):
         target_owner = None
 
         # figure out the owner (creator/author/user field names differ)
-        if hasattr(target_obj, "creator_id"):
+        # If the reported object *is already* a User, the user is the owner.
+        if isinstance(target_obj, User):
+            target_owner = target_obj
+        elif hasattr(target_obj, "creator_id"):
             target_owner = getattr(target_obj, "creator", None)
         elif hasattr(target_obj, "author_id"):
             target_owner = getattr(target_obj, "author", None)
