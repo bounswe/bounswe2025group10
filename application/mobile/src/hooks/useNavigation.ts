@@ -1,12 +1,38 @@
-import { useNavigation as useRNNavigation } from '@react-navigation/native';
+import { useNavigation as useRNNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useCallback } from 'react';
 
+// Define the app's navigation param list
+export type RootStackParamList = {
+  Login: undefined;
+  Signup: undefined;
+  MainTabs: undefined;
+  Home: undefined;
+  Community: undefined;
+  Challenges: undefined;
+  Profile: undefined;
+  Tips: undefined;
+  Achievements: undefined;
+  Leaderboard: undefined;
+  ActivityFeed: undefined;
+  OtherProfile: { username: string };
+  Legal: { type: 'terms' | 'agreement' };
+  AdminPanel: undefined;
+  PostModeration: undefined;
+  CommentModeration: undefined;
+  ChallengeModeration: undefined;
+  UserModeration: undefined;
+};
+
 export const useAppNavigation = () => {
-  const navigation = useRNNavigation();
+  const navigation = useRNNavigation<NavigationProp<RootStackParamList>>();
 
   // Standardized navigation methods with consistent behavior
-  const navigateToScreen = useCallback((screenName: string, params?: any) => {
-    navigation.navigate(screenName as never, params as never);
+  const navigateToScreen = useCallback(<T extends keyof RootStackParamList>(
+    screenName: T,
+    params?: RootStackParamList[T]
+  ) => {
+    // Use type assertion for navigation compatibility
+    (navigation as NavigationProp<ParamListBase>).navigate(screenName as string, params);
   }, [navigation]);
 
   const goBack = useCallback(() => {
@@ -15,10 +41,13 @@ export const useAppNavigation = () => {
     }
   }, [navigation]);
 
-  const resetToScreen = useCallback((screenName: string, params?: any) => {
-    navigation.reset({
+  const resetToScreen = useCallback(<T extends keyof RootStackParamList>(
+    screenName: T,
+    params?: RootStackParamList[T]
+  ) => {
+    (navigation as NavigationProp<ParamListBase>).reset({
       index: 0,
-      routes: [{ name: screenName, params }],
+      routes: [{ name: screenName as string, params }],
     });
   }, [navigation]);
 
@@ -56,6 +85,7 @@ export const SCREEN_NAMES = {
   
   // Modal/Detail screens
   OTHER_PROFILE: 'OtherProfile',
+  LEGAL: 'Legal',
 } as const;
 
 // Navigation types for type safety

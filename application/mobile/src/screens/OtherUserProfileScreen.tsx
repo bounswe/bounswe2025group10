@@ -1,14 +1,45 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, FlatList, RefreshControl, Dimensions, Alert, TouchableOpacity } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { profilePublicService, postService, profileService, getProfilePictureUrl } from '../services/api';
+import { profilePublicService, postService, profileService, getProfilePictureUrl, UserBadge } from '../services/api';
 import { colors, spacing, typography } from '../utils/theme';
 import { useTranslation } from 'react-i18next';
 import { ScreenWrapper } from '../components/ScreenWrapper';
+import { logger } from '../utils/logger';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
+
+// Badge helper functions
+const getBadgeTierColor = (tier?: string): string => {
+  switch (tier?.toLowerCase()) {
+    case 'bronze': return '#CD7F32';
+    case 'silver': return '#C0C0C0';
+    case 'gold': return '#FFD700';
+    case 'platinum': return '#E5E4E2';
+    case 'diamond': return '#B9F2FF';
+    default: return '#CD7F32';
+  }
+};
+
+const getBadgeCategoryEmoji = (category?: string): string => {
+  switch (category?.toUpperCase()) {
+    case 'PLASTIC': return '♳';
+    case 'PAPER': return '📄';
+    case 'GLASS': return '🫙';
+    case 'METAL': return '🥫';
+    case 'ELECTRONIC': return '📱';
+    case 'OIL_AND_FATS': return '🛢️';
+    case 'OIL&FATS': return '🛢️'; // Legacy support
+    case 'ORGANIC': return '🥬';
+    case 'TOTAL_WASTE': return '♻️';
+    case 'CONTRIBUTIONS': return '✍️';
+    case 'LIKES_RECEIVED': return '❤️';
+    case 'LIKES': return '❤️'; // Legacy support
+    default: return '🏅';
+  }
+};
 
 type RouteParams = {
   OtherProfile: {
@@ -28,7 +59,8 @@ export const OtherUserProfileScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  
+  const [badges, setBadges] = useState<UserBadge[]>([]);
+
   // Follow state
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
@@ -40,7 +72,7 @@ export const OtherUserProfileScreen: React.FC = () => {
       const data = await profilePublicService.getUserBio(username);
       setBio(data.bio || '');
     } catch (error) {
-      console.warn('Error fetching user bio:', error);
+      logger.warn('Error fetching user bio:', error);
       Alert.alert(t('common.error', 'Error'), t('profile.failedToLoad', 'Failed to load profile'));
     } finally {
       setLoading(false);
@@ -57,7 +89,7 @@ export const OtherUserProfileScreen: React.FC = () => {
         setFollowingCount(data.data.following_count || 0);
       }
     } catch (error) {
-      console.warn('Error fetching follow status:', error);
+      logger.warn('Error fetching follow status:', error);
     }
   }, [username]);
 
@@ -93,26 +125,35 @@ export const OtherUserProfileScreen: React.FC = () => {
     try {
       const response = await postService.getAllPosts();
       const allPosts = response.data || [];
-      const userPosts = allPosts.filter((p: any) => p.creator_username === username);
+      const userPosts = allPosts.filter((p: { creator_username: string }) => p.creator_username === username);
       setPosts(userPosts);
     } catch (error) {
-      console.warn('Error fetching posts for user:', error);
+      logger.warn('Error fetching posts for user:', error);
       Alert.alert('Error', 'Failed to load posts.');
     } finally{
       setLoadingPosts(false);
     }
   }, [username]);
 
+  const fetchBadges = useCallback(async () => {
+    // Note: Badge API requires user_id (integer), not username.
+    // Since we only have username here, we cannot fetch badges for other users.
+    // This would require a backend endpoint that accepts username or returns user_id.
+    // For now, badges are only shown on the user's own profile.
+    setBadges([]);
+  }, []);
+
   useEffect(() => {
     fetchBio();
     fetchPosts();
     fetchFollowStatus();
-  }, [fetchBio, fetchPosts, fetchFollowStatus]);
+    fetchBadges();
+  }, [fetchBio, fetchPosts, fetchFollowStatus, fetchBadges]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchBio(), fetchPosts(), fetchFollowStatus()]);
-  }, [fetchBio, fetchPosts, fetchFollowStatus]);
+    await Promise.all([fetchBio(), fetchPosts(), fetchFollowStatus(), fetchBadges()]);
+  }, [fetchBio, fetchPosts, fetchFollowStatus, fetchBadges]);
 
   if (loading) {
     return (
@@ -126,10 +167,13 @@ export const OtherUserProfileScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      {/* TODO: Re-enable profile picture loading when backend is fixed */}
-      <Image source={PROFILE_PLACEHOLDER} style={styles.profilePic} />
+      <Image
+        source={username ? { uri: getProfilePictureUrl(username) } : PROFILE_PLACEHOLDER}
+        style={styles.profilePic}
+        defaultSource={PROFILE_PLACEHOLDER}
+      />
       <Text style={[styles.username, { color: themeColors.primary }]}>{username}</Text>
-      
+
       {/* Follow Stats */}
       <View style={styles.followStatsRow}>
         <View style={styles.followStatItem}>
@@ -169,6 +213,29 @@ export const OtherUserProfileScreen: React.FC = () => {
       )}
 
       {bio ? <Text style={[styles.bio, { color: themeColors.textPrimary }]}>{bio}</Text> : null}
+
+      {/* Badges Section */}
+      {badges.length > 0 && (
+        <View style={styles.badgesSection}>
+          <Text style={[styles.sectionTitle, { alignSelf: 'flex-start', color: themeColors.primary }]}>Badges</Text>
+          <View style={styles.badgesGrid}>
+            {badges.map((userBadge) => (
+              <View key={userBadge.id} style={[styles.badgeItem, { backgroundColor: themeColors.background }]}>
+                <View style={[styles.badgeIconWrapper, { backgroundColor: getBadgeTierColor(userBadge.badge?.tier) }]}>
+                  <Text style={styles.badgeEmoji}>{getBadgeCategoryEmoji(userBadge.badge?.category)}</Text>
+                </View>
+                <Text style={[styles.badgeName, { color: themeColors.textPrimary }]} numberOfLines={2}>
+                  {userBadge.badge?.name || 'Badge'}
+                </Text>
+                <Text style={[styles.badgeTier, { color: getBadgeTierColor(userBadge.badge?.tier) }]}>
+                  {userBadge.badge?.tier?.toUpperCase() || 'BRONZE'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       <Text style={[styles.sectionTitle, { alignSelf: 'flex-start', color: themeColors.primary }]}>{t('profile.posts', 'Posts')}</Text>
     </View>
   );
@@ -303,5 +370,44 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     marginLeft: spacing.sm,
+  },
+  // Badge styles
+  badgesSection: {
+    width: '100%',
+    marginTop: spacing.md,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
+  },
+  badgeItem: {
+    width: '30%',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: 12,
+    marginBottom: spacing.xs,
+  },
+  badgeIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  badgeEmoji: {
+    fontSize: 24,
+  },
+  badgeName: {
+    ...typography.caption,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  badgeTier: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });

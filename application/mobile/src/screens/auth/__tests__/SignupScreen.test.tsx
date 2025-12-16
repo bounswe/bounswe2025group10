@@ -414,7 +414,7 @@ describe('SignupScreen', () => {
 
   describe('Loading State', () => {
     it('should show loading indicator while signup is in progress', async () => {
-      let resolveSignup;
+      let resolveSignup: ((value: unknown) => void) | undefined;
       authService.signup.mockImplementation(
         () => new Promise((resolve) => { resolveSignup = resolve; })
       );
@@ -426,7 +426,7 @@ describe('SignupScreen', () => {
       const emailInput = getByPlaceholderText('Email');
       const usernameInput = getByPlaceholderText('Username');
       const passwordInput = getByPlaceholderText('Password');
-      
+
       fireEvent.changeText(emailInput, 'test@example.com');
       fireEvent.changeText(usernameInput, 'testuser');
       fireEvent.changeText(passwordInput, 'password123');
@@ -513,7 +513,9 @@ describe('SignupScreen', () => {
       );
 
       const loginLink = getByText(/Already have an account/);
-      fireEvent.press(loginLink.parent);
+      if (loginLink.parent) {
+        fireEvent.press(loginLink.parent);
+      }
 
       expect(mockNavigate).toHaveBeenCalledWith('Login');
     });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, ActivityIndicator, Switch } from 'react-native';
 import { ChallengesScreen } from '../ChallengesScreen';
 
 // Mock axios
@@ -105,7 +105,7 @@ describe('ChallengesScreen', () => {
 
     const { UNSAFE_getByType } = render(<ChallengesScreen />);
 
-    expect(UNSAFE_getByType('ActivityIndicator')).toBeTruthy();
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
   it('should render challenges when data is loaded', async () => {
@@ -126,7 +126,7 @@ describe('ChallengesScreen', () => {
     });
 
     // Find the Switch and toggle it
-    const switchComponent = UNSAFE_getByType('Switch');
+    const switchComponent = UNSAFE_getByType(Switch);
     fireEvent(switchComponent, 'onValueChange', true);
 
     // Should now show enrolled challenges only

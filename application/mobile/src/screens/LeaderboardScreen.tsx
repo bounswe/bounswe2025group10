@@ -12,26 +12,12 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { leaderboardService, getProfilePictureUrl } from '../services/api';
+import { leaderboardService, getProfilePictureUrl, LeaderboardUser, UserBio } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
-
-interface LeaderboardUser {
-  rank: number;
-  username: string;
-  total_waste: string;
-  points: number;
-  profile_picture?: string;
-  isCurrentUser?: boolean;
-}
-
-interface UserBio {
-  username: string;
-  bio?: string;
-}
+import { logger } from '../utils/logger';
 
 export const LeaderboardScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -63,51 +49,56 @@ export const LeaderboardScreen: React.FC = () => {
   };
 
   // Fetch leaderboard data
-  const fetchLeaderboard = useCallback(async () => {
-    if (!refreshing) setLoading(true);
+  const fetchLeaderboard = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     setError(null);
 
     try {
       const response = await leaderboardService.getLeaderboard();
       const data = response.data;
-      
+
       // Process top users
-      const topUsers: LeaderboardUser[] = (data.top_users || []).map((user: any) => ({
-        rank: user.rank,
-        username: user.username,
-        total_waste: user.total_waste,
-        points: user.points || 0,
-        profile_picture: user.profile_picture,
-        isCurrentUser: false,
-      }));
+      const topUsers: LeaderboardUser[] = ((data as { top_users?: unknown[] }).top_users || []).map((user: unknown) => {
+        const u = user as { rank: number; username: string; total_waste: number; points?: number; profile_picture?: string };
+        return {
+          rank: u.rank,
+          username: u.username,
+          total_waste: u.total_waste,
+          points: u.points || 0,
+          profile_picture: u.profile_picture,
+          isCurrentUser: false,
+        };
+      });
 
       setLeaderboard(topUsers);
 
       // Set current user if exists and not in top 10
-      if (data.current_user && data.current_user.rank > 10) {
+      const responseData = data as { current_user?: { rank: number; username: string; total_waste: number; points?: number; profile_picture?: string } };
+      if (responseData.current_user && responseData.current_user.rank > 10) {
         setCurrentUser({
-          rank: data.current_user.rank,
-          username: data.current_user.username,
-          total_waste: data.current_user.total_waste,
-          points: data.current_user.points || 0,
-          profile_picture: data.current_user.profile_picture,
+          rank: responseData.current_user.rank,
+          username: responseData.current_user.username,
+          total_waste: responseData.current_user.total_waste,
+          points: responseData.current_user.points || 0,
+          profile_picture: responseData.current_user.profile_picture,
           isCurrentUser: true,
         });
       } else {
         setCurrentUser(null);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch leaderboard');
-      console.error('Error fetching leaderboard:', err);
+    } catch (err: unknown) {
+      const leaderboardErr = err as { message?: string };
+      setError(leaderboardErr.message || 'Failed to fetch leaderboard');
+      logger.error('Error fetching leaderboard:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchLeaderboard();
+    await fetchLeaderboard(true);
   }, [fetchLeaderboard]);
 
   useEffect(() => {
@@ -122,7 +113,7 @@ export const LeaderboardScreen: React.FC = () => {
       setSelectedUserBio(response);
       setShowBioModal(true);
     } catch (error) {
-      console.error(`Failed to fetch bio for ${username}:`, error);
+      logger.error(`Failed to fetch bio for ${username}:`, error);
       setSelectedUserBio({ username, bio: 'Bio could not be loaded.' });
       setShowBioModal(true);
     } finally {
@@ -165,8 +156,10 @@ export const LeaderboardScreen: React.FC = () => {
 
   // Render leaderboard item
   const renderLeaderboardItem = ({ item, index }: { item: LeaderboardUser; index: number }) => {
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const profileImageSource = require('../assets/profile_placeholder.png');
+    // Load profile picture from API with fallback to placeholder
+    const profileImageSource = item.username
+      ? { uri: getProfilePictureUrl(item.username) }
+      : require('../assets/profile_placeholder.png');
 
     return (
       <View style={[styles.leaderboardRow, getUserRowStyle(item.isCurrentUser || false, index)]}>
@@ -216,8 +209,10 @@ export const LeaderboardScreen: React.FC = () => {
   const renderCurrentUserRow = () => {
     if (!currentUser) return null;
 
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const currentUserProfileSource = require('../assets/profile_placeholder.png');
+    // Load profile picture from API with fallback to placeholder
+    const currentUserProfileSource = currentUser.username
+      ? { uri: getProfilePictureUrl(currentUser.username) }
+      : require('../assets/profile_placeholder.png');
 
     return (
       <View style={styles.currentUserSection}>
@@ -297,7 +292,7 @@ export const LeaderboardScreen: React.FC = () => {
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>{t('leaderboard.failedToLoad')}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderboard}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchLeaderboard()}>
             <Text style={styles.retryButtonText}>{t('leaderboard.retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -338,10 +333,12 @@ export const LeaderboardScreen: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={styles.modalUserInfo}>
-              {/* TODO: Re-enable profile picture loading when backend is fixed */}
               <Image
-                source={require('../assets/profile_placeholder.png')}
+                source={selectedUserBio?.username
+                  ? { uri: getProfilePictureUrl(selectedUserBio.username) }
+                  : require('../assets/profile_placeholder.png')}
                 style={styles.modalProfileImage}
+                defaultSource={require('../assets/profile_placeholder.png')}
               />
               <View style={styles.modalUserDetails}>
                 <Text style={styles.modalUsername}>{selectedUserBio?.username}</Text>
@@ -379,8 +376,6 @@ export const LeaderboardScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Custom Tab Bar */}
-      <CustomTabBar activeTab="Leaderboard" />
     </ScreenWrapper>
   );
 };

@@ -2,36 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Alert, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { postService, getProfilePictureUrl, getPostImageUrl } from '../services/api';
+import { postService, getProfilePictureUrl, getPostImageUrl, Post, Comment } from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 
-interface Post {
-  id: number;
-  text: string;
-  image?: string;
-  date: string;
-  creator_username: string;
-  creator_profile_image?: string;
-  like_count: number;
-  dislike_count: number;
-  image_url?: string;
-  is_user_liked?: boolean;
-  is_user_disliked?: boolean;
-}
-
-interface Comment {
-  id: number;
-  content: string;
-  date: string;
-  post: number;
-  author: number;
-  author_username: string;
-  author_profile_image?: string;
-}
+const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
 
 export const CommunityScreen = () => {
   const { t } = useTranslation();
@@ -122,17 +100,34 @@ export const CommunityScreen = () => {
 
   const handleReaction = async (postId: number, type: 'like' | 'dislike') => {
     try {
-      const response = type === 'like'
-        ? await postService.likePost(postId)
-        : await postService.dislikePost(postId);
-      if (response && response.data) {
-        const updatedPost = response.data;
-        setPosts(prevPosts =>
-          prevPosts.map(post =>
-            post.id === postId ? { ...post, ...updatedPost } : post
-          )
-        );
+      if (type === 'like') {
+        await postService.likePost(postId);
+      } else {
+        await postService.dislikePost(postId);
       }
+      // Update state after successful API call
+      setPosts(prevPosts =>
+        prevPosts.map(post => {
+          if (post.id !== postId) return post;
+          if (type === 'like') {
+            return {
+              ...post,
+              like_count: post.is_user_liked ? post.like_count - 1 : post.like_count + 1,
+              dislike_count: post.is_user_disliked ? post.dislike_count - 1 : post.dislike_count,
+              is_user_liked: !post.is_user_liked,
+              is_user_disliked: false,
+            };
+          } else {
+            return {
+              ...post,
+              dislike_count: post.is_user_disliked ? post.dislike_count - 1 : post.dislike_count + 1,
+              like_count: post.is_user_liked ? post.like_count - 1 : post.like_count,
+              is_user_disliked: !post.is_user_disliked,
+              is_user_liked: false,
+            };
+          }
+        })
+      );
     } catch (error) {
       Alert.alert('Error', `Failed to ${type} post`);
     }
@@ -182,16 +177,14 @@ export const CommunityScreen = () => {
       ? getPostImageUrl(item.image_url)
       : (item.image ? getPostImageUrl(item.image) : null);
 
-    // TODO: Re-enable profile picture loading when backend is fixed
-    const profileImageSource = require('../assets/profile_placeholder.png');
-
     return (
       <View style={[styles.postItem, { backgroundColor: colors.backgroundSecondary }]}>
         <View style={styles.postHeader}>
           <TouchableOpacity onPress={() => navigation.navigate('OtherProfile', { username: item.creator_username })} style={{flexDirection:'row', alignItems:'center'}}>
             <Image
-              source={profileImageSource}
+              source={item.creator_username ? { uri: getProfilePictureUrl(item.creator_username) } : PROFILE_PLACEHOLDER}
               style={[styles.avatar, { backgroundColor: colors.lightGray }]}
+              defaultSource={PROFILE_PLACEHOLDER}
             />
             <Text style={[styles.username, { color: colors.primary }]}>{item.creator_username}</Text>
           </TouchableOpacity>
@@ -234,10 +227,17 @@ export const CommunityScreen = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      leftComponent={
+        <TouchableOpacity
+          style={styles.headerPlusButton}
+          onPress={() => setModalVisible(true)}
+          accessibilityLabel="Create new post"
+          accessibilityRole="button"
+        >
+          <Text style={styles.headerPlusButtonText}>+</Text>
+        </TouchableOpacity>
+      }
     >
-      <TouchableOpacity style={[styles.createButton, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(true)}>
-        <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>+ {t('community.createPost')}</Text>
-      </TouchableOpacity>
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
@@ -246,6 +246,10 @@ export const CommunityScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: spacing.lg }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          initialNumToRender={5}
         />
       )}
       <Modal
@@ -300,23 +304,20 @@ export const CommunityScreen = () => {
           ) : (
             <ScrollView style={{ flex: 1, padding: spacing.md }}>
               {selectedPostId && comments[selectedPostId] && comments[selectedPostId].length > 0 ? (
-                comments[selectedPostId].map(comment => {
-                  // TODO: Re-enable profile picture loading when backend is fixed
-                  const commentProfileSource = require('../assets/profile_placeholder.png');
-                  return (
+                comments[selectedPostId].map(comment => (
                     <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <Image
-                          source={commentProfileSource}
+                          source={comment.author_username ? { uri: getProfilePictureUrl(comment.author_username) } : PROFILE_PLACEHOLDER}
                           style={{ width: 24, height: 24, borderRadius: 12, marginRight: spacing.sm, backgroundColor: colors.lightGray }}
+                          defaultSource={PROFILE_PLACEHOLDER}
                         />
                         <Text style={{ fontWeight: 'bold', color: colors.primary }}>{comment.author_username}</Text>
                         <Text style={{ marginLeft: 8, color: colors.textSecondary, fontSize: 12 }}>{new Date(comment.date).toLocaleString()}</Text>
                       </View>
                       <Text style={{ color: colors.textPrimary }}>{comment.content}</Text>
                     </View>
-                  );
-                })
+                  ))
               ) : (
                 <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg }}>{t('community.noPostsYet')}</Text>
               )}
@@ -346,16 +347,18 @@ export const CommunityScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  createButton: {
-    backgroundColor: defaultColors.primary,
-    borderRadius: 24,
-    alignSelf: 'flex-end',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    minHeight: MIN_TOUCH_TARGET,
-    justifyContent: 'center',
+  headerPlusButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: defaultColors.primary,
+  },
+  headerPlusButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: defaultColors.white,
   },
   createButtonText: {
     color: defaultColors.white,

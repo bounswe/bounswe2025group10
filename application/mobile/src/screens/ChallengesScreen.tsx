@@ -2,30 +2,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert, Switch, Modal,
 } from 'react-native';
-import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
+import { colors as defaultColors, spacing, typography, commonStyles, ThemeColors } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { challengeService } from '../services/api';
+import { challengeService, Challenge, UserChallenge } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
-
-interface Challenge {
-  id: number;
-  title: string;
-  description: string;
-  target_amount: number;
-  current_progress: number;
-  is_public: boolean;
-  deadline?: string; // ISO date string
-  reward?: any;
-  creator?: any;
-  is_enrolled?: boolean;
-}
-
-interface UserChallenge {
-  challenge: number; // challenge ID
-  joined_date: string;
-}
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errors';
 
 // Helper function to calculate days remaining
 const getDaysRemaining = (deadline: string): number => {
@@ -55,7 +39,7 @@ const formatDeadline = (deadline: string): string => {
 };
 
 // Helper function to get deadline urgency color
-const getDeadlineUrgencyColor = (deadline: string, colors: any): string => {
+const getDeadlineUrgencyColor = (deadline: string, colors: ThemeColors): string => {
   const daysRemaining = getDaysRemaining(deadline);
   
   if (daysRemaining < 0) {
@@ -84,45 +68,44 @@ export const ChallengesScreen = () => {
   const [deadline, setDeadline] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
-  const fetchChallenges = useCallback(async () => {
-    if (!refreshing) {setLoading(true);}
+  const fetchChallenges = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) {setLoading(true);}
     try {
       const [challengesResponse, enrolledResponse] = await Promise.all([
         challengeService.getChallenges(),
         challengeService.getEnrolledChallenges()
       ]);
-      
+
       const allChallenges = challengesResponse;
       const enrolled = enrolledResponse;
-      
+
       // Debug the structure first
-      console.log('Raw enrolled response:', enrolled);
-      console.log('First enrolled item:', enrolled[0]);
-      
+      logger.log('Raw enrolled response count:', enrolled?.length);
+
       // Mark challenges as enrolled
       const enrolledChallengeIds = new Set(enrolled.map((uc: UserChallenge) => uc.challenge).filter(Boolean));
       const challengesWithEnrollment = allChallenges.map((challenge: Challenge) => ({
         ...challenge,
         is_enrolled: enrolledChallengeIds.has(challenge.id)
       }));
-      
+
       setChallenges(challengesWithEnrollment);
       setEnrolledChallenges(enrolled);
-      
+
       // Debug logging
-      console.log('Enrolled challenge IDs:', Array.from(enrolledChallengeIds));
-      console.log('Challenges with enrollment status:', challengesWithEnrollment.map((c: Challenge) => ({ id: c.id, title: c.title, is_enrolled: c.is_enrolled })));
+      logger.log('Enrolled challenge IDs:', Array.from(enrolledChallengeIds));
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch challenges');
+      logger.error('Error fetching challenges:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, [t]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await fetchChallenges();
+    await fetchChallenges(true);
   }, [fetchChallenges]);
 
   const createChallenge = async () => {
@@ -143,20 +126,22 @@ export const ChallengesScreen = () => {
       setTargetAmount('');
       setIsPublic(true);
       setShowCreateModal(false);
-      fetchChallenges();
-      Alert.alert('Success', 'Challenge created successfully!');
+      await fetchChallenges();
+      Alert.alert(t('common.success'), t('challenges.created'));
     } catch (error) {
-      Alert.alert('Error', 'Failed to create challenge');
+      logger.error('Error creating challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
   const joinChallenge = async (challengeId: number) => {
     try {
       await challengeService.joinChallenge(challengeId);
-      fetchChallenges();
-      Alert.alert('Success', 'Successfully joined the challenge!');
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to join challenge');
+      await fetchChallenges();
+      Alert.alert(t('common.success'), t('challenges.joined'));
+    } catch (error: unknown) {
+      logger.error('Error joining challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
@@ -166,23 +151,25 @@ export const ChallengesScreen = () => {
       const enrolledChallenge = enrolledChallenges.find(uc => uc.challenge === challengeId);
       if (enrolledChallenge) {
         await challengeService.leaveChallenge(enrolledChallenge.challenge);
-        fetchChallenges();
-        Alert.alert('Success', 'Successfully left the challenge!');
+        await fetchChallenges();
+        Alert.alert(t('common.success'), t('challenges.left'));
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to leave challenge');
+    } catch (error: unknown) {
+      logger.error('Error leaving challenge:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
   const handleDelete = async (id: number) => {
-    Alert.alert('Delete Challenge', 'Are you sure you want to delete this challenge?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+    Alert.alert(t('challenges.deleteConfirm'), t('challenges.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
           try {
             await challengeService.deleteChallenge(id);
             fetchChallenges();
-          } catch (error:any) {
-            Alert.alert('Error', error.response?.data?.detail || 'Failed to delete');
+          } catch (error: unknown) {
+            logger.error('Error deleting challenge:', error);
+            Alert.alert(t('common.error'), getErrorMessage(error));
           }
         } },
     ]);
@@ -197,12 +184,12 @@ export const ChallengesScreen = () => {
         .filter(uc => challenges.some(c => c.id === uc.challenge)) // Filter out any null/undefined challenges
         .map(uc => {
           const challengeId = uc.challenge as unknown as number;
-          console.log('Processing enrolled challenge ID:', challengeId);
-          
+          logger.log('Processing enrolled challenge ID:', challengeId);
+
           // Find the full challenge data from the all challenges list
           const fullChallenge = challenges.find((c: Challenge) => c.id === challengeId);
-          console.log('Found full challenge:', fullChallenge);
-          
+          logger.log('Found full challenge:', fullChallenge?.title);
+
           if (fullChallenge) {
             return {
               ...fullChallenge,
@@ -313,6 +300,16 @@ export const ChallengesScreen = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      leftComponent={
+        <TouchableOpacity
+          style={styles.headerPlusButton}
+          onPress={() => setShowCreateModal(true)}
+          accessibilityLabel="Create new challenge"
+          accessibilityRole="button"
+        >
+          <Text style={styles.headerPlusButtonText}>+</Text>
+        </TouchableOpacity>
+      }
     >
       {/* Header Controls */}
       <View style={styles.headerControls}>
@@ -325,15 +322,6 @@ export const ChallengesScreen = () => {
             thumbColor={showEnrolledOnly ? colors.white : colors.gray}
           />
         </View>
-      </View>
-
-      <View style={styles.createButtonContainer}>
-        <TouchableOpacity
-          style={[styles.createButton, { backgroundColor: colors.primary }]}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>{t('challenges.createChallenge')}</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Challenges List */}
@@ -460,6 +448,19 @@ export const ChallengesScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  headerPlusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: defaultColors.primary,
+  },
+  headerPlusButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: defaultColors.white,
+  },
   headerControls: {
     paddingBottom: spacing.sm,
   },

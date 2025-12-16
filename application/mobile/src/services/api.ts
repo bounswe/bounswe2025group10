@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
 import { API_URL } from '@env';
+import { logger } from '../utils/logger';
 
 
 // Types
@@ -27,6 +28,373 @@ export interface AuthResponse {
     email: string;
     username: string;
   };
+}
+
+// User Info
+export interface UserInfo {
+  id: number;
+  email: string;
+  username: string;
+  is_admin?: boolean;
+}
+
+// Waste Types
+export interface WasteEntry {
+  id?: number;
+  waste_type: string;
+  total_amount: number;
+  created_at?: string;
+}
+
+export interface WasteResponse {
+  message?: string;
+  data: WasteEntry[];
+}
+
+export interface AddWasteResponse {
+  message: string;
+  data?: WasteEntry;
+}
+
+// Tips
+export interface Tip {
+  id: number;
+  title: string;
+  description: string;
+  creator_username?: string;
+  like_count: number;
+  dislike_count: number;
+  is_user_liked?: boolean;
+  is_user_disliked?: boolean;
+  created_at?: string;
+}
+
+export interface TipsResponse {
+  data: Tip[];
+}
+
+// Achievements
+export interface AchievementDetails {
+  id: number;
+  title: string;
+  description: string;
+  icon?: string | null;
+}
+
+export interface UserAchievement {
+  id: number;
+  achievement: AchievementDetails;
+  earned_at: string;
+}
+
+export interface AchievementsData {
+  achievements: UserAchievement[];
+}
+
+export interface AchievementsResponse {
+  data: AchievementsData;
+}
+
+// Badges
+export type BadgeCategory =
+  | 'PLASTIC'
+  | 'PAPER'
+  | 'GLASS'
+  | 'METAL'
+  | 'ELECTRONIC'
+  | 'OIL_AND_FATS'
+  | 'ORGANIC'
+  | 'TOTAL_WASTE'
+  | 'CONTRIBUTIONS'
+  | 'LIKES_RECEIVED';
+
+// API uses level 1-5, we map to tier names for display
+export type BadgeLevel = 1 | 2 | 3 | 4 | 5;
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
+// Helper to convert level number to tier name
+export const levelToTier = (level: number): BadgeTier => {
+  switch (level) {
+    case 1: return 'bronze';
+    case 2: return 'silver';
+    case 3: return 'gold';
+    case 4: return 'platinum';
+    case 5: return 'diamond';
+    default: return 'bronze';
+  }
+};
+
+// Badge as returned by API
+export interface Badge {
+  id: number;
+  category: string;
+  category_display?: string;
+  level: number;
+  level_display?: string;
+  criteria_value: number;
+  description?: string;
+  earned_at?: string;
+}
+
+// For backward compatibility with existing UI code
+export interface UserBadge {
+  id: number;
+  badge: {
+    id: number;
+    name: string;
+    category: string;
+    tier: BadgeTier;
+    description?: string;
+  };
+  earned_at: string;
+}
+
+// Actual API response format for /api/badges/
+export interface BadgesApiResponse {
+  user_id: number;
+  username: string;
+  total_badges: number;
+  badges_by_category: Record<string, Badge[]>;
+}
+
+// Transformed response for UI consumption
+export interface BadgesResponse {
+  data: {
+    username: string;
+    badges: UserBadge[];
+    total_badges: number;
+  };
+}
+
+export interface BadgeLeaderboardUser {
+  user_id: number;
+  username: string;
+  badge_count: number;
+  profile_image_url?: string | null;
+}
+
+export interface BadgeLeaderboardResponse {
+  data: {
+    leaderboard: BadgeLeaderboardUser[];
+  };
+}
+
+// Actual API response format for /api/badges/check/
+export interface BadgeCheckResponse {
+  user_id: number;
+  username: string;
+  newly_awarded_count: number;
+  newly_awarded_badges: Badge[];
+}
+
+// Progress for a single category
+export interface BadgeProgressItem {
+  current_value: number;
+  required_value: number | null;
+  percentage: number;
+  next_badge: {
+    id: number;
+    category: string;
+    level: number;
+  } | null;
+  all_earned: boolean;
+}
+
+// API response for /api/badges/progress/
+export interface BadgeProgressResponse {
+  user_id: number;
+  username: string;
+  progress: Record<string, BadgeProgressItem>;
+}
+
+// Leaderboard
+export interface LeaderboardUser {
+  rank: number;
+  username: string;
+  total_waste: number | string;
+  points: number;
+  profile_picture?: string | null;
+  isCurrentUser?: boolean;
+}
+
+export interface LeaderboardData {
+  top_users: LeaderboardUser[];
+  current_user?: LeaderboardUser | null;
+}
+
+export interface LeaderboardResponse {
+  data: LeaderboardData;
+}
+
+export interface UserBio {
+  username: string;
+  bio: string;
+}
+
+// Posts
+export interface Post {
+  id: number;
+  text?: string;
+  image?: string;
+  image_url?: string;
+  date?: string;
+  creator_username: string;
+  creator_profile_image?: string;
+  like_count: number;
+  dislike_count: number;
+  is_user_liked?: boolean;
+  is_user_disliked?: boolean;
+  created_at?: string;
+}
+
+export interface PostsResponse {
+  data: Post[];
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  date: string;
+  post?: number;
+  author?: number;
+  author_username: string;
+  author_profile_image?: string;
+}
+
+export interface CommentsResponse {
+  data: Comment[];
+}
+
+// Challenges
+export interface Challenge {
+  id: number;
+  title: string;
+  description: string;
+  target_amount: number;
+  current_progress: number;
+  is_public: boolean;
+  deadline?: string;
+  reward?: {
+    id: number;
+    title?: string;
+    points?: number;
+  };
+  creator?: {
+    id: number;
+    username: string;
+  };
+  participants_count?: number;
+  created_at?: string;
+  is_enrolled?: boolean;
+}
+
+export interface UserChallenge {
+  id?: number;
+  challenge: number;
+  progress?: number;
+  joined_at?: string;
+  joined_date?: string;
+}
+
+// Profile
+export interface ProfilePictureResponse {
+  message: string;
+  url?: string;
+}
+
+export interface FollowResponse {
+  message: string;
+  is_following?: boolean;
+}
+
+export interface FollowStatusResponse {
+  data: {
+    is_following: boolean;
+    followers_count: number;
+    following_count: number;
+  };
+}
+
+export interface FollowUser {
+  id: number;
+  username: string;
+  profile_image?: string | null;
+  bio?: string | null;
+}
+
+export interface FollowersResponse {
+  data: {
+    followers: FollowUser[];
+    followers_count: number;
+  };
+}
+
+export interface FollowingResponse {
+  data: {
+    following: FollowUser[];
+    following_count: number;
+  };
+}
+
+// Admin/Moderation
+export interface ReportContent {
+  id: number;
+  title?: string;
+  content?: string;
+  text?: string;
+  description?: string;
+  username?: string;
+  email?: string;
+  profile_picture?: string;
+  creator?: string;
+  target_amount?: number;
+  current_progress?: number;
+  is_public?: boolean;
+  created_at?: string;
+  participants_count?: number;
+  likes_count?: number;
+  comments_count?: number;
+  post_title?: string;
+  post_id?: number;
+  bio?: string;
+  followers_count?: number;
+  is_active?: boolean;
+}
+
+export interface Report {
+  id: number;
+  content_type: string;
+  reason: string;
+  description: string;
+  created_at: string;
+  reporter: {
+    username: string;
+  };
+  content: ReportContent;
+}
+
+export interface ReportsResponse {
+  results?: Report[];
+  data?: Report[];
+}
+
+export interface ModerationResponse {
+  message: string;
+  success: boolean;
+}
+
+// Weather
+export interface WeatherData {
+  temperature: number;
+  windspeed: number;
+  weathercode: number;
+  time?: string;
+}
+
+// Generic API response wrapper
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
 }
 
 // API Configuration
@@ -70,12 +438,12 @@ api.interceptors.request.use(
       }
       return config;
     } catch (error) {
-      console.error('Error in request interceptor:', error);
+      logger.error('Error in request interceptor:', error);
       return Promise.reject(error);
     }
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    logger.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -141,7 +509,7 @@ api.interceptors.response.use(
             }
           }
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          logger.error('Token refresh failed:', refreshError);
           processQueue(refreshError as Error, null);
           // Clear tokens on refresh failure
           await storage.clearTokens();
@@ -156,7 +524,11 @@ api.interceptors.response.use(
 );
 
 // URL Construction Helpers
-export const getProfilePictureUrl = (username: string): string => {
+export const getProfilePictureUrl = (username: string, cacheBust?: number): string => {
+  // Only add cache-busting parameter when explicitly provided (e.g., after uploading new picture)
+  if (cacheBust) {
+    return `${API_URL}/api/profile/${username}/picture/?t=${cacheBust}`;
+  }
   return `${API_URL}/api/profile/${username}/picture/`;
 };
 
@@ -177,9 +549,9 @@ export const authService = {
     return response.data;
   },
 
-  getUserInfo: async (): Promise<any> => {
-    const response = await api.get('/me/');
-    console.log('Full user info response:', JSON.stringify(response.data, null, 2));
+  getUserInfo: async (): Promise<UserInfo> => {
+    const response = await api.get<UserInfo>('/me/');
+    logger.log('User info response received');
     return response.data;
   },
 
@@ -189,22 +561,24 @@ export const authService = {
   },
 
   fakeLogin: async (): Promise<AuthResponse> => {
+    if (!__DEV__) {
+      throw new Error('fakeLogin is only available in development mode');
+    }
     const response = await axios.post(`${API_URL}/fake-login/`);
     return response.data;
   },
 };
 
 export const wasteService = {
-  getUserWastes: async (): Promise<any> => {
-    console.log('Fetching user wastes...');
+  getUserWastes: async (): Promise<WasteResponse> => {
     const response = await api.get('/api/waste/get/');
-    console.log('Waste data response:', response.status, response.data);
+    // Backend returns { message: '...', data: [...] }
     return response.data;
   },
-  addUserWaste: async (waste_type: string, amount: number): Promise<any> => {
-    console.log('Adding user waste:', { waste_type, amount });
-    const response = await api.post('/api/waste/', { waste_type, amount });
-    console.log('Add waste response:', response.status, response.data);
+  addUserWaste: async (waste_type: string, amount: number): Promise<AddWasteResponse> => {
+    logger.log('Adding user waste:', { waste_type, amount });
+    const response = await api.post<AddWasteResponse>('/api/waste/', { waste_type, amount });
+    logger.log('Add waste response:', response.status);
     return response.data;
   },
 };
@@ -213,73 +587,71 @@ export const tipService = {
   /**
    * Fetch the most recent tips (backend returns latest N records)
    */
-  getRecentTips: async (): Promise<any> => {
+  getRecentTips: async (): Promise<TipsResponse> => {
     const response = await api.get('/api/tips/get_recent_tips');
-    return response.data;
+    // Backend returns { message: '...', data: [...] }
+    const data = response.data;
+    return { data: (data.data || data) as Tip[] };
   },
 
   /**
    * Fetch all tips (could be used for paginated lists later)
    */
-  getAllTips: async (): Promise<any> => {
-    console.log('[Tips API] Fetching all tips...');
+  getAllTips: async (): Promise<TipsResponse> => {
+    logger.log('[Tips API] Fetching all tips...');
     try {
       // Try the all endpoint first
       const response = await api.get('/api/tips/all');
-      console.log('[Tips API] Response from /all:', JSON.stringify(response.data, null, 2).slice(0, 500));
       const data = response.data;
       const tips = data.results || data.data || (Array.isArray(data) ? data : []);
-      console.log('[Tips API] Extracted tips count:', tips.length);
-      return { data: tips };
-    } catch (error: any) {
-      console.log('[Tips API] /all endpoint failed, trying getRecentTips...');
+      logger.log('[Tips API] Extracted tips count:', tips.length);
+      return { data: tips as Tip[] };
+    } catch (error: unknown) {
+      logger.log('[Tips API] /all endpoint failed, trying getRecentTips...');
       // Fallback to getRecentTips if /all doesn't exist
       const response = await api.get('/api/tips/get_recent_tips');
-      console.log('[Tips API] Response from getRecentTips:', JSON.stringify(response.data, null, 2).slice(0, 500));
       const data = response.data;
       const tips = data.data || (Array.isArray(data) ? data : []);
-      console.log('[Tips API] Extracted tips count:', tips.length);
-      return { data: tips };
+      logger.log('[Tips API] Extracted tips count:', tips.length);
+      return { data: tips as Tip[] };
     }
   },
 
   /**
    * Create a new tip
    */
-  createTip: async (title: string, description: string): Promise<any> => {
-    const response = await api.post('/api/tips/create/', { title, description });
+  createTip: async (title: string, description: string): Promise<Tip> => {
+    const response = await api.post<Tip>('/api/tips/create/', { title, description });
     return response.data;
   },
 
   /**
    * Like a tip
    */
-  likeTip: async (tipId: number): Promise<any> => {
-    const response = await api.post(`/api/tips/${tipId}/like/`, {});
-    return response.data;
+  likeTip: async (tipId: number): Promise<void> => {
+    await api.post(`/api/tips/${tipId}/like/`, {});
   },
 
   /**
    * Dislike a tip
    */
-  dislikeTip: async (tipId: number): Promise<any> => {
-    const response = await api.post(`/api/tips/${tipId}/dislike/`, {});
-    return response.data;
+  dislikeTip: async (tipId: number): Promise<void> => {
+    await api.post(`/api/tips/${tipId}/dislike/`, {});
   },
 
   /**
    * Report a tip
    */
-  reportTip: async (tipId: number, reason: string, description: string): Promise<any> => {
-    const response = await api.post(`/api/tips/${tipId}/report/`, { reason, description });
-    return response.data;
+  reportTip: async (tipId: number, reason: string, description: string): Promise<void> => {
+    await api.post(`/api/tips/${tipId}/report/`, { reason, description });
   },
 };
 
 export const achievementService = {
-  getUserAchievements: async (): Promise<any> => {
+  getUserAchievements: async (): Promise<AchievementsResponse> => {
     const response = await api.get('/api/achievements/');
-    return response.data;
+    // Backend returns { message: '...', data: { username: '...', achievements: [...] } }
+    return { data: response.data.data || response.data };
   },
   // Get another user's achievements by username
   getUserAchievementsByUsername: async (username: string): Promise<any> => {
@@ -288,32 +660,123 @@ export const achievementService = {
   },
 };
 
-export const leaderboardService = {
-  getLeaderboard: async (): Promise<any> => {
-    const response = await api.get('/api/waste/leaderboard/');
+// Helper to transform API badge format to UI format
+const transformBadgesToUserBadges = (badgesByCategory: Record<string, Badge[]>): UserBadge[] => {
+  const userBadges: UserBadge[] = [];
+
+  for (const [category, badges] of Object.entries(badgesByCategory)) {
+    for (const badge of badges) {
+      userBadges.push({
+        id: badge.id,
+        badge: {
+          id: badge.id,
+          name: badge.level_display || badge.description || `${category} Level ${badge.level}`,
+          category: category,
+          tier: levelToTier(badge.level),
+          description: badge.description,
+        },
+        earned_at: badge.earned_at || new Date().toISOString(),
+      });
+    }
+  }
+
+  return userBadges;
+};
+
+export const badgeService = {
+  // Get current user's badges
+  getUserBadges: async (): Promise<BadgesResponse> => {
+    const response = await api.get('/api/badges/');
+    const apiData: BadgesApiResponse = response.data;
+
+    // Transform badges_by_category to flat badges array for UI
+    const badges = transformBadgesToUserBadges(apiData.badges_by_category || {});
+
+    return {
+      data: {
+        username: apiData.username,
+        badges: badges,
+        total_badges: apiData.total_badges || badges.length,
+      }
+    };
+  },
+
+  // Get another user's badges by user ID (note: requires integer user_id, not username)
+  getUserBadgesById: async (userId: number): Promise<BadgesResponse> => {
+    const response = await api.get(`/api/badges/${userId}/`);
+    const apiData: BadgesApiResponse = response.data;
+
+    const badges = transformBadgesToUserBadges(apiData.badges_by_category || {});
+
+    return {
+      data: {
+        username: apiData.username,
+        badges: badges,
+        total_badges: apiData.total_badges || badges.length,
+      }
+    };
+  },
+
+  // Get all available badges in the system (can filter by category)
+  getAllBadges: async (category?: BadgeCategory): Promise<{ data: { count: number; badges: Badge[] } }> => {
+    const url = category ? `/api/badges/all/?category=${category}` : '/api/badges/all/';
+    const response = await api.get(url);
+    return { data: response.data };
+  },
+
+  // Get badge leaderboard (top 50 users by badge count)
+  getBadgeLeaderboard: async (): Promise<BadgeLeaderboardResponse> => {
+    const response = await api.get('/api/badges/leaderboard/');
+    return { data: response.data };
+  },
+
+  // Get current user's progress toward next badges
+  // Returns object with category keys, each containing progress data
+  getBadgeProgress: async (): Promise<BadgeProgressResponse> => {
+    const response = await api.get('/api/badges/progress/');
     return response.data;
   },
-  getUserBio: async (username: string): Promise<any> => {
-    const response = await api.get(`/api/profile/${username}/bio/`);
+
+  // Get complete badge summary for a user by ID
+  getBadgeSummary: async (userId?: number): Promise<any> => {
+    const url = userId ? `/api/badges/summary/${userId}/` : '/api/badges/summary/';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  // Check for new badges (triggers backend to evaluate and award new badges)
+  checkForNewBadges: async (): Promise<BadgeCheckResponse> => {
+    const response = await api.post('/api/badges/check/');
+    return response.data;
+  },
+};
+
+export const leaderboardService = {
+  getLeaderboard: async (): Promise<LeaderboardResponse> => {
+    const response = await api.get('/api/waste/leaderboard/');
+    // Backend returns { message: '...', data: { top_users: [...], current_user: {...} } }
+    return { data: response.data.data || response.data };
+  },
+  getUserBio: async (username: string): Promise<UserBio> => {
+    const response = await api.get<UserBio>(`/api/profile/${username}/bio/`);
     return response.data;
   },
 };
 
 export const postService = {
-  getAllPosts: async (): Promise<any> => {
+  getAllPosts: async (): Promise<PostsResponse> => {
     const response = await api.get('/api/posts/all/');
-    // API returns paginated format: { count, next, previous, results: [...] }
-    // Normalize to { data: [...] } format for consistency with other endpoints
+    // API returns { message: '...', data: [...] } format
     const data = response.data;
-    return { data: data.results || data };
+    return { data: (data.data || data.results || data) as Post[] };
   },
 
-  createPost: async (formData: FormData): Promise<any> => {
+  createPost: async (formData: FormData): Promise<Post> => {
     // Use cached token for auth
     const token = cachedToken || await storage.getToken();
 
     // Use axios directly for multipart uploads to avoid Content-Type issues
-    const response = await axios.post(`${API_URL}/api/posts/create/`, formData, {
+    const response = await axios.post<Post>(`${API_URL}/api/posts/create/`, formData, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         // Don't set Content-Type - let the browser/RN set it with boundary
@@ -322,55 +785,52 @@ export const postService = {
     return response.data;
   },
 
-  likePost: async (postId: number): Promise<any> => {
-    const response = await api.post(`/api/posts/${postId}/like/`);
-    return response.data;
+  likePost: async (postId: number): Promise<void> => {
+    await api.post(`/api/posts/${postId}/like/`);
   },
 
-  dislikePost: async (postId: number): Promise<any> => {
-    const response = await api.post(`/api/posts/${postId}/dislike/`);
-    return response.data;
+  dislikePost: async (postId: number): Promise<void> => {
+    await api.post(`/api/posts/${postId}/dislike/`);
   },
 
-  getComments: async (postId: number): Promise<any> => {
+  getComments: async (postId: number): Promise<CommentsResponse> => {
     const response = await api.get(`/api/posts/${postId}/comments/`);
     // API may return paginated format: { count, next, previous, results: [...] }
     // or direct format: { data: [...] }
     const data = response.data;
-    return { data: data.results || data.data || data };
+    return { data: (data.results || data.data || data) as Comment[] };
   },
 
-  createComment: async (postId: number, content: string): Promise<any> => {
-    const response = await api.post(`/api/posts/${postId}/comments/create/`, {
+  createComment: async (postId: number, content: string): Promise<Comment> => {
+    const response = await api.post<Comment>(`/api/posts/${postId}/comments/create/`, {
       content,
     });
     return response.data;
   },
 
-  reportPost: async (postId: number, reason: string, description: string): Promise<any> => {
-    const response = await api.post(`/api/posts/${postId}/report/`, {
+  reportPost: async (postId: number, reason: string, description: string): Promise<void> => {
+    await api.post(`/api/posts/${postId}/report/`, {
       reason,
       description,
     });
-    return response.data;
   },
 };
 
 export const challengeService = {
-  getChallenges: async (): Promise<any> => {
+  getChallenges: async (): Promise<Challenge[]> => {
     const response = await api.get('/api/challenges/');
     // API returns paginated format: { count, next, previous, results: [...] }
     // Return the array directly for consistency
     const data = response.data;
-    return data.results || data;
+    return (data.results || data) as Challenge[];
   },
 
-  getEnrolledChallenges: async (): Promise<any> => {
+  getEnrolledChallenges: async (): Promise<UserChallenge[]> => {
     const response = await api.get('/api/challenges/enrolled/');
     // API returns paginated format: { count, next, previous, results: [...] }
     // Return the array directly for consistency
     const data = response.data;
-    return data.results || data;
+    return (data.results || data) as UserChallenge[];
   },
 
   createChallenge: async (data: {
@@ -379,26 +839,24 @@ export const challengeService = {
     target_amount: number;
     is_public: boolean;
     deadline: string;
-  }): Promise<any> => {
-    const response = await api.post('/api/challenges/', data);
+  }): Promise<Challenge> => {
+    const response = await api.post<Challenge>('/api/challenges/', data);
     return response.data;
   },
 
-  joinChallenge: async (challengeId: number): Promise<any> => {
-    const response = await api.post('/api/challenges/participate/', {
+  joinChallenge: async (challengeId: number): Promise<UserChallenge> => {
+    const response = await api.post<UserChallenge>('/api/challenges/participate/', {
       challenge: challengeId,
     });
     return response.data;
   },
 
-  leaveChallenge: async (userChallengeId: number): Promise<any> => {
-    const response = await api.delete(`/api/challenges/participate/${userChallengeId}/`);
-    return response.data;
+  leaveChallenge: async (userChallengeId: number): Promise<void> => {
+    await api.delete(`/api/challenges/participate/${userChallengeId}/`);
   },
 
-  deleteChallenge: async (id: number): Promise<any> => {
-    const response = await api.delete(`/api/challenges/${id}/delete/`);
-    return response.data;
+  deleteChallenge: async (id: number): Promise<void> => {
+    await api.delete(`/api/challenges/${id}/delete/`);
   },
 };
 
@@ -789,51 +1247,50 @@ export const activityService = {
 };
 
 export const profileService = {
-  uploadProfilePicture: async (formData: FormData): Promise<any> => {
+  uploadProfilePicture: async (formData: FormData): Promise<ProfilePictureResponse> => {
     // Use cached token for auth
     const token = cachedToken || await storage.getToken();
 
-    // Use axios directly for multipart uploads to avoid Content-Type issues
-    const response = await axios.post(`${API_URL}/api/profile/profile-picture/`, formData, {
+    // Use axios directly for multipart uploads - don't set Content-Type, let axios handle boundary
+    const response = await axios.post<ProfilePictureResponse>(`${API_URL}/api/profile/profile-picture/`, formData, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        // Don't set Content-Type - let the browser/RN set it with boundary
       },
     });
     return response.data;
   },
-  updateBio: async (username: string, bio: string): Promise<any> => {
-    const response = await api.put(`/api/profile/${username}/bio/`, { bio });
+  updateBio: async (username: string, bio: string): Promise<UserBio> => {
+    const response = await api.put<UserBio>(`/api/profile/${username}/bio/`, { bio });
     return response.data;
   },
-  
+
   // Follow a user
-  followUser: async (username: string): Promise<any> => {
-    const response = await api.post(`/api/profile/${username}/follow/`);
+  followUser: async (username: string): Promise<FollowResponse> => {
+    const response = await api.post<FollowResponse>(`/api/profile/${username}/follow/`);
     return response.data;
   },
-  
+
   // Unfollow a user
-  unfollowUser: async (username: string): Promise<any> => {
-    const response = await api.post(`/api/profile/${username}/unfollow/`);
+  unfollowUser: async (username: string): Promise<FollowResponse> => {
+    const response = await api.post<FollowResponse>(`/api/profile/${username}/unfollow/`);
     return response.data;
   },
-  
+
   // Get follow status and counts for a user
-  getFollowStatus: async (username: string): Promise<any> => {
-    const response = await api.get(`/api/profile/${username}/follow-status/`);
+  getFollowStatus: async (username: string): Promise<FollowStatusResponse> => {
+    const response = await api.get<FollowStatusResponse>(`/api/profile/${username}/follow-status/`);
     return response.data;
   },
-  
+
   // Get list of followers
-  getFollowers: async (username: string): Promise<any> => {
-    const response = await api.get(`/api/profile/${username}/followers/`);
+  getFollowers: async (username: string): Promise<FollowersResponse> => {
+    const response = await api.get<FollowersResponse>(`/api/profile/${username}/followers/`);
     return response.data;
   },
-  
+
   // Get list of users being followed
-  getFollowing: async (username: string): Promise<any> => {
-    const response = await api.get(`/api/profile/${username}/following/`);
+  getFollowing: async (username: string): Promise<FollowingResponse> => {
+    const response = await api.get<FollowingResponse>(`/api/profile/${username}/following/`);
     return response.data;
   },
   
@@ -857,22 +1314,22 @@ export const profileService = {
 // Public profile endpoints (no auth required)
 export const profilePublicService = {
   /** Get public bio info of a user by username */
-  getUserBio: async (username: string): Promise<any> => {
-    const response = await api.get(`/api/profile/${username}/bio/`);
-    return response.data; // { username, bio }
+  getUserBio: async (username: string): Promise<UserBio> => {
+    const response = await api.get<UserBio>(`/api/profile/${username}/bio/`);
+    return response.data;
   },
 };
 
 // Admin service for moderation functionality
 export const adminService = {
-  getReports: async (contentType?: string): Promise<any> => {
+  getReports: async (contentType?: string): Promise<ReportsResponse> => {
     const url = contentType ? `/api/admin/reports/?content_type=${contentType}` : '/api/admin/reports/';
-    const response = await api.get(url);
+    const response = await api.get<ReportsResponse>(url);
     return response.data;
   },
-  
-  moderateContent: async (reportId: number, action: string): Promise<any> => {
-    const response = await api.post(`/api/admin/reports/${reportId}/moderate/`, {
+
+  moderateContent: async (reportId: number, action: string): Promise<ModerationResponse> => {
+    const response = await api.post<ModerationResponse>(`/api/admin/reports/${reportId}/moderate/`, {
       action: action
     });
     return response.data;
@@ -884,10 +1341,10 @@ export const weatherService = {
   /**
    * Get current weather for given coordinates using the free Open-Meteo API (no key needed).
    */
-  getCurrentWeather: async (latitude: number, longitude: number): Promise<any> => {
+  getCurrentWeather: async (latitude: number, longitude: number): Promise<WeatherData> => {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
-    const response = await axios.get(url);
-    return response.data.current_weather; // { temperature, windspeed, weathercode, ... }
+    const response = await axios.get<{ current_weather: WeatherData }>(url);
+    return response.data.current_weather;
   },
 };
 

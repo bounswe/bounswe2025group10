@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
 import { authService, AuthResponse, updateCachedToken } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface UserData {
   email: string;
@@ -28,10 +29,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserData = async () => {
     try {
       const data = await authService.getUserInfo();
-      console.log('Fetched user data:', JSON.stringify(data, null, 2));
+      logger.log('Fetched user data');
       setUserData(data);
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      logger.error('Error fetching user data:', error);
     }
   };
 
@@ -71,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       return null;
     }
   };

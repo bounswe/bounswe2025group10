@@ -57,7 +57,7 @@ jest.mock('../../hooks/useNavigation', () => ({
 
 // Import after mocks
 const { HomeScreen } = require('../HomeScreen');
-const { wasteService, tipService, weatherService } = require('../../services/api');
+const { wasteService, tipService } = require('../../services/api');
 const { SCREEN_NAMES } = require('../../hooks/useNavigation');
 
 describe('HomeScreen', () => {
@@ -69,7 +69,6 @@ describe('HomeScreen', () => {
     wasteService.getUserWastes = jest.fn();
     wasteService.addUserWaste = jest.fn();
     tipService.getRecentTips = jest.fn();
-    weatherService.getCurrentWeather = jest.fn();
 
     // Mock waste data
     wasteService.getUserWastes.mockResolvedValue({
@@ -85,12 +84,6 @@ describe('HomeScreen', () => {
         { id: 1, title: 'Tip 1', description: 'Description 1', like_count: 5, dislike_count: 1 },
         { id: 2, title: 'Tip 2', description: 'Description 2', like_count: 3, dislike_count: 0 },
       ],
-    });
-
-    // Mock weather
-    weatherService.getCurrentWeather.mockResolvedValue({
-      temperature: 20,
-      weathercode: 0,
     });
   });
 
@@ -151,28 +144,6 @@ describe('HomeScreen', () => {
       expect(getByText('Tip 1')).toBeTruthy();
       expect(getByText('Tip 2')).toBeTruthy();
     });
-  });
-
-  it('should load and display weather', async () => {
-    const { getByText } = render(<HomeScreen />);
-
-    await waitFor(() => {
-      expect(weatherService.getCurrentWeather).toHaveBeenCalledWith(41.0082, 28.9784);
-      expect(getByText('Istanbul Weather: 20°C')).toBeTruthy();
-    });
-  });
-
-  it('should handle weather fetch error gracefully', async () => {
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-    weatherService.getCurrentWeather.mockRejectedValueOnce(new Error('Weather error'));
-
-    const { queryByText } = render(<HomeScreen />);
-
-    await waitFor(() => {
-      expect(queryByText(/Istanbul Weather:/)).toBeNull();
-    });
-
-    consoleSpy.mockRestore();
   });
 
   it('should not add waste when no waste type is selected', async () => {

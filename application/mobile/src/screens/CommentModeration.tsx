@@ -15,37 +15,17 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
-import { adminService } from '../services/api';
-
-interface CommentReport {
-  id: number;
-  content_type: string;
-  reason: string;
-  description: string;
-  created_at: string;
-  reporter: {
-    username: string;
-  };
-  content: {
-    id: number;
-    text: string;
-    username: string;
-    profile_picture?: string;
-    created_at: string;
-    likes_count: number;
-    post_title?: string;
-    post_id?: number;
-  };
-}
+import { adminService, Report } from '../services/api';
+import { logger } from '../utils/logger';
 
 export const CommentModeration: React.FC = () => {
   const navigation = useNavigation();
-  const [reports, setReports] = useState<CommentReport[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCommentReports = useCallback(async () => {
+  const fetchReports = useCallback(async () => {
     if (!refreshing) setLoading(true);
     setError(null);
 
@@ -53,12 +33,13 @@ export const CommentModeration: React.FC = () => {
       const response = await adminService.getReports('comments');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch comment reports');
-      console.error('Error fetching comment reports:', err);
+    } catch (err: unknown) {
+      const commentErr = err as { message?: string };
+      setError(commentErr.message || 'Failed to fetch comment reports');
+      logger.error('Error fetching comment reports:', err);
       
       // Fallback to mock data for development
-      const mockReports: CommentReport[] = [
+      const mockReports: Report[] = [
         {
           id: 1,
           content_type: 'comments',
@@ -105,25 +86,25 @@ export const CommentModeration: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchCommentReports();
-  }, [fetchCommentReports]);
+    await fetchReports();
+  }, [fetchReports]);
 
   useEffect(() => {
-    fetchCommentReports();
-  }, [fetchCommentReports]);
+    fetchReports();
+  }, [fetchReports]);
 
   const handleModerate = async (reportId: number, action: string) => {
     try {
       await adminService.moderateContent(reportId, action);
       Alert.alert('Success', `Comment ${action} successfully`);
-      fetchCommentReports();
+      fetchReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate comment');
     }
   };
 
-  const renderCommentReport = ({ item }: { item: CommentReport }) => (
+  const renderReport = ({ item }: { item: Report }) => (
     <View style={styles.reportCard}>
       <View style={styles.reportHeader}>
         <Text style={styles.reportType}>COMMENT REPORT</Text>
@@ -149,7 +130,7 @@ export const CommentModeration: React.FC = () => {
           <View style={styles.commentUserInfo}>
             <Text style={styles.commentUsername}>@{item.content.username}</Text>
             <Text style={styles.commentDate}>
-              {new Date(item.content.created_at).toLocaleDateString()}
+              {item.content.created_at ? new Date(item.content.created_at).toLocaleDateString() : 'N/A'}
             </Text>
           </View>
         </View>
@@ -222,7 +203,7 @@ export const CommentModeration: React.FC = () => {
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>Failed to load comment reports</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchCommentReports}>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchReports}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -232,7 +213,7 @@ export const CommentModeration: React.FC = () => {
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderCommentReport}
+          renderItem={renderReport}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
           refreshControl={

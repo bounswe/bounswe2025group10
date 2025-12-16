@@ -15,7 +15,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
 import { activityService, profileService, postService, ActivityItem } from '../services/api';
 import { colors as defaultColors, spacing, typography } from '../utils/theme';
 import { useAppNavigation } from '../hooks/useNavigation';
@@ -384,8 +383,6 @@ export const ActivityFeedScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Custom Tab Bar */}
-      <CustomTabBar activeTab="ActivityFeed" />
     </ScreenWrapper>
   );
 };

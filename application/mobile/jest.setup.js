@@ -37,6 +37,7 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
+
 // Mock react-native-chart-kit
 jest.mock('react-native-chart-kit', () => {
   const React = require('react');
@@ -116,5 +117,75 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
   SafeAreaView: ({ children }) => children,
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
+// Mock logger utility
+jest.mock('./src/utils/logger', () => ({
+  logger: {
+    log: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Mock ThemeContext
+jest.mock('./src/context/ThemeContext', () => ({
+  useTheme: () => ({
+    colors: {
+      primary: '#2E7D32',
+      background: '#FFFFFF',
+      backgroundSecondary: '#F5F5F5',
+      textPrimary: '#212121',
+      textSecondary: '#757575',
+      textOnPrimary: '#FFFFFF',
+      error: '#D32F2F',
+      success: '#4CAF50',
+      warning: '#FF9800',
+      lightGray: '#E0E0E0',
+      gray: '#9E9E9E',
+      darkGray: '#424242',
+      white: '#FFFFFF',
+      black: '#000000',
+      primaryLight: '#C8E6C9',
+    },
+    isDarkMode: false,
+    themeMode: 'light',
+    setThemeMode: jest.fn(),
+  }),
+  ThemeProvider: ({ children }) => children,
+}));
+
+// Mock error utility
+jest.mock('./src/utils/errors', () => ({
+  ErrorType: {
+    NETWORK: 'NETWORK',
+    AUTH: 'AUTH',
+    VALIDATION: 'VALIDATION',
+    NOT_FOUND: 'NOT_FOUND',
+    SERVER: 'SERVER',
+    TIMEOUT: 'TIMEOUT',
+    UNKNOWN: 'UNKNOWN',
+  },
+  AppError: class AppError extends Error {
+    constructor(type, message, userMessage, code, originalError) {
+      super(message);
+      this.type = type;
+      this.code = code;
+      this.userMessage = userMessage;
+      this.originalError = originalError;
+    }
+  },
+  parseError: jest.fn((error) => ({
+    type: 'UNKNOWN',
+    message: error?.message || 'Unknown error',
+    userMessage: 'An unexpected error occurred. Please try again.',
+    code: null,
+    originalError: error,
+  })),
+  getErrorMessage: jest.fn((error) => error?.message || 'An unexpected error occurred. Please try again.'),
+  isErrorType: jest.fn(() => false),
+  isAuthError: jest.fn(() => false),
+  isNetworkError: jest.fn(() => false),
 }));
 

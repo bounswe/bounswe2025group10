@@ -1,27 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  FlatList,
   Alert,
   Dimensions,
-  RefreshControl,
   Modal,
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
-  Platform,
-  KeyboardAvoidingView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors as defaultColors, spacing, typography, commonStyles } from '../utils/theme';
 import { useRTL } from '../hooks/useRTL';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { wasteService, tipService, weatherService } from '../services/api';
+import { wasteService, tipService, badgeService } from '../services/api';
 import { BarChart } from 'react-native-chart-kit';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useAppNavigation, SCREEN_NAMES } from '../hooks/useNavigation';
@@ -29,6 +26,8 @@ import { MoreDropdown } from '../components/MoreDropdown';
 import { useTranslation } from 'react-i18next';
 import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components/WasteFilterModal';
 import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errors';
 
 // Dynamic chart config based on theme
 const getChartConfig = (isDarkMode: boolean) => ({
@@ -117,7 +116,7 @@ export const HomeScreen: React.FC = () => {
     { key: 'OIL&FATS', label: t('home.wasteTypes.OIL&FATS') },
     { key: 'ORGANIC', label: t('home.wasteTypes.ORGANIC') },
   ];
-  const { logout, userData } = useAuth();
+  const { userData } = useAuth();
   const { navigateToScreen } = useAppNavigation();
 
   // waste form state
@@ -170,14 +169,11 @@ export const HomeScreen: React.FC = () => {
     applyFilters,
   } = useWasteFilters(wasteData);
 
-  // weather state
-  const [weather, setWeather] = useState<{ temperature: number; weathercode: number } | null>(null);
-
   // pull‑to‑refresh
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchWasteData(), fetchTips(), fetchWeather()]);
+    await Promise.all([fetchWasteData(), fetchTips()]);
     setRefreshing(false);
   }, []);
 
@@ -208,10 +204,16 @@ export const HomeScreen: React.FC = () => {
     setLoadingWaste(true);
     try {
       const response = await wasteService.getUserWastes();
-      setWasteData(response.data);
+      // Map WasteEntry to WasteDataItem with empty records array for filtering support
+      const mappedData: WasteDataItem[] = response.data.map(entry => ({
+        waste_type: entry.waste_type,
+        total_amount: entry.total_amount,
+        records: [], // No individual records from this endpoint
+      }));
+      setWasteData(mappedData);
     } catch (err) {
-      console.error('Error fetching waste data:', err);
-      Alert.alert('Error', 'Failed to load waste data. Please pull to refresh.');
+      logger.error('Error fetching waste data:', err);
+      Alert.alert(t('common.error'), getErrorMessage(err));
     } finally {
       setLoadingWaste(false);
     }
@@ -224,31 +226,21 @@ export const HomeScreen: React.FC = () => {
       const response = await tipService.getRecentTips();
       setTips(response.data);
     } catch (err) {
-      console.error('Error fetching tips:', err);
-      Alert.alert('Error', 'Failed to load tips. Please try again.');
+      logger.error('Error fetching tips:', err);
+      Alert.alert(t('common.error'), getErrorMessage(err));
     } finally {
       setLoadingTips(false);
     }
   };
 
-  // fetch current weather for Istanbul
-  const fetchWeather = async () => {
-    const lat = 41.0082;
-    const lon = 28.9784;
-    try {
-      const data = await weatherService.getCurrentWeather(lat, lon);
-      setWeather(data);
-    } catch (err) {
-      console.warn('Weather fetch error:', err);
-    }
-  };
-
   // initial load
-  useEffect(() => {
-    fetchWasteData();
-    fetchTips();
-    fetchWeather();
-  }, []);
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchWasteData();
+      fetchTips();
+    }, [])
+  );
 
   // add a new waste entry
   const handleAddWaste = async () => {
@@ -296,12 +288,25 @@ export const HomeScreen: React.FC = () => {
       setSelectedUnitOption('');
       setUnitCount('');
       fetchWasteData();
-      Alert.alert(t('common.success'), t('home.addWaste'));
-    } catch (error: any) {
-      let message = 'Unknown error';
-      if (error.response?.data) {message = JSON.stringify(error.response.data);}
-      else if (error.message) {message = error.message;}
-      Alert.alert(t('common.error'), `${message}`);
+
+      // Check for new badges after logging waste
+      try {
+        const badgeResult = await badgeService.checkForNewBadges();
+        if (badgeResult.newly_awarded_badges && badgeResult.newly_awarded_badges.length > 0) {
+          const badgeNames = badgeResult.newly_awarded_badges
+            .map(b => b.level_display || b.description || `${b.category} Level ${b.level}`)
+            .join(', ');
+          Alert.alert('🏅 New Badge Earned!', `Congratulations! You earned: ${badgeNames}`);
+        } else {
+          Alert.alert(t('common.success'), t('home.addWaste'));
+        }
+      } catch {
+        // Badge check failed, just show normal success
+        Alert.alert(t('common.success'), t('home.addWaste'));
+      }
+    } catch (error: unknown) {
+      logger.error('Error adding waste:', error);
+      Alert.alert(t('common.error'), getErrorMessage(error));
     }
   };
 
@@ -367,18 +372,6 @@ export const HomeScreen: React.FC = () => {
   // Check if there's any data to display
   const hasData = barData.some(val => val > 0);
 
-  // tip item renderer
-  const renderTipItem = ({ item }: { item: any }) => (
-    <View style={[styles.tipItem, { backgroundColor: colors.backgroundSecondary }]}>
-      <Text style={[styles.tipTitle, textStyle, { color: colors.primary }]}>{item.title}</Text>
-      <Text style={[styles.tipDescription, textStyle, { color: colors.textSecondary }]}>{item.description}</Text>
-      <View style={[styles.tipStatsRow, rowStyle]}>
-        <Text style={[styles.tipStat, { color: colors.textSecondary }]}>👍 {item.like_count}</Text>
-        <Text style={[styles.tipStat, { color: colors.textSecondary }]}>👎 {item.dislike_count}</Text>
-      </View>
-    </View>
-  );
-
   const renderEmptyTips = () => (
     <Text style={[styles.tipText, { color: colors.textSecondary }]}>{t('home.noWasteLogged')}</Text>
   );
@@ -386,7 +379,7 @@ export const HomeScreen: React.FC = () => {
   return (
     <ScreenWrapper
       title={t('home.title')}
-      scrollable={false}
+      scrollable={true}
       refreshing={refreshing}
       onRefresh={onRefresh}
       rightComponent={
@@ -407,13 +400,6 @@ export const HomeScreen: React.FC = () => {
           {userData?.username ? t('home.greeting', { username: userData.username }) : t('common.loading')}
         </Text>
       </View>
-
-      {/* Weather line */}
-      {weather && (
-        <Text style={{ alignSelf: 'center', marginBottom: spacing.sm, color: colors.textSecondary }}>
-          {t('home.istanbulWeather', { temperature: weather.temperature })}
-        </Text>
-      )}
 
       {/* Bar chart */}
       <View style={styles.chartContainer}>
@@ -814,21 +800,23 @@ export const HomeScreen: React.FC = () => {
         {t('home.recentTips')}
       </Text>
 
-      {/* Tips list + logout footer */}
-      <FlatList
-        style={{ flex: 1 }}
-        data={loadingTips ? [] : tips}
-        keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
-        renderItem={renderTipItem}
-        ListEmptyComponent={loadingTips ? undefined : renderEmptyTips}
-        ListFooterComponent={
-          <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={logout}>
-            <Text style={[styles.logoutButtonText, { color: colors.textOnPrimary }]}>{t('common.logout')}</Text>
-          </TouchableOpacity>
-        }
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: spacing.lg }}
-      />
+      {/* Tips list */}
+      {loadingTips ? (
+        <Text style={[styles.tipText, { color: colors.textSecondary }]}>{t('common.loading')}</Text>
+      ) : tips.length > 0 ? (
+        tips.map((item, idx) => (
+          <View key={item.id?.toString() || idx.toString()} style={[styles.tipItem, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.tipTitle, textStyle, { color: colors.primary }]}>{item.title}</Text>
+            <Text style={[styles.tipDescription, textStyle, { color: colors.textSecondary }]}>{item.description}</Text>
+            <View style={[styles.tipStatsRow, rowStyle]}>
+              <Text style={[styles.tipStat, { color: colors.textSecondary }]}>👍 {item.like_count}</Text>
+              <Text style={[styles.tipStat, { color: colors.textSecondary }]}>👎 {item.dislike_count}</Text>
+            </View>
+          </View>
+        ))
+      ) : (
+        renderEmptyTips()
+      )}
     </ScreenWrapper>
   );
 };
@@ -1179,16 +1167,5 @@ const styles = StyleSheet.create({
     color: defaultColors.gray,
     textAlign: 'center',
     marginVertical: spacing.sm,
-  },
-  logoutButton: {
-    backgroundColor: defaultColors.error,
-    padding: spacing.sm,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  logoutButtonText: {
-    color: defaultColors.white,
-    fontWeight: 'bold',
   },
 });

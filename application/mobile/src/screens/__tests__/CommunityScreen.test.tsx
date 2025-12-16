@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
+import { ActivityIndicator } from 'react-native';
 import { CommunityScreen } from '../CommunityScreen';
 
 // Mock axios
@@ -89,7 +90,7 @@ describe('CommunityScreen', () => {
 
     const { UNSAFE_getByType } = render(<CommunityScreen />);
 
-    expect(UNSAFE_getByType('ActivityIndicator')).toBeTruthy();
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
   it('should render empty state when no posts', async () => {

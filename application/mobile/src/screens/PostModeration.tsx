@@ -15,32 +15,12 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
-import { adminService } from '../services/api';
-
-interface PostReport {
-  id: number;
-  content_type: string;
-  reason: string;
-  description: string;
-  created_at: string;
-  reporter: {
-    username: string;
-  };
-  content: {
-    id: number;
-    title: string;
-    content: string;
-    username: string;
-    profile_picture?: string;
-    created_at: string;
-    likes_count: number;
-    comments_count: number;
-  };
-}
+import { adminService, Report } from '../services/api';
+import { logger } from '../utils/logger';
 
 export const PostModeration: React.FC = () => {
   const navigation = useNavigation();
-  const [reports, setReports] = useState<PostReport[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,12 +33,13 @@ export const PostModeration: React.FC = () => {
       const response = await adminService.getReports('posts');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch post reports');
-      console.error('Error fetching post reports:', err);
+    } catch (err: unknown) {
+      const postErr = err as { message?: string };
+      setError(postErr.message || 'Failed to fetch post reports');
+      logger.error('Error fetching post reports:', err);
       
       // Fallback to mock data for development
-      const mockReports: PostReport[] = [
+      const mockReports: Report[] = [
         {
           id: 1,
           content_type: 'posts',
@@ -118,12 +99,12 @@ export const PostModeration: React.FC = () => {
       Alert.alert('Success', `Post ${action} successfully`);
       fetchPostReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate post');
     }
   };
 
-  const renderPostReport = ({ item }: { item: PostReport }) => (
+  const renderPostReport = ({ item }: { item: Report }) => (
     <View style={styles.reportCard}>
       <View style={styles.reportHeader}>
         <Text style={styles.reportType}>POST REPORT</Text>
@@ -149,7 +130,7 @@ export const PostModeration: React.FC = () => {
           <View style={styles.postUserInfo}>
             <Text style={styles.postUsername}>{item.content.username}</Text>
             <Text style={styles.postDate}>
-              {new Date(item.content.created_at).toLocaleDateString()}
+              {item.content.created_at ? new Date(item.content.created_at).toLocaleDateString() : 'N/A'}
             </Text>
           </View>
         </View>

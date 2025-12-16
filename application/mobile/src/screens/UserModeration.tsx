@@ -15,36 +15,17 @@ import { MIN_TOUCH_TARGET } from '../utils/accessibility';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { AdminTabBar } from '../components/AdminTabBar';
 import { useNavigation } from '@react-navigation/native';
-import { adminService } from '../services/api';
-
-interface UserReport {
-  id: number;
-  content_type: string;
-  reason: string;
-  description: string;
-  created_at: string;
-  reporter: {
-    username: string;
-  };
-  content: {
-    id: number;
-    username: string;
-    email: string;
-    profile_picture?: string;
-    bio?: string;
-    created_at: string;
-    is_active: boolean;
-  };
-}
+import { adminService, Report } from '../services/api';
+import { logger } from '../utils/logger';
 
 export const UserModeration: React.FC = () => {
   const navigation = useNavigation();
-  const [reports, setReports] = useState<UserReport[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUserReports = useCallback(async () => {
+  const fetchReports = useCallback(async () => {
     if (!refreshing) setLoading(true);
     setError(null);
 
@@ -52,12 +33,13 @@ export const UserModeration: React.FC = () => {
       const response = await adminService.getReports('users');
       const reports = response.results || response.data || [];
       setReports(reports);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch user reports');
-      console.error('Error fetching user reports:', err);
+    } catch (err: unknown) {
+      const userErr = err as { message?: string };
+      setError(userErr.message || 'Failed to fetch user reports');
+      logger.error('Error fetching user reports:', err);
       
       // Fallback to mock data for development
-      const mockReports: UserReport[] = [
+      const mockReports: Report[] = [
         {
           id: 1,
           content_type: 'users',
@@ -102,25 +84,25 @@ export const UserModeration: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchUserReports();
-  }, [fetchUserReports]);
+    await fetchReports();
+  }, [fetchReports]);
 
   useEffect(() => {
-    fetchUserReports();
-  }, [fetchUserReports]);
+    fetchReports();
+  }, [fetchReports]);
 
   const handleModerate = async (reportId: number, action: string) => {
     try {
       await adminService.moderateContent(reportId, action);
       Alert.alert('Success', `User ${action} successfully`);
-      fetchUserReports();
+      fetchReports();
     } catch (error) {
-      console.error('Moderation error:', error);
+      logger.error('Moderation error:', error);
       Alert.alert('Error', 'Failed to moderate user');
     }
   };
 
-  const renderUserReport = ({ item }: { item: UserReport }) => (
+  const renderReport = ({ item }: { item: Report }) => (
     <View style={styles.reportCard}>
       <View style={styles.reportHeader}>
         <Text style={styles.reportType}>USER REPORT</Text>
@@ -150,7 +132,7 @@ export const UserModeration: React.FC = () => {
               Status: {item.content.is_active ? 'Active' : 'Inactive'}
             </Text>
             <Text style={styles.userJoinDate}>
-              Joined: {new Date(item.content.created_at).toLocaleDateString()}
+              Joined: {item.content.created_at ? new Date(item.content.created_at).toLocaleDateString() : 'N/A'}
             </Text>
           </View>
         </View>
@@ -224,7 +206,7 @@ export const UserModeration: React.FC = () => {
       ) : error ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>Failed to load user reports</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchUserReports}>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchReports}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -234,7 +216,7 @@ export const UserModeration: React.FC = () => {
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderUserReport}
+          renderItem={renderReport}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
           refreshControl={

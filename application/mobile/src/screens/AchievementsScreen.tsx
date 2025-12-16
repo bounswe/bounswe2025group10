@@ -11,28 +11,17 @@ import {
 } from 'react-native';
 import { colors, spacing, typography, commonStyles } from '../utils/theme';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { achievementService } from '../services/api';
+import { achievementService, UserAchievement } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { MoreDropdown } from '../components/MoreDropdown';
-import { CustomTabBar } from '../components/CustomTabBar';
 import { useAppNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
-
-interface Achievement {
-  id: number;
-  title: string;
-  description: string;
-  icon?: string;
-}
-
-interface UserAchievement {
-  id: number;
-  achievement: Achievement;
-  earned_at: string;
-}
+import { useTheme } from '../context/ThemeContext';
+import { logger } from '../utils/logger';
 
 export const AchievementsScreen: React.FC = () => {
   const { t } = useTranslation();
+  const { colors: themeColors } = useTheme();
   const navigation = useAppNavigation();
   const [achievements, setAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,9 +54,10 @@ export const AchievementsScreen: React.FC = () => {
       const response = await achievementService.getUserAchievements();
       const data = response.data?.achievements || [];
       setAchievements(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch achievements');
-      console.error('Error fetching achievements:', err);
+    } catch (err: unknown) {
+      const achievementErr = err as { message?: string };
+      setError(achievementErr.message || 'Failed to fetch achievements');
+      logger.error('Error fetching achievements:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,17 +75,17 @@ export const AchievementsScreen: React.FC = () => {
 
   // Render achievement card
   const renderAchievementCard = ({ item }: { item: UserAchievement }) => (
-    <View style={styles.achievementCard}>
+    <View style={[styles.achievementCard, { backgroundColor: themeColors.background }]}>
       {/* Achievement Icon */}
       {item.achievement.icon && (
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: themeColors.backgroundSecondary }]}>
           <Image
             source={{ uri: item.achievement.icon }}
             style={styles.achievementIcon}
             resizeMode="cover"
             onError={() => {
               // Fallback to emoji if image fails to load
-              console.log('Failed to load achievement icon');
+              logger.log('Failed to load achievement icon');
             }}
           />
         </View>
@@ -103,11 +93,11 @@ export const AchievementsScreen: React.FC = () => {
 
       {/* Achievement Content */}
       <View style={styles.achievementContent}>
-        <Text style={styles.achievementTitle}>{item.achievement.title}</Text>
-        <Text style={styles.achievementDescription}>
+        <Text style={[styles.achievementTitle, { color: themeColors.textPrimary }]}>{item.achievement.title}</Text>
+        <Text style={[styles.achievementDescription, { color: themeColors.textSecondary }]}>
           {item.achievement.description}
         </Text>
-        <Text style={styles.earnedDate}>
+        <Text style={[styles.earnedDate, { color: themeColors.textSecondary }]}>
           {t('achievements.earned')}: {new Date(item.earned_at).toLocaleDateString()}
         </Text>
       </View>
@@ -118,8 +108,8 @@ export const AchievementsScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateIcon}>🏆</Text>
-      <Text style={styles.emptyStateText}>{t('achievements.myAchievements')}</Text>
-      <Text style={styles.emptyStateSubtext}>
+      <Text style={[styles.emptyStateText, { color: themeColors.textPrimary }]}>{t('achievements.myAchievements')}</Text>
+      <Text style={[styles.emptyStateSubtext, { color: themeColors.textSecondary }]}>
         {t('achievements.startParticipating')}
       </Text>
     </View>
@@ -144,12 +134,12 @@ export const AchievementsScreen: React.FC = () => {
       accessibilityLabel="Achievements screen"
     >
       {loading && !refreshing ? (
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+        <ActivityIndicator size="large" color={themeColors.primary} style={styles.loader} />
       ) : error ? (
         <View style={styles.errorState}>
-          <Text style={styles.errorText}>{t('achievements.failedToLoad')}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchAchievements}>
-            <Text style={styles.retryButtonText}>{t('achievements.retry')}</Text>
+          <Text style={[styles.errorText, { color: themeColors.error }]}>{t('achievements.failedToLoad')}</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: themeColors.primary }]} onPress={fetchAchievements}>
+            <Text style={[styles.retryButtonText, { color: themeColors.textOnPrimary }]}>{t('achievements.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -163,8 +153,6 @@ export const AchievementsScreen: React.FC = () => {
         />
       )}
 
-      {/* Custom Tab Bar */}
-      <CustomTabBar activeTab="Achievements" />
     </ScreenWrapper>
   );
 };
