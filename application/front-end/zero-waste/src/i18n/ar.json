@@ -243,7 +243,12 @@
     "errorJoining": "خطأ في الانضمام إلى التحدي",
     "provideReasonDescription": "يرجى تقديم كل من السبب والوصف",
     "reportedSuccess": "تم الإبلاغ عن التحدي بنجاح",
-    "errorReporting": "خطأ في الإبلاغ عن التحدي"
+    "errorReporting": "خطأ في الإبلاغ عن التحدي",
+    "unit": "وحدة"
+  },
+  "units": {
+    "grams": "جرام",
+    "kilograms": "كيلوجرام"
   },
   "auth": {
     "loginTitle": "تسجيل الدخول",

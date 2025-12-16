@@ -243,7 +243,12 @@
     "errorJoining": "Erreur lors de la participation au défi",
     "provideReasonDescription": "Veuillez fournir à la fois la raison et la description",
     "reportedSuccess": "Défi signalé avec succès",
-    "errorReporting": "Erreur lors du signalement du défi"
+    "errorReporting": "Erreur lors du signalement du défi",
+    "unit": "Unité"
+  },
+  "units": {
+    "grams": "grammes",
+    "kilograms": "kilogrammes"
   },
   "auth": {
     "loginTitle": "Connexion",

@@ -56,6 +56,7 @@ export default function Challenges() {
     is_public: true,
     deadline: "",
   });
+  const [unit, setUnit] = useState("g");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [reportingId, setReportingId] = useState(null);
   const [reason, setReason] = useState("");
@@ -156,10 +157,18 @@ export default function Challenges() {
     }
 
     try {
+      // Automatic conversion: If user selects kg, convert to grams for backend storage
+      const amountInGrams = unit === 'kg'
+        ? parseFloat(target_amount) * 1000
+        : parseFloat(target_amount);
+
+      // Append unit info to description so user sees what they selected
+      const fullDescription = `${description.trim()}\n\n[Display Unit: ${unit}]`;
+
       await createChallenge({
         title: title.trim(),
-        description: description.trim(),
-        target_amount: parseFloat(target_amount),
+        description: fullDescription,
+        target_amount: amountInGrams,
         is_public: Boolean(is_public),
         deadline: new Date(deadline).toISOString(),
       });
@@ -554,22 +563,42 @@ export default function Challenges() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
-                    {t('challenges.targetAmount', 'Target Amount')}
-                  </label>
-                  <input
-                    type="number"
-                    placeholder={t('challenges.targetAmountPlaceholder', 'Enter target amount')}
-                    value={newChallenge.target_amount}
-                    onChange={(e) => setNewChallenge({ ...newChallenge, target_amount: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
-                    style={{
-                      backgroundColor: currentTheme.background,
-                      borderColor: currentTheme.border,
-                      color: currentTheme.text
-                    }}
-                  />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                      {t('challenges.targetAmount', 'Target Amount')}
+                    </label>
+                    <input
+                      type="number"
+                      placeholder={t('challenges.targetAmountPlaceholder', 'Enter target amount')}
+                      value={newChallenge.target_amount}
+                      onChange={(e) => setNewChallenge({ ...newChallenge, target_amount: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    />
+                  </div>
+                  <div className="w-1/3">
+                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                      {t('challenges.unit', 'Unit')}
+                    </label>
+                    <select
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: currentTheme.border,
+                        color: currentTheme.text
+                      }}
+                    >
+                      <option value="g">{t('units.grams', 'grams')}</option>
+                      <option value="kg">{t('units.kilograms', 'kilograms')}</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>

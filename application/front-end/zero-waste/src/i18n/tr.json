@@ -234,7 +234,12 @@
     "errorJoining": "Meydan okumaya katılma hatası",
     "provideReasonDescription": "Lütfen hem sebep hem de açıklama sağlayın",
     "reportedSuccess": "Meydan okuma başarıyla bildirildi",
-    "errorReporting": "Meydan okuma bildirme hatası"
+    "errorReporting": "Meydan okuma bildirme hatası",
+    "unit": "Birim"
+  },
+  "units": {
+    "grams": "gram",
+    "kilograms": "kilogram"
   },
   "auth": {
     "loginTitle": "Giriş Yap",
