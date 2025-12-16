@@ -7,9 +7,9 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import {spacing, typography} from '../utils/theme';
-import {useTranslation} from 'react-i18next';
+import {colors as defaultColors, spacing, typography} from '../utils/theme';
 import {useTheme} from '../context/ThemeContext';
+import {useTranslation} from 'react-i18next';
 
 interface MoreDropdownProps {
   onTipsPress?: () => void;
@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 100, // Adjust based on header height
+    paddingTop: 100,
     paddingRight: spacing.md,
   },
   dropdownContainer: {
     borderRadius: 12,
     alignSelf: 'flex-end',
-    shadowColor: '#000',
+    shadowColor: defaultColors.black,
     shadowOffset: {
       width: 0,
       height: 4,

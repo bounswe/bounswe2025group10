@@ -13,7 +13,9 @@ export type RootStackParamList = {
   Tips: undefined;
   Achievements: undefined;
   Leaderboard: undefined;
+  ActivityFeed: undefined;
   OtherProfile: { username: string };
+  Legal: { type: 'terms' | 'agreement' };
   AdminPanel: undefined;
   PostModeration: undefined;
   CommentModeration: undefined;
@@ -83,6 +85,7 @@ export const SCREEN_NAMES = {
   
   // Modal/Detail screens
   OTHER_PROFILE: 'OtherProfile',
+  LEGAL: 'Legal',
 } as const;
 
 // Navigation types for type safety

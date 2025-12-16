@@ -7,12 +7,16 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Modal,
+  ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import {colors, spacing, typography, commonStyles} from '../../utils/theme';
 import {MIN_TOUCH_TARGET} from '../../utils/accessibility';
 import {authService} from '../../services/api';
 import {useTranslation} from 'react-i18next';
 import {logger} from '../../utils/logger';
+import {TERMS_OF_SERVICE, USER_AGREEMENT} from '../../constants/legalContent';
 
 interface SignupScreenProps {
   navigation: any; // We'll type this properly when we set up navigation
@@ -24,6 +28,13 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'agreement'>('terms');
+
+  const openLegalModal = (type: 'terms' | 'agreement') => {
+    setLegalModalType(type);
+    setLegalModalVisible(true);
+  };
 
   const handleSignup = async () => {
     logger.log('Signup button pressed');
@@ -94,6 +105,17 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
         secureTextEntry
       />
 
+      <Text style={styles.legalText}>
+        By signing up, you agree to our{' '}
+        <Text style={styles.legalLink} onPress={() => openLegalModal('terms')}>
+          Terms of Service
+        </Text>
+        {' '}and{' '}
+        <Text style={styles.legalLink} onPress={() => openLegalModal('agreement')}>
+          User Agreement
+        </Text>
+      </Text>
+
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
@@ -112,6 +134,36 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({navigation}) => {
           {t('auth.alreadyHaveAccount')} <Text style={styles.loginTextBold}>{t('auth.login')}</Text>
         </Text>
       </TouchableOpacity>
+
+      {/* Legal Content Modal */}
+      <Modal
+        visible={legalModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setLegalModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {legalModalType === 'terms' ? 'Terms of Service' : 'User Agreement'}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setLegalModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalContentContainer}
+          >
+            <Text style={styles.modalText}>
+              {legalModalType === 'terms' ? TERMS_OF_SERVICE : USER_AGREEMENT}
+            </Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 };
@@ -156,5 +208,54 @@ const styles = StyleSheet.create({
   loginTextBold: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  legalText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  legalLink: {
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lightGray,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    padding: spacing.sm,
+  },
+  closeButtonText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalContentContainer: {
+    padding: spacing.md,
+    paddingBottom: spacing.xl * 2,
+  },
+  modalText: {
+    ...typography.body,
+    color: colors.textPrimary,
+    lineHeight: 24,
   },
 });

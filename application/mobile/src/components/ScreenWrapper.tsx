@@ -16,6 +16,7 @@ interface ScreenWrapperProps {
   title: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
   scrollable?: boolean;
   refreshing?: boolean;
@@ -31,6 +32,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   title,
   showBackButton = false,
   onBackPress,
+  leftComponent,
   rightComponent,
   scrollable = true,
   refreshing = false,
@@ -90,6 +92,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
         title={title}
         showBackButton={showBackButton}
         onBackPress={onBackPress}
+        leftComponent={leftComponent}
         rightComponent={rightComponent}
         accessibilityLabel={accessibilityLabel}
         testID={testID ? `${testID}-header` : undefined}

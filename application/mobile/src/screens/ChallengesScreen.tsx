@@ -300,6 +300,16 @@ export const ChallengesScreen = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      leftComponent={
+        <TouchableOpacity
+          style={styles.headerPlusButton}
+          onPress={() => setShowCreateModal(true)}
+          accessibilityLabel="Create new challenge"
+          accessibilityRole="button"
+        >
+          <Text style={styles.headerPlusButtonText}>+</Text>
+        </TouchableOpacity>
+      }
     >
       {/* Header Controls */}
       <View style={styles.headerControls}>
@@ -312,15 +322,6 @@ export const ChallengesScreen = () => {
             thumbColor={showEnrolledOnly ? colors.white : colors.gray}
           />
         </View>
-      </View>
-
-      <View style={styles.createButtonContainer}>
-        <TouchableOpacity
-          style={[styles.createButton, { backgroundColor: colors.primary }]}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>{t('challenges.createChallenge')}</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Challenges List */}
@@ -447,6 +448,19 @@ export const ChallengesScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  headerPlusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: defaultColors.primary,
+  },
+  headerPlusButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: defaultColors.white,
+  },
   headerControls: {
     paddingBottom: spacing.sm,
   },

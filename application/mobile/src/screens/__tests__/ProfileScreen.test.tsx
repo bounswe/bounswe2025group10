@@ -32,7 +32,6 @@ jest.mock('../../context/AuthContext', () => ({
 jest.mock('../../services/api', () => ({
   wasteService: {
     getUserWastes: jest.fn().mockResolvedValue({
-      message: 'User wastes retrieved successfully',
       data: [
         { waste_type: 'PLASTIC', total_amount: 10 },
         { waste_type: 'PAPER', total_amount: 5 },

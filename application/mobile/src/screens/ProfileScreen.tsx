@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Image, ScrollView as RNScrollView, TouchableOpacity, Platform, Alert, RefreshControl, TextInput, Modal, Switch } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors as defaultColors, spacing, typography, commonStyles, lightColors, darkColors } from '../utils/theme';
 import { useRTL } from '../hooks/useRTL';
 import { MIN_TOUCH_TARGET } from '../utils/accessibility';
-import { wasteService, achievementService, profileService, profilePublicService, getProfilePictureUrl } from '../services/api';
+import { wasteService, achievementService, badgeService, profileService, profilePublicService, getProfilePictureUrl, UserBadge } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,21 +18,38 @@ import { WasteFilterModal, WasteFilters, getDefaultFilters } from '../components
 import { useWasteFilters, WasteDataItem } from '../hooks/useWasteFilters';
 import { logger } from '../utils/logger';
 
-// Chart config will be computed dynamically based on theme
-const getChartConfig = (colors: typeof defaultColors, isDarkMode: boolean) => ({
-  backgroundGradientFrom: colors.backgroundSecondary,
-  backgroundGradientTo: colors.backgroundSecondary,
-  color: (opacity = 1) => isDarkMode
-    ? `rgba(102, 187, 106, ${opacity})` // dark mode primary
-    : `rgba(46, 125, 50, ${opacity})`, // light mode primary
-  labelColor: (opacity = 1) => isDarkMode
-    ? `rgba(255, 255, 255, ${opacity})` // dark mode text
-    : `rgba(33, 33, 33, ${opacity})`, // light mode text
-  barPercentage: 0.7,
-  decimalPlaces: 2,
-});
 
 const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
+
+// Badge helper functions
+const getBadgeTierColor = (tier?: string): string => {
+  switch (tier?.toLowerCase()) {
+    case 'bronze': return '#CD7F32';
+    case 'silver': return '#C0C0C0';
+    case 'gold': return '#FFD700';
+    case 'platinum': return '#E5E4E2';
+    case 'diamond': return '#B9F2FF';
+    default: return '#CD7F32';
+  }
+};
+
+const getBadgeCategoryEmoji = (category?: string): string => {
+  switch (category?.toUpperCase()) {
+    case 'PLASTIC': return '♳';
+    case 'PAPER': return '📄';
+    case 'GLASS': return '🫙';
+    case 'METAL': return '🥫';
+    case 'ELECTRONIC': return '📱';
+    case 'OIL_AND_FATS': return '🛢️';
+    case 'OIL&FATS': return '🛢️'; // Legacy support
+    case 'ORGANIC': return '🥬';
+    case 'TOTAL_WASTE': return '♻️';
+    case 'CONTRIBUTIONS': return '✍️';
+    case 'LIKES_RECEIVED': return '❤️';
+    case 'LIKES': return '❤️'; // Legacy support
+    default: return '🏅';
+  }
+};
 
 // Theme mode options for display
 const THEME_OPTIONS: { mode: ThemeMode; labelKey: string }[] = [
@@ -58,6 +75,8 @@ const ProfileMain: React.FC = () => {
   const { colors, isDarkMode, themeMode, setThemeMode } = useTheme();
   const [wasteData, setWasteData] = useState<WasteDataItem[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
+  const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [badgeProgress, setBadgeProgress] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter hook for waste data
@@ -73,6 +92,7 @@ const ProfileMain: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [_refreshing, setRefreshing] = useState(false);
   const [_profileImageLoadError, setProfileImageLoadError] = useState(false);
+  const [profilePicTimestamp, setProfilePicTimestamp] = useState(Date.now());
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [bio, setBio] = useState<string>('');
   const [editingBio, setEditingBio] = useState(false);
@@ -197,13 +217,15 @@ const ProfileMain: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [wasteResponse, challengesResponse] = await Promise.all([
+      const [wasteResponse, achievementsResponse, badgesResponse, progressResponse] = await Promise.all([
         wasteService.getUserWastes(),
         achievementService.getUserAchievements(),
+        badgeService.getUserBadges().catch(() => ({ data: { badges: [] } })),
+        badgeService.getBadgeProgress().catch(() => []),
       ]);
 
       // Handle waste data - map WasteEntry to WasteDataItem
-      if (wasteResponse.message === 'User wastes retrieved successfully') {
+      if (wasteResponse.data && Array.isArray(wasteResponse.data)) {
         const mappedData: WasteDataItem[] = wasteResponse.data.map(entry => ({
           waste_type: entry.waste_type,
           total_amount: entry.total_amount,
@@ -212,15 +234,35 @@ const ProfileMain: React.FC = () => {
         setWasteData(mappedData);
       }
 
-      // Handle challenges/achievements data
-      if (Array.isArray(challengesResponse)) {
-        setAchievements(challengesResponse.map(challenge => ({
-          id: challenge.challenge,
-          title: 'Challenge Achievement',
-          description: `Joined challenge on ${new Date(challenge.joined_date).toLocaleDateString()}`,
-          date_earned: challenge.joined_date,
+      // Handle achievements data - extract from response.data.achievements
+      const achievementsData = achievementsResponse?.data?.achievements || [];
+      if (Array.isArray(achievementsData)) {
+        setAchievements(achievementsData.map((item: any) => ({
+          id: item.id,
+          title: item.achievement?.title || 'Achievement',
+          description: item.achievement?.description || '',
+          date_earned: item.earned_at,
         })));
       }
+
+      // Handle badges data
+      const badgesData = badgesResponse?.data?.badges || [];
+      if (Array.isArray(badgesData)) {
+        setBadges(badgesData);
+      }
+
+      // Handle badge progress data - API returns { progress: { CATEGORY: {...}, ... } }
+      const progressObj = progressResponse?.progress || {};
+      // Convert object to array format for UI iteration
+      const progressArray = Object.entries(progressObj).map(([category, data]: [string, any]) => ({
+        category,
+        current_value: data.current_value || 0,
+        required_value: data.required_value,
+        percentage: data.percentage || 0,
+        next_badge: data.next_badge,
+        all_earned: data.all_earned || false,
+      }));
+      setBadgeProgress(progressArray);
     } catch (error) {
       logger.error('Error fetching data:', error);
       Alert.alert('Error', 'Failed to load profile data. Please pull to refresh.');
@@ -230,30 +272,38 @@ const ProfileMain: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-    fetchBio();
-    fetchFollowStats();
-    fetchPrivacySettings();
-  }, [fetchBio, fetchFollowStats, fetchPrivacySettings]); // fetchBio, fetchFollowStats, and fetchPrivacySettings already depend on userData?.username
+  // Refresh data when screen comes into focus (e.g., after logging waste on HomeScreen)
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      fetchBio();
+      fetchFollowStats();
+      fetchPrivacySettings();
+    }, [fetchBio, fetchFollowStats, fetchPrivacySettings])
+  );
 
-  // Prepare data for BarChart - handle the specific waste data structure with translated labels
-  const screenWidth = Dimensions.get('window').width - 40;
-  const barLabels = filteredData.map((item) => {
+  // Prepare data for horizontal bar chart
+  const chartData = filteredData.map((item) => {
     const wasteType = item.waste_type?.toUpperCase();
-    // Translate waste type if translation exists, otherwise use original
-    return wasteType ? t(`home.wasteTypes.${wasteType}`, { defaultValue: item.waste_type }) : '';
+    const translated = t(`home.wasteTypes.${wasteType}`, { defaultValue: item.waste_type });
+    // Convert grams to kg for display
+    const valueInKg = (item.total_amount || 0) / 1000;
+    return {
+      label: translated,
+      value: valueInKg,
+      type: wasteType,
+    };
   });
-  // Convert grams to kg for display (backend stores in grams, chart shows kg)
-  const barData = filteredData.map((item) => (item.total_amount || 0) / 1000);
-  const chartWidth = Math.max(screenWidth - 32, barLabels.length * 80);
-  
+
+  // Find max value for scaling bars
+  const maxValue = Math.max(...chartData.map(d => d.value), 0.1);
+
   // Check if there's any data to display
-  const hasData = barData.some(val => val > 0);
+  const hasData = chartData.some(d => d.value > 0);
 
   // Try to load profile picture from API, fall back to placeholder on error
   const profileImageSource = userData?.username && !_profileImageLoadError
-    ? { uri: getProfilePictureUrl(userData.username) }
+    ? { uri: getProfilePictureUrl(userData.username, profilePicTimestamp) }
     : PROFILE_PLACEHOLDER;
 
   // Handle selecting and uploading a new profile picture
@@ -282,9 +332,9 @@ const ProfileMain: React.FC = () => {
       setUploading(true);
       const formData = new FormData();
       formData.append('image', {
-        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
-        type: 'image/jpeg',
-        name: `profile_${Date.now()}.jpg`,
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg',
+        name: asset.fileName || `profile_${Date.now()}.jpg`,
       } as any);
 
       const uploadResponse = await profileService.uploadProfilePicture(formData);
@@ -293,15 +343,19 @@ const ProfileMain: React.FC = () => {
       // Force reload user data
       await fetchUserData();
 
-      // Reset error state so we try loading the new image
+      // Reset error state and update timestamp to force image reload
       setProfileImageLoadError(false);
+      setProfilePicTimestamp(Date.now());
 
       await fetchData();
       Alert.alert('Success', 'Profile picture updated');
     } catch (error: unknown) {
-      const uploadError = error as { message?: string; response?: { data?: unknown; status?: number } };
+      const uploadError = error as { message?: string; response?: { data?: { error?: string }; status?: number } };
       logger.error('Upload error details:', uploadError.message);
-      Alert.alert('Error', 'Could not upload profile picture');
+      logger.error('Upload error response:', JSON.stringify(uploadError.response?.data));
+      logger.error('Upload error status:', uploadError.response?.status);
+      const errorMessage = uploadError.response?.data?.error || 'Could not upload profile picture';
+      Alert.alert('Error', errorMessage);
     } finally {
       setUploading(false);
     }
@@ -458,14 +512,15 @@ const ProfileMain: React.FC = () => {
           activeOpacity={1}
           onPress={() => setLanguageModalVisible(false)}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('profile.selectLanguage')}</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>{t('profile.selectLanguage')}</Text>
             {LANGUAGES.map((language) => (
               <TouchableOpacity
                 key={language.code}
                 style={[
                   styles.languageOption,
-                  i18n.language === language.code && styles.languageOptionSelected
+                  { backgroundColor: colors.backgroundSecondary },
+                  i18n.language === language.code && [styles.languageOptionSelected, { backgroundColor: colors.primary }]
                 ]}
                 onPress={async () => {
                   const currentIsRTL = I18nManager.isRTL;
@@ -485,20 +540,21 @@ const ProfileMain: React.FC = () => {
               >
                 <Text style={[
                   styles.languageOptionText,
-                  i18n.language === language.code && styles.languageOptionTextSelected
+                  { color: colors.textPrimary },
+                  i18n.language === language.code && [styles.languageOptionTextSelected, { color: colors.textOnPrimary }]
                 ]}>
                   {language.nativeName}
                 </Text>
                 {i18n.language === language.code && (
-                  <Text style={styles.checkmark}>✓</Text>
+                  <Text style={[styles.checkmark, { color: colors.textOnPrimary }]}>✓</Text>
                 )}
               </TouchableOpacity>
             ))}
             <TouchableOpacity
-              style={styles.modalCloseButton}
+              style={[styles.modalCloseButton, { backgroundColor: colors.lightGray }]}
               onPress={() => setLanguageModalVisible(false)}
             >
-              <Text style={styles.modalCloseButtonText}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCloseButtonText, { color: colors.textPrimary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -668,13 +724,13 @@ const ProfileMain: React.FC = () => {
       </Modal>
 
       {/* Progress Chart Section */}
-      <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
-        <View style={styles.chartHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>{t('home.wasteHistory')}</Text>
+      <View style={[styles.chartContainer, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={[styles.chartHeaderRow, rowStyle]}>
+          <Text style={[styles.sectionTitle, textStyle, { color: colors.primary }]}>{t('home.wasteHistory')}</Text>
           <TouchableOpacity
             style={[
               styles.filterButton,
-              { 
+              {
                 backgroundColor: filtersActive ? colors.primary : colors.background,
                 borderColor: colors.primary,
               },
@@ -692,7 +748,7 @@ const ProfileMain: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         {/* Active filters indicator */}
         {filtersActive && (
           <View style={[styles.activeFiltersBar, { backgroundColor: colors.background }]}>
@@ -701,47 +757,52 @@ const ProfileMain: React.FC = () => {
             </Text>
           </View>
         )}
-        
-        {hasData ? (
-          <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, alignItems: 'center' }}>
-            <View style={{ width: chartWidth, alignItems: 'center' }}>
-              <BarChart
-                data={{
-                  labels: barLabels,
-                  datasets: [{ data: barData }],
-                }}
-                width={chartWidth}
-                height={220}
-                chartConfig={{
-                  ...getChartConfig(colors, isDarkMode),
-                  propsForLabels: { fontSize: 12 },
-                }}
-                verticalLabelRotation={15}
-                showValuesOnTopOfBars
-                fromZero
-                style={{ ...styles.chart, marginBottom: spacing.sm + 4 }}
-                yAxisLabel=""
-                yAxisSuffix="kg"
-              />
+
+        <View style={styles.chartPlaceholder}>
+          {loading ? (
+            <Text style={{ color: colors.textSecondary }}>{t('common.loading')}</Text>
+          ) : hasData ? (
+            <View style={styles.horizontalChartContainer}>
+              {chartData.map((item, index) => (
+                <View key={item.type || index} style={styles.horizontalBarRow}>
+                  <Text style={[styles.horizontalBarLabel, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                  <View style={styles.horizontalBarWrapper}>
+                    <View
+                      style={[
+                        styles.horizontalBar,
+                        {
+                          width: `${Math.max((item.value / maxValue) * 100, 2)}%`,
+                          backgroundColor: isDarkMode ? '#66BB6A' : '#228B22',
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.horizontalBarValue, { color: colors.textSecondary }]}>
+                    {item.value.toFixed(2)} kg
+                  </Text>
+                </View>
+              ))}
             </View>
-          </RNScrollView>
-        ) : (
-          <View style={styles.emptyChartContainer}>
-            <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
-              {filtersActive ? t('filter.noDataForFilters') : t('home.noWasteLogged')}
-            </Text>
-            {filtersActive && (
-              <TouchableOpacity
-                style={[styles.clearFiltersButton, { borderColor: colors.primary }]}
-                onPress={openFilterModal}
-              >
-                <Text style={[styles.clearFiltersText, { color: colors.primary }]}>
-                  {t('filter.clearAll')}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+          ) : (
+            <View style={styles.emptyChartContainer}>
+              <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
+                {filtersActive ? t('filter.noDataForFilters') : t('home.noWasteLogged')}
+              </Text>
+              {filtersActive && (
+                <TouchableOpacity
+                  style={[styles.clearFiltersButton, { borderColor: colors.primary }]}
+                  onPress={openFilterModal}
+                >
+                  <Text style={[styles.clearFiltersText, { color: colors.primary }]}>
+                    {t('filter.clearAll')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Waste Filter Modal */}
@@ -753,29 +814,167 @@ const ProfileMain: React.FC = () => {
       />
 
       {/* Achievements Section */}
-      <View style={styles.cardSection}>
-        <Text style={styles.sectionTitle}>{t('profile.achievements')}</Text>
+      <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('profile.achievements')}</Text>
         {achievements.length > 0 ? (
           achievements.map((achievement) => (
-            <View key={achievement.id} style={styles.achievementItem}>
-              <View style={styles.achievementIconWrapper}>
+            <View key={achievement.id} style={[styles.achievementItem, { backgroundColor: colors.background }]}>
+              <View style={[styles.achievementIconWrapper, { backgroundColor: colors.backgroundSecondary }]}>
                 <Image source={PROFILE_PLACEHOLDER} style={styles.achievementIcon} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.achievementTitle}>{achievement.title}</Text>
-                <Text style={styles.achievementDescription}>{achievement.description}</Text>
-                <Text style={styles.achievementDate}>Earned: {new Date(achievement.date_earned).toLocaleDateString()}</Text>
+                <Text style={[styles.achievementTitle, { color: colors.primary }]}>{achievement.title}</Text>
+                <Text style={[styles.achievementDescription, { color: colors.textSecondary }]}>{achievement.description}</Text>
+                <Text style={[styles.achievementDate, { color: colors.textSecondary }]}>Earned: {new Date(achievement.date_earned).toLocaleDateString()}</Text>
               </View>
             </View>
           ))
         ) : (
-          <Text style={styles.noAchievements}>{t('achievements.myAchievements')}</Text>
+          <Text style={[styles.noAchievements, { color: colors.textSecondary }]}>{t('achievements.myAchievements')}</Text>
         )}
       </View>
 
+      {/* Badges Section */}
+      <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Badges</Text>
+        {badges.length > 0 ? (
+          <View style={styles.badgesGrid}>
+            {badges.map((userBadge) => (
+              <View key={userBadge.id} style={[styles.badgeItem, { backgroundColor: colors.background }]}>
+                <View style={[styles.badgeIconWrapper, { backgroundColor: getBadgeTierColor(userBadge.badge?.tier) }]}>
+                  <Text style={styles.badgeEmoji}>{getBadgeCategoryEmoji(userBadge.badge?.category)}</Text>
+                </View>
+                <Text style={[styles.badgeName, { color: colors.textPrimary }]} numberOfLines={2}>
+                  {userBadge.badge?.name || 'Badge'}
+                </Text>
+                <Text style={[styles.badgeTier, { color: getBadgeTierColor(userBadge.badge?.tier) }]}>
+                  {userBadge.badge?.tier?.toUpperCase() || 'BRONZE'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={[styles.noAchievements, { color: colors.textSecondary }]}>No badges earned yet. Keep recycling!</Text>
+        )}
+      </View>
+
+      {/* Badge Progress Section */}
+      <View style={[styles.cardSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Badge Progress</Text>
+        {badgeProgress.length > 0 ? (
+          <View style={styles.progressContainer}>
+            {badgeProgress.map((item: any, index: number) => {
+              const category = item.category || 'UNKNOWN';
+              const currentValue = Math.round(item.current_value || 0);
+              const requiredValue = item.required_value;
+              const percentage = item.percentage || 0;
+              const nextBadge = item.next_badge;
+              const allEarned = item.all_earned || false;
+
+              // Convert level to tier name for display
+              const nextLevel = nextBadge?.level || 1;
+              const tierNames = ['', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+              const nextTierName = tierNames[nextLevel] || 'Bronze';
+              const tierColorMap: Record<number, string> = {
+                1: '#CD7F32', // Bronze
+                2: '#C0C0C0', // Silver
+                3: '#FFD700', // Gold
+                4: '#E5E4E2', // Platinum
+                5: '#B9F2FF', // Diamond
+              };
+              const tierColor = tierColorMap[nextLevel] || '#CD7F32';
+
+              // If all badges earned in this category, show completion
+              if (allEarned) {
+                return (
+                  <View key={`progress-${category}-${index}`} style={styles.progressItem}>
+                    <View style={styles.progressHeader}>
+                      <Text style={styles.progressEmoji}>{getBadgeCategoryEmoji(category)}</Text>
+                      <View style={styles.progressInfo}>
+                        <Text style={[styles.progressCategory, { color: colors.textPrimary }]}>
+                          {category.replace(/_/g, ' ')}
+                        </Text>
+                        <Text style={[styles.progressNextBadge, { color: colors.success }]}>
+                          All badges earned! 🎉
+                        </Text>
+                      </View>
+                      <Text style={[styles.progressValues, { color: colors.success }]}>
+                        ✓
+                      </Text>
+                    </View>
+                    <View style={[styles.progressBarBackground, { backgroundColor: colors.lightGray }]}>
+                      <View
+                        style={[styles.progressBarFill, { width: '100%', backgroundColor: colors.success }]}
+                      />
+                    </View>
+                    <Text style={[styles.progressPercentage, { color: colors.success }]}>100%</Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View key={`progress-${category}-${index}`} style={styles.progressItem}>
+                  <View style={styles.progressHeader}>
+                    <Text style={styles.progressEmoji}>{getBadgeCategoryEmoji(category)}</Text>
+                    <View style={styles.progressInfo}>
+                      <Text style={[styles.progressCategory, { color: colors.textPrimary }]}>
+                        {category.replace(/_/g, ' ')}
+                      </Text>
+                      <Text style={[styles.progressNextBadge, { color: colors.textSecondary }]}>
+                        Next: {nextTierName} Badge
+                      </Text>
+                    </View>
+                    <Text style={[styles.progressValues, { color: colors.textSecondary }]}>
+                      {currentValue}/{requiredValue !== null ? Math.round(requiredValue) : '?'}
+                    </Text>
+                  </View>
+                  <View style={[styles.progressBarBackground, { backgroundColor: colors.lightGray }]}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: `${Math.min(percentage, 100)}%`,
+                          backgroundColor: tierColor,
+                        }
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.progressPercentage, { color: tierColor }]}>
+                    {percentage.toFixed(0)}%
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <Text style={[styles.noAchievements, { color: colors.textSecondary }]}>
+            Start logging waste to track your progress toward badges!
+          </Text>
+        )}
+      </View>
+
+      {/* Legal Links */}
+      <View style={[styles.legalSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.sectionTitleSmall, { color: colors.primary }]}>Legal</Text>
+        <TouchableOpacity
+          style={styles.legalLink}
+          onPress={() => navigateToScreen('Legal', { type: 'terms' })}
+        >
+          <Text style={[styles.legalLinkText, { color: colors.textPrimary }]}>Terms of Service</Text>
+          <Text style={[styles.legalLinkArrow, { color: colors.textSecondary }]}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.legalLink}
+          onPress={() => navigateToScreen('Legal', { type: 'agreement' })}
+        >
+          <Text style={[styles.legalLinkText, { color: colors.textPrimary }]}>User Agreement</Text>
+          <Text style={[styles.legalLinkArrow, { color: colors.textSecondary }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutButtonText}>{t('common.logout')}</Text>
+      <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={logout}>
+        <Text style={[styles.logoutButtonText, { color: colors.textOnPrimary }]}>{t('common.logout')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -882,16 +1081,15 @@ const styles = StyleSheet.create({
     color: defaultColors.primary,
   },
   sectionTitle: {
-    ...typography.h3,
+    ...typography.h2,
     color: defaultColors.primary,
-    textAlign: 'left',
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   chartHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   filterButton: {
     flexDirection: 'row',
@@ -951,8 +1149,51 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   chartContainer: {
+    width: '100%',
+    backgroundColor: defaultColors.backgroundSecondary,
+    borderRadius: 14,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: defaultColors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  chartPlaceholder: {
+    width: '100%',
+  },
+  horizontalChartContainer: {
+    width: '100%',
+  },
+  horizontalBarRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  horizontalBarLabel: {
+    width: 80,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  horizontalBarWrapper: {
+    flex: 1,
+    height: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 10,
+    marginHorizontal: spacing.sm,
+    overflow: 'hidden',
+  },
+  horizontalBar: {
+    height: '100%',
+    borderRadius: 10,
+    minWidth: 4,
+  },
+  horizontalBarValue: {
+    width: 70,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
   },
   chart: {
     borderRadius: 12,
@@ -1001,6 +1242,92 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: defaultColors.gray,
   },
+  // Badge styles
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: spacing.sm,
+  },
+  badgeItem: {
+    width: '30%',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: 12,
+    marginBottom: spacing.xs,
+  },
+  badgeIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  badgeEmoji: {
+    fontSize: 24,
+  },
+  badgeName: {
+    ...typography.caption,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  badgeTier: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  // Badge Progress styles
+  progressContainer: {
+    width: '100%',
+  },
+  progressItem: {
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  progressEmoji: {
+    fontSize: 24,
+    marginRight: spacing.sm,
+  },
+  progressInfo: {
+    flex: 1,
+  },
+  progressCategory: {
+    ...typography.body,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  progressNextBadge: {
+    ...typography.caption,
+    marginTop: 2,
+  },
+  progressValues: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  progressBarBackground: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginVertical: spacing.xs,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    minWidth: 4,
+  },
+  progressPercentage: {
+    ...typography.caption,
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
   noAchievements: {
     ...typography.body,
     color: defaultColors.textSecondary,
@@ -1014,12 +1341,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutButton: {
-    marginTop: spacing.xs,
-    alignSelf: 'flex-end',
+    width: '100%',
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
     minHeight: MIN_TOUCH_TARGET,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 6,
+    paddingVertical: spacing.md,
+    borderRadius: 14,
     backgroundColor: defaultColors.error,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1231,6 +1558,27 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginTop: spacing.md,
     marginBottom: spacing.md,
+  },
+  legalSection: {
+    width: '100%',
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  legalLink: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: defaultColors.lightGray,
+  },
+  legalLinkText: {
+    ...typography.body,
+  },
+  legalLinkArrow: {
+    fontSize: 20,
+    fontWeight: '300',
   },
   sectionTitleSmall: {
     ...typography.h3,

@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 
+const PROFILE_PLACEHOLDER = require('../assets/profile_placeholder.png');
+
 export const CommunityScreen = () => {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -175,18 +177,14 @@ export const CommunityScreen = () => {
       ? getPostImageUrl(item.image_url)
       : (item.image ? getPostImageUrl(item.image) : null);
 
-    // Load profile picture from API with fallback to placeholder
-    const profileImageSource = item.creator_username
-      ? { uri: getProfilePictureUrl(item.creator_username) }
-      : require('../assets/profile_placeholder.png');
-
     return (
       <View style={[styles.postItem, { backgroundColor: colors.backgroundSecondary }]}>
         <View style={styles.postHeader}>
           <TouchableOpacity onPress={() => navigation.navigate('OtherProfile', { username: item.creator_username })} style={{flexDirection:'row', alignItems:'center'}}>
             <Image
-              source={profileImageSource}
+              source={item.creator_username ? { uri: getProfilePictureUrl(item.creator_username) } : PROFILE_PLACEHOLDER}
               style={[styles.avatar, { backgroundColor: colors.lightGray }]}
+              defaultSource={PROFILE_PLACEHOLDER}
             />
             <Text style={[styles.username, { color: colors.primary }]}>{item.creator_username}</Text>
           </TouchableOpacity>
@@ -229,10 +227,17 @@ export const CommunityScreen = () => {
       scrollable={false}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      leftComponent={
+        <TouchableOpacity
+          style={styles.headerPlusButton}
+          onPress={() => setModalVisible(true)}
+          accessibilityLabel="Create new post"
+          accessibilityRole="button"
+        >
+          <Text style={styles.headerPlusButtonText}>+</Text>
+        </TouchableOpacity>
+      }
     >
-      <TouchableOpacity style={[styles.createButton, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(true)}>
-        <Text style={[styles.createButtonText, { color: colors.textOnPrimary }]}>+ {t('community.createPost')}</Text>
-      </TouchableOpacity>
       {loading && !refreshing ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
@@ -241,6 +246,10 @@ export const CommunityScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: spacing.lg }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          initialNumToRender={5}
         />
       )}
       <Modal
@@ -295,25 +304,20 @@ export const CommunityScreen = () => {
           ) : (
             <ScrollView style={{ flex: 1, padding: spacing.md }}>
               {selectedPostId && comments[selectedPostId] && comments[selectedPostId].length > 0 ? (
-                comments[selectedPostId].map(comment => {
-                  // Load profile picture from API with fallback to placeholder
-                  const commentProfileSource = comment.author_username
-                    ? { uri: getProfilePictureUrl(comment.author_username) }
-                    : require('../assets/profile_placeholder.png');
-                  return (
+                comments[selectedPostId].map(comment => (
                     <View key={comment.id} style={{ marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lightGray, paddingBottom: spacing.sm }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <Image
-                          source={commentProfileSource}
+                          source={comment.author_username ? { uri: getProfilePictureUrl(comment.author_username) } : PROFILE_PLACEHOLDER}
                           style={{ width: 24, height: 24, borderRadius: 12, marginRight: spacing.sm, backgroundColor: colors.lightGray }}
+                          defaultSource={PROFILE_PLACEHOLDER}
                         />
                         <Text style={{ fontWeight: 'bold', color: colors.primary }}>{comment.author_username}</Text>
                         <Text style={{ marginLeft: 8, color: colors.textSecondary, fontSize: 12 }}>{new Date(comment.date).toLocaleString()}</Text>
                       </View>
                       <Text style={{ color: colors.textPrimary }}>{comment.content}</Text>
                     </View>
-                  );
-                })
+                  ))
               ) : (
                 <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg }}>{t('community.noPostsYet')}</Text>
               )}
@@ -343,16 +347,18 @@ export const CommunityScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  createButton: {
-    backgroundColor: defaultColors.primary,
-    borderRadius: 24,
-    alignSelf: 'flex-end',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    minHeight: MIN_TOUCH_TARGET,
-    justifyContent: 'center',
+  headerPlusButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    backgroundColor: defaultColors.primary,
+  },
+  headerPlusButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: defaultColors.white,
   },
   createButtonText: {
     color: defaultColors.white,

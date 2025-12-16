@@ -114,10 +114,10 @@ describe('TipsScreen', () => {
     });
 
     it('should display create tip button', async () => {
-      const {getByText} = render(<TipsScreen />);
+      const {getByLabelText} = render(<TipsScreen />);
 
       await waitFor(() => {
-        expect(getByText('Create Tip')).toBeTruthy();
+        expect(getByLabelText('Create new tip')).toBeTruthy();
       });
     });
 

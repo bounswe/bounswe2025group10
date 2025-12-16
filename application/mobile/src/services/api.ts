@@ -95,6 +95,118 @@ export interface AchievementsResponse {
   data: AchievementsData;
 }
 
+// Badges
+export type BadgeCategory =
+  | 'PLASTIC'
+  | 'PAPER'
+  | 'GLASS'
+  | 'METAL'
+  | 'ELECTRONIC'
+  | 'OIL_AND_FATS'
+  | 'ORGANIC'
+  | 'TOTAL_WASTE'
+  | 'CONTRIBUTIONS'
+  | 'LIKES_RECEIVED';
+
+// API uses level 1-5, we map to tier names for display
+export type BadgeLevel = 1 | 2 | 3 | 4 | 5;
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
+// Helper to convert level number to tier name
+export const levelToTier = (level: number): BadgeTier => {
+  switch (level) {
+    case 1: return 'bronze';
+    case 2: return 'silver';
+    case 3: return 'gold';
+    case 4: return 'platinum';
+    case 5: return 'diamond';
+    default: return 'bronze';
+  }
+};
+
+// Badge as returned by API
+export interface Badge {
+  id: number;
+  category: string;
+  category_display?: string;
+  level: number;
+  level_display?: string;
+  criteria_value: number;
+  description?: string;
+  earned_at?: string;
+}
+
+// For backward compatibility with existing UI code
+export interface UserBadge {
+  id: number;
+  badge: {
+    id: number;
+    name: string;
+    category: string;
+    tier: BadgeTier;
+    description?: string;
+  };
+  earned_at: string;
+}
+
+// Actual API response format for /api/badges/
+export interface BadgesApiResponse {
+  user_id: number;
+  username: string;
+  total_badges: number;
+  badges_by_category: Record<string, Badge[]>;
+}
+
+// Transformed response for UI consumption
+export interface BadgesResponse {
+  data: {
+    username: string;
+    badges: UserBadge[];
+    total_badges: number;
+  };
+}
+
+export interface BadgeLeaderboardUser {
+  user_id: number;
+  username: string;
+  badge_count: number;
+  profile_image_url?: string | null;
+}
+
+export interface BadgeLeaderboardResponse {
+  data: {
+    leaderboard: BadgeLeaderboardUser[];
+  };
+}
+
+// Actual API response format for /api/badges/check/
+export interface BadgeCheckResponse {
+  user_id: number;
+  username: string;
+  newly_awarded_count: number;
+  newly_awarded_badges: Badge[];
+}
+
+// Progress for a single category
+export interface BadgeProgressItem {
+  current_value: number;
+  required_value: number | null;
+  percentage: number;
+  next_badge: {
+    id: number;
+    category: string;
+    level: number;
+  } | null;
+  all_earned: boolean;
+}
+
+// API response for /api/badges/progress/
+export interface BadgeProgressResponse {
+  user_id: number;
+  username: string;
+  progress: Record<string, BadgeProgressItem>;
+}
+
 // Leaderboard
 export interface LeaderboardUser {
   rank: number;
@@ -412,7 +524,11 @@ api.interceptors.response.use(
 );
 
 // URL Construction Helpers
-export const getProfilePictureUrl = (username: string): string => {
+export const getProfilePictureUrl = (username: string, cacheBust?: number): string => {
+  // Only add cache-busting parameter when explicitly provided (e.g., after uploading new picture)
+  if (cacheBust) {
+    return `${API_URL}/api/profile/${username}/picture/?t=${cacheBust}`;
+  }
   return `${API_URL}/api/profile/${username}/picture/`;
 };
 
@@ -455,10 +571,9 @@ export const authService = {
 
 export const wasteService = {
   getUserWastes: async (): Promise<WasteResponse> => {
-    logger.log('Fetching user wastes...');
-    const response = await api.get<WasteEntry[]>('/api/waste/get/');
-    logger.log('Waste data response:', response.status);
-    return { data: response.data };
+    const response = await api.get('/api/waste/get/');
+    // Backend returns { message: '...', data: [...] }
+    return response.data;
   },
   addUserWaste: async (waste_type: string, amount: number): Promise<AddWasteResponse> => {
     logger.log('Adding user waste:', { waste_type, amount });
@@ -473,8 +588,10 @@ export const tipService = {
    * Fetch the most recent tips (backend returns latest N records)
    */
   getRecentTips: async (): Promise<TipsResponse> => {
-    const response = await api.get<TipsResponse>('/api/tips/get_recent_tips');
-    return response.data;
+    const response = await api.get('/api/tips/get_recent_tips');
+    // Backend returns { message: '...', data: [...] }
+    const data = response.data;
+    return { data: (data.data || data) as Tip[] };
   },
 
   /**
@@ -532,8 +649,9 @@ export const tipService = {
 
 export const achievementService = {
   getUserAchievements: async (): Promise<AchievementsResponse> => {
-    const response = await api.get<AchievementsData>('/api/achievements/');
-    return { data: response.data };
+    const response = await api.get('/api/achievements/');
+    // Backend returns { message: '...', data: { username: '...', achievements: [...] } }
+    return { data: response.data.data || response.data };
   },
   // Get another user's achievements by username
   getUserAchievementsByUsername: async (username: string): Promise<any> => {
@@ -542,10 +660,102 @@ export const achievementService = {
   },
 };
 
+// Helper to transform API badge format to UI format
+const transformBadgesToUserBadges = (badgesByCategory: Record<string, Badge[]>): UserBadge[] => {
+  const userBadges: UserBadge[] = [];
+
+  for (const [category, badges] of Object.entries(badgesByCategory)) {
+    for (const badge of badges) {
+      userBadges.push({
+        id: badge.id,
+        badge: {
+          id: badge.id,
+          name: badge.level_display || badge.description || `${category} Level ${badge.level}`,
+          category: category,
+          tier: levelToTier(badge.level),
+          description: badge.description,
+        },
+        earned_at: badge.earned_at || new Date().toISOString(),
+      });
+    }
+  }
+
+  return userBadges;
+};
+
+export const badgeService = {
+  // Get current user's badges
+  getUserBadges: async (): Promise<BadgesResponse> => {
+    const response = await api.get('/api/badges/');
+    const apiData: BadgesApiResponse = response.data;
+
+    // Transform badges_by_category to flat badges array for UI
+    const badges = transformBadgesToUserBadges(apiData.badges_by_category || {});
+
+    return {
+      data: {
+        username: apiData.username,
+        badges: badges,
+        total_badges: apiData.total_badges || badges.length,
+      }
+    };
+  },
+
+  // Get another user's badges by user ID (note: requires integer user_id, not username)
+  getUserBadgesById: async (userId: number): Promise<BadgesResponse> => {
+    const response = await api.get(`/api/badges/${userId}/`);
+    const apiData: BadgesApiResponse = response.data;
+
+    const badges = transformBadgesToUserBadges(apiData.badges_by_category || {});
+
+    return {
+      data: {
+        username: apiData.username,
+        badges: badges,
+        total_badges: apiData.total_badges || badges.length,
+      }
+    };
+  },
+
+  // Get all available badges in the system (can filter by category)
+  getAllBadges: async (category?: BadgeCategory): Promise<{ data: { count: number; badges: Badge[] } }> => {
+    const url = category ? `/api/badges/all/?category=${category}` : '/api/badges/all/';
+    const response = await api.get(url);
+    return { data: response.data };
+  },
+
+  // Get badge leaderboard (top 50 users by badge count)
+  getBadgeLeaderboard: async (): Promise<BadgeLeaderboardResponse> => {
+    const response = await api.get('/api/badges/leaderboard/');
+    return { data: response.data };
+  },
+
+  // Get current user's progress toward next badges
+  // Returns object with category keys, each containing progress data
+  getBadgeProgress: async (): Promise<BadgeProgressResponse> => {
+    const response = await api.get('/api/badges/progress/');
+    return response.data;
+  },
+
+  // Get complete badge summary for a user by ID
+  getBadgeSummary: async (userId?: number): Promise<any> => {
+    const url = userId ? `/api/badges/summary/${userId}/` : '/api/badges/summary/';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  // Check for new badges (triggers backend to evaluate and award new badges)
+  checkForNewBadges: async (): Promise<BadgeCheckResponse> => {
+    const response = await api.post('/api/badges/check/');
+    return response.data;
+  },
+};
+
 export const leaderboardService = {
   getLeaderboard: async (): Promise<LeaderboardResponse> => {
-    const response = await api.get<LeaderboardData>('/api/waste/leaderboard/');
-    return { data: response.data };
+    const response = await api.get('/api/waste/leaderboard/');
+    // Backend returns { message: '...', data: { top_users: [...], current_user: {...} } }
+    return { data: response.data.data || response.data };
   },
   getUserBio: async (username: string): Promise<UserBio> => {
     const response = await api.get<UserBio>(`/api/profile/${username}/bio/`);
@@ -556,10 +766,9 @@ export const leaderboardService = {
 export const postService = {
   getAllPosts: async (): Promise<PostsResponse> => {
     const response = await api.get('/api/posts/all/');
-    // API returns paginated format: { count, next, previous, results: [...] }
-    // Normalize to { data: [...] } format for consistency with other endpoints
+    // API returns { message: '...', data: [...] } format
     const data = response.data;
-    return { data: (data.results || data) as Post[] };
+    return { data: (data.data || data.results || data) as Post[] };
   },
 
   createPost: async (formData: FormData): Promise<Post> => {
@@ -1042,11 +1251,10 @@ export const profileService = {
     // Use cached token for auth
     const token = cachedToken || await storage.getToken();
 
-    // Use axios directly for multipart uploads to avoid Content-Type issues
+    // Use axios directly for multipart uploads - don't set Content-Type, let axios handle boundary
     const response = await axios.post<ProfilePictureResponse>(`${API_URL}/api/profile/profile-picture/`, formData, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        // Don't set Content-Type - let the browser/RN set it with boundary
       },
     });
     return response.data;

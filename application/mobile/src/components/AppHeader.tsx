@@ -17,6 +17,7 @@ interface AppHeaderProps {
   title: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
   accessibilityLabel?: string;
   testID?: string;
@@ -26,6 +27,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   title,
   showBackButton = false,
   onBackPress,
+  leftComponent,
   rightComponent,
   accessibilityLabel,
   testID = 'app-header',
@@ -62,6 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <Text style={[styles.backButtonText, { color: colors.primary }]}>{backArrow}</Text>
             </TouchableOpacity>
           )}
+          {leftComponent}
         </View>
 
         <View style={styles.centerSection}>
