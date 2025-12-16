@@ -45,6 +45,10 @@ export const LeaderboardScreen: React.FC = () => {
     navigation.navigateToScreen('Achievements');
   };
 
+  const handleActivityFeedPress = () => {
+    navigation.navigateToScreen('ActivityFeed');
+  };
+
   // Fetch leaderboard data
   const fetchLeaderboard = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -277,6 +281,7 @@ export const LeaderboardScreen: React.FC = () => {
           onTipsPress={handleTipsPress}
           onAchievementsPress={handleAchievementsPress}
           onLeaderboardPress={handleLeaderboardPress}
+          onActivityFeedPress={handleActivityFeedPress}
           testID="leaderboard-more-dropdown"
         />
       }

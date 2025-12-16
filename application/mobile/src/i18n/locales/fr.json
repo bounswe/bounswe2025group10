@@ -215,6 +215,24 @@
       "foodScraps": "Restes de nourriture"
     }
   },
+  "activity": {
+    "title": "Fil d'activité",
+    "followingFeed": "Abonnements",
+    "myActivity": "Mon Activité",
+    "filterAll": "Tout",
+    "noFollowingActivity": "Aucune activité des utilisateurs suivis",
+    "noOwnActivity": "Pas encore d'activité",
+    "followUsersHint": "Suivez des utilisateurs pour voir leur activité",
+    "startActivityHint": "Enregistrez des déchets, rejoignez des défis",
+    "types": {
+      "all": "Tout",
+      "posts": "Publications",
+      "waste": "Déchet",
+      "achievement": "Réalisation",
+      "challenge": "Défi",
+      "follow": "Suivre"
+    }
+  },
   "filter": {
     "title": "Filtrer les données",
     "timeRange": "Plage de temps",

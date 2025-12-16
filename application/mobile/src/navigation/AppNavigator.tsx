@@ -10,6 +10,7 @@ import { OtherUserProfileScreen } from '../screens/OtherUserProfileScreen';
 import { TipsScreen } from '../screens/TipsScreen';
 import { AchievementsScreen } from '../screens/AchievementsScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
+import { ActivityFeedScreen } from '../screens/ActivityFeedScreen';
 import { AdminPanel } from '../screens/AdminPanel';
 import { PostModeration } from '../screens/PostModeration';
 import { UserModeration } from '../screens/UserModeration';
@@ -259,6 +260,15 @@ export const AppNavigator = () => {
               <RootStack.Screen 
                 name={SCREEN_NAMES.LEADERBOARD} 
                 component={LeaderboardScreen} 
+                options={{ 
+                  headerShown: false,
+                  gestureEnabled: true,
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen 
+                name={SCREEN_NAMES.ACTIVITY_FEED} 
+                component={ActivityFeedScreen} 
                 options={{ 
                   headerShown: false,
                   gestureEnabled: true,

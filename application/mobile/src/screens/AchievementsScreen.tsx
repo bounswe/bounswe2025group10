@@ -40,6 +40,10 @@ export const AchievementsScreen: React.FC = () => {
     navigation.navigateToScreen('Leaderboard');
   };
 
+  const handleActivityFeedPress = () => {
+    navigation.navigateToScreen('ActivityFeed');
+  };
+
   // Fetch achievements
   const fetchAchievements = useCallback(async () => {
     if (!refreshing) setLoading(true);
@@ -121,6 +125,7 @@ export const AchievementsScreen: React.FC = () => {
           onTipsPress={handleTipsPress}
           onAchievementsPress={handleAchievementsPress}
           onLeaderboardPress={handleLeaderboardPress}
+          onActivityFeedPress={handleActivityFeedPress}
           testID="achievements-more-dropdown"
         />
       }
