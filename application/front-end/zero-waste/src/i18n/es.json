@@ -15,18 +15,8 @@
     "admin": "Administrador",
     "recyclingCenters": "Centros de Reciclaje",
     "statistics": "Estadísticas",
-    "inviteFriend": "Invitar a un Amigo",
-    "impact": "Impacto",
-    "adminPage": "Moderación de Publicaciones",
-    "userPage": "Moderación de Usuarios",
-    "challengePage": "Moderación de Desafíos",
-    "commentPage": "Moderación de Comentarios",
-    "activityPage": "Registro de Actividad",
-    "preferences": "Privacidad y Cuenta"
+    "inviteFriend": "Invitar a un Amigo"
   },
-  "username": "Nombre de usuario",
-  "password": "Contraseña",
-  "email": "Correo electrónico",
   "common": {
     "language": "Idioma",
     "theme": "Tema",
@@ -52,8 +42,6 @@
     "reportSuccess": "Usuario reportado exitosamente",
     "next": "Siguiente",
     "previous": "Anterior",
-    "of": "de",
-    "filters": "Filtros",
     "total": "Total",
     "reason": "Razón",
     "reasonRequired": "Por favor proporcione una razón",
@@ -63,43 +51,7 @@
     "loginRequired": "Por favor inicie sesión para continuar",
     "notifications": "Notificaciones",
     "markAllRead": "Marcar todo como leído",
-    "noNotifications": "No hay notificaciones",
-    "preview": "Vista Previa",
-    "verifying": "Verificando..."
-  },
-  "admin": {
-    "postModeration": "Moderación de Publicaciones",
-    "managePosts": "Revisar y gestionar publicaciones reportadas.",
-    "failedToLoad": "Error al cargar elementos.",
-    "noPosts": "No se encontraron publicaciones reportadas.",
-    "reportedPost": "Publicación Reportada",
-    "confirmDelete": "¿Estás seguro de que deseas eliminar esta publicación?",
-    "deleteFailed": "Error al eliminar publicación.",
-    "userModeration": "Moderación de Usuarios",
-    "manageUsers": "Revisar y gestionar usuarios reportados.",
-    "noUsers": "No se encontraron usuarios reportados.",
-    "confirmBan": "¿Estás seguro de que deseas prohibir a este usuario?",
-    "banFailed": "Error al prohibir usuario.",
-    "challengeModeration": "Moderación de Desafíos",
-    "manageChallenges": "Revisar y gestionar desafíos reportados.",
-    "noChallenges": "No se encontraron desafíos reportados.",
-    "confirmDeleteChallenge": "¿Estás seguro de que deseas eliminar este desafío?",
-    "deleteChallengeFailed": "Error al eliminar desafío.",
-    "commentModeration": "Moderación de Comentarios",
-    "manageComments": "Revisar y gestionar comentarios reportados.",
-    "noComments": "No se encontraron comentarios reportados.",
-    "confirmDeleteComment": "¿Estás seguro de que deseas eliminar este comentario?",
-    "deleteCommentFailed": "Error al eliminar comentario.",
-    "activities": "Registro de Actividad",
-    "viewActivities": "Ver eventos de actividad en todo el sistema (ActivityPub).",
-    "failedToLoadActivities": "Error al cargar eventos de actividad.",
-    "filterType": "Tipo",
-    "allTypes": "Todos los Tipos",
-    "filterActorID": "ID del Actor",
-    "enterActorID": "Ingrese el ID del actor...",
-    "clearFilters": "Borrar Filtros",
-    "noActivities": "No se encontraron eventos de actividad.",
-    "totalEvents": "Eventos Totales"
+    "noNotifications": "No hay notificaciones"
   },
   "leaderboard": {
     "title": "🌿 Los 10 mejores campeones de cero residuos",
@@ -112,35 +64,6 @@
     "noBio": "Este usuario aún no ha escrito una biografía.",
     "loadingBio": "Cargando biografía..."
   },
-  "auth": {
-    "loginTitle": "Iniciar Sesión",
-    "signupTitle": "Registrarse",
-    "subtitle": "Únete al Movimiento Cero Residuos 🌱",
-    "agreeTerms": "Acepto los Términos y Condiciones y la Política de Privacidad",
-    "loginSuccess": "¡Inicio de sesión exitoso! Redirigiendo...",
-    "signupSuccess": "¡Registro exitoso! Redirigiendo al inicio de sesión...",
-    "loginFailed": "Inicio de sesión fallido",
-    "signupFailed": "Registro fallido",
-    "loggingIn": "Iniciando sesión...",
-    "haveAccount": "¿Ya tienes una cuenta?",
-    "noAccount": "¿No tienes una cuenta?",
-    "recoverAcount": "¿Recuperar cuenta eliminada?",
-    "recoverTitle": "Recuperar Cuenta",
-    "recoverSubtitle": "Restaura tu viaje de cero residuos ♻️",
-    "recoverSuccess": "¡Cuenta restaurada exitosamente!",
-    "recoverError": "Token inválido o error de red.",
-    "reactivatedTitle": "¡Cuenta Reactivada!",
-    "reactivatedDesc": "Tu cuenta ha sido restaurada completamente. Ahora puedes iniciar sesión normalmente.",
-    "deletedTitle": "Cuenta Eliminada Permanentemente",
-    "deletedDesc": "El período de gracia de 30 días ha expirado. Esta cuenta no se puede recuperar.",
-    "recoverInstructions": "Ingresa el token de recuperación que guardaste al solicitar la eliminación para detener el proceso y reactivar tu cuenta.",
-    "recoveryToken": "Token de Recuperación",
-    "tokenPlaceholder": "Pega el token aquí...",
-    "recoverBtn": "Recuperar Cuenta",
-    "cancelReturn": "Cancelar y volver a Iniciar Sesión",
-    "createNewAccount": "Crear Nueva Cuenta",
-    "goToLogin": "Ir a Iniciar Sesión"
-  },
   "community": {
     "title": "Comunidad",
     "showAll": "Todas las publicaciones",
@@ -150,8 +73,6 @@
     "description": "Descripción",
     "writeSomething": "Escribe algo...",
     "uploadImage": "Subir imagen (opcional)",
-    "chooseFile": "Seleccionar archivo",
-    "noFileSelected": "Ningún archivo seleccionado",
     "create": "Crear",
     "writeComment": "Escribir un comentario...",
     "postComment": "Publicar comentario",
@@ -246,8 +167,6 @@
     "targetAmount": "Cantidad Objetivo",
     "targetAmountPlaceholder": "Ingrese la cantidad objetivo",
     "makePublic": "Hacer el desafío público",
-    "deadline": "Fecha límite",
-    "selectDeadline": "Seleccionar fecha límite",
     "reportChallenge": "Reportar Desafío",
     "reportDescription": "Díganos qué está mal con este desafío.",
     "reason": "Razón",
@@ -260,17 +179,11 @@
     "explainBriefly": "Por favor explique brevemente…",
     "allFieldsRequired": "Todos los campos excepto visibilidad son obligatorios.",
     "joinedChallenge": "¡Te uniste al desafío!",
-    "joinedDate": "Fecha de ingreso",
     "alreadyParticipating": "Ya estás participando o no tienes permiso.",
     "errorJoining": "Error al unirse al desafío",
     "provideReasonDescription": "Por favor proporcione tanto la razón como la descripción",
     "reportedSuccess": "Desafío reportado exitosamente",
-    "errorReporting": "Error al reportar desafío",
-    "unit": "Unidad"
-  },
-  "units": {
-    "grams": "gramos",
-    "kilograms": "kilogramos"
+    "errorReporting": "Error al reportar desafío"
   },
   "achievements": {
     "title": "Logros",
@@ -283,20 +196,6 @@
     "light": "Claro",
     "dark": "Oscuro",
     "highContrast": "Alto Contraste"
-  },
-  "settings": {
-    "title": "Configuración",
-    "appearance": "Apariencia",
-    "accessibility": "Accesibilidad",
-    "fontSize": "Tamaño de Fuente",
-    "fontSizeDesc": "Ajuste el tamaño de fuente para una mejor legibilidad.",
-    "xs": "Muy Pequeño",
-    "small": "Pequeño",
-    "medium": "Mediano",
-    "large": "Grande",
-    "xlarge": "Muy Grande",
-    "fontSizePreview": "Así se verá su texto con el tamaño de fuente seleccionado.",
-    "about": "Acerca de"
   },
   "weather": {
     "tips": {
@@ -347,7 +246,7 @@
     "followed": "Seguido exitosamente",
     "unfollowed": "Dejado de seguir exitosamente",
     "noFollowing": "Aún no sigues a nadie.",
-    "noFollowers": "Aún no hay seguidores."
+"noFollowers": "Aún no hay seguidores."
   },
   "wasteHelper": {
     "title": "Agregar Residuo",
@@ -456,65 +355,5 @@
     "wasteEncouragement": "¡Trabajo increíble! Cada artículo que reciclas ayuda a reducir la contaminación y conservar los recursos naturales. ¡Sigue con el gran esfuerzo!",
     "communityEncouragement": "¡Gracias por ser un miembro activo de nuestra comunidad! Juntos, estamos construyendo un futuro sostenible e inspirando a otros a marcar la diferencia.",
     "historyTitle": "Historial de Reciclaje"
-  },
-  "landing": {
-    "title": "Marca la diferencia para un futuro sostenible",
-    "subtitle": "Rastrea tus residuos, gana puntos y únete a una comunidad de agentes de cambio.",
-    "cta": "Comienza tu viaje",
-    "features": {
-      "track": {
-        "title": "Rastrear Residuos",
-        "desc": "Registra tu reciclaje y residuos diarios para visualizar tu impacto a lo largo del tiempo."
-      },
-      "points": {
-        "title": "Gana Puntos",
-        "desc": "Sube en la clasificación y gana logros por tus acciones sostenibles."
-      },
-      "community": {
-        "title": "Comunidad",
-        "desc": "Conéctate con otros, comparte consejos y participa en eco-desafíos."
-      }
-    }
-  },
-  "preferences": {
-    "title": "Configuración",
-    "saved": "Configuración actualizada",
-    "privacy": "Privacidad y Visibilidad",
-    "privacySectionDesc": "Controla quién puede ver los detalles de tu perfil.",
-    "profileVisibility": "Visibilidad del Perfil",
-    "profileDesc": "¿Quién puede ver los detalles completos de tu perfil?",
-    "wasteStatsVisibility": "Visibilidad de Estadísticas",
-    "wasteStatsDesc": "¿Quién puede ver tus estadísticas de residuos?",
-    "emailVisibility": "Visibilidad del Correo",
-    "emailDesc": "¿Quién puede ver tu correo electrónico?",
-    "anonymity": "Anonimato",
-    "anonymitySectionDesc": "Oculta tu identidad a los usuarios que no te siguen.",
-    "anonymousMode": "Modo Anónimo",
-    "anonDesc": "Oculta tu nombre real y foto a quienes no te siguen.",
-    "anonNotice": "Actualmente te muestras como",
-    "toStrangers": "a los extraños.",
-    "dangerZone": "Zona de Peligro",
-    "deleteSectionDesc": "Elimina permanentemente tu perfil, publicaciones y datos. Esta acción es irreversible después del período de gracia.",
-    "deletionScheduled": "Eliminación Programada",
-    "deletionDateInfo": "Tu cuenta está programada para eliminación permanente:",
-    "deleteRequested": "Eliminación de cuenta programada",
-    "deleteCancelled": "Eliminación cancelada",
-    "cancelDeletion": "Cancelar Eliminación",
-    "deleteAccount": "Eliminar Cuenta",
-    "deleteBtn": "Eliminar Mi Cuenta",
-    "confirmDelete": "¿Estás seguro?",
-    "deleteWarning": "Esto iniciará un período de gracia de 14 días. Si no inicias sesión o cancelas durante este tiempo, tus datos se perderán permanentemente.",
-    "confirmBtn": "Sí, Eliminar Cuenta",
-    "processing": "Procesando...",
-    "public": "Público",
-    "followersOnly": "Solo Seguidores",
-    "private": "Privado",
-    "copy": "Copiar",
-"tokenCopied": "¡Token de recuperación copiado!",
-"deletionRequestedTitle": "Eliminación Solicitada",
-"deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
-"saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
-"tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
-"confirmLogout": "Lo he guardado, cerrar sesión"
   }
 }

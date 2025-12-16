@@ -73,30 +73,27 @@ function setupProviders() {
 const mockLeaderboard = {
   leaderboard: [
     {
-      id: 1,
       username: "user1",
       score: 100,
       points: 150,
       rank: 1,
-      profileImage: "https://example.com/user1.jpg",
+      profileImage: "",
       isCurrentUser: false,
     },
     {
-      id: 2,
       username: "user2",
       score: 95,
       points: 120,
       rank: 2,
-      profileImage: "https://example.com/user2.jpg",
+      profileImage: "",
       isCurrentUser: false,
     },
     {
-      id: 3,
       username: "user3",
       score: 90,
       points: 100,
       rank: 3,
-      profileImage: "https://example.com/user3.jpg",
+      profileImage: "",
       isCurrentUser: false,
     },
   ],

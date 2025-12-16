@@ -2,14 +2,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "./index.css"; // Tailwind CSS
+import "bootstrap/dist/css/bootstrap.min.css";
 
 import App from "./App";
 import { AuthProvider } from "./providers/AuthContext";
 import { LanguageProvider } from "./providers/LanguageContext";
 import { ThemeProvider } from "./providers/ThemeContext";
 import ToastProvider from "./providers/ToastProvider";
-import { FontSizeProvider } from "./providers/FontSizeContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -17,18 +16,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       {/* 1️⃣  Language context for multilingual support */}
       <ThemeProvider>
         {/* 2️⃣  Theme context for color schemes */}
-        <FontSizeProvider>
-          {/* 3️⃣  Settings context for user preferences */}
-          <ToastProvider />
-          {/* 4️⃣  Toast provider with theme support */}
-          <BrowserRouter>
-            {/* 5️⃣  Router */}
-            <AuthProvider>
-              {/* 6️⃣  Auth context */}
-              <App /> {/* 7️⃣  App with all contexts available */}
-            </AuthProvider>
-          </BrowserRouter>
-        </FontSizeProvider>
+        <ToastProvider />
+        {/* 3️⃣  Toast provider with theme support */}
+        <BrowserRouter>
+          {/* 4️⃣  Router */}
+          <AuthProvider>
+            {/* 5️⃣  Auth context */}
+            <App /> {/* 6️⃣  App with all contexts available */}
+          </AuthProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </LanguageProvider>
   </React.StrictMode>

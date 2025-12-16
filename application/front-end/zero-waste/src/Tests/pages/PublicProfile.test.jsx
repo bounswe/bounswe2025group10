@@ -17,15 +17,6 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
 
-// Mock LocalStorage
-const localStorageMock = {
-  getItem: vi.fn(() => "test-token"),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-
 // Mock AuthContext
 const authContextValues = {
   token: "test-token",
@@ -104,7 +95,7 @@ describe("<PublicProfile />", () => {
     // Default Fetch Implementation
     global.fetch.mockImplementation((url) => {
       const urlStr = url ? url.toString() : "";
-
+      
       if (urlStr.includes("/bio/")) {
         return Promise.resolve({
           ok: true,
@@ -144,15 +135,10 @@ describe("<PublicProfile />", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders loading state initially", async () => {
+  it("renders loading state initially", () => {
     render(<PublicProfile />);
     // "Loading..." is the key fallback in your code
     expect(screen.getByText("Loading...")).toBeInTheDocument();
-
-    // Wait for data load to complete to avoid act warnings
-    await waitFor(() => {
-      expect(screen.getByText("targetuser")).toBeInTheDocument();
-    });
   });
 
   it("renders profile data after loading", async () => {
@@ -242,7 +228,7 @@ describe("<PublicProfile />", () => {
     // Fill Inputs
     const reasonInput = screen.getByPlaceholderText("Enter reason...");
     const descInput = screen.getByPlaceholderText("Enter description...");
-
+    
     fireEvent.change(reasonInput, { target: { value: "Spam" } });
     fireEvent.change(descInput, { target: { value: "Bot content" } });
 

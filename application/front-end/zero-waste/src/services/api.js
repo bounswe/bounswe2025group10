@@ -29,13 +29,10 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 403 Forbidden and 401 Unauthorized
-    if (error.response?.status === 403 || error.response?.status === 401) {
-      // Clear auth tokens
+    // Handle common errors here if needed
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('isAdmin');
-      localStorage.removeItem('username');
-      // Redirect to login
       window.location.href = '/login';
     }
     return Promise.reject(error);

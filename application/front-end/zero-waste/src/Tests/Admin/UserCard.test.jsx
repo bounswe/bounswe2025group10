@@ -7,18 +7,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import UserCard from "@/components/features/UserCard";
 
-// Mock ThemeContext
-vi.mock("../../providers/ThemeContext", () => ({
-  useTheme: () => ({
-    currentTheme: {
-      background: "#ffffff",
-      text: "#000000",
-      secondary: "#00ff00",
-      border: "#cccccc",
-    },
-  }),
-}));
-
 describe("<UserCard />", () => {
   it("shows the username and badge counts", () => {
     render(
@@ -26,7 +14,7 @@ describe("<UserCard />", () => {
         username="eco_ninja"
         flaggedPosts={2}
         flaggedComments={1}
-        onDelete={() => { }}
+        onDelete={() => {}}
       />
     );
 

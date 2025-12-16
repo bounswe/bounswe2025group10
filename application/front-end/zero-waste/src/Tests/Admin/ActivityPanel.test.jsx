@@ -8,7 +8,6 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import ActivityPanel from "../../pages/admin/ActivityPanel";
-import adminService from "../../services/adminService";
 
 /* ── mock useAuth so component mounts without real auth ───────── */
 const mockLogout = vi.fn();
@@ -16,43 +15,8 @@ vi.mock("../../providers/AuthContext", () => ({
   useAuth: () => ({ token: "fake-token", logout: mockLogout }),
 }));
 
-// Mock LocalStorage
-const localStorageMock = {
-  getItem: vi.fn(() => "fake-token"),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-
-// Mock diff ThemeContext
-vi.mock("../../providers/ThemeContext", () => ({
-  useTheme: () => ({
-    currentTheme: {
-      background: "#ffffff",
-      text: "#000000",
-      secondary: "#00ff00",
-      border: "#cccccc",
-    },
-  }),
-}));
-
 /* ── mock fetch ───────────────────────────────────────────────── */
-// Mock LanguageContext
-vi.mock("../../providers/LanguageContext", () => ({
-  useLanguage: () => ({
-    t: (key, fallback) => fallback || key,
-    language: "en",
-  }),
-}));
-
-/* ── mock fetch ───────────────────────────────────────────────── */
-// Mock adminService
-vi.mock("../../services/adminService", () => ({
-  default: {
-    getActivityEvents: vi.fn(),
-  },
-}));
+global.fetch = vi.fn();
 
 describe("<ActivityPanel />", () => {
   const mockActivities = {
@@ -84,7 +48,7 @@ describe("<ActivityPanel />", () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    fetch.mockClear();
     mockLogout.mockClear();
   });
 
@@ -92,11 +56,10 @@ describe("<ActivityPanel />", () => {
     vi.clearAllMocks();
   });
 
-  // Omit sidebar test
-
-  it("renders the Activity Events header", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: { items: [], totalItems: 0 },
+  it("renders the sidebar with navigation links", async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -106,14 +69,46 @@ describe("<ActivityPanel />", () => {
     );
 
     await waitFor(() => {
-      // Expect "Activity Log" as per component fallback
-      expect(screen.getByText("Activity Log")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /post moderation/i })
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole("link", { name: /challenge moderation/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /user moderation/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /comment moderation/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /activities/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Activity Events header", async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
+    });
+
+    render(
+      <MemoryRouter>
+        <ActivityPanel />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/📊 Activity Events/)).toBeInTheDocument();
     });
   });
 
   it("displays loading spinner while fetching activities", async () => {
-    adminService.getActivityEvents.mockImplementationOnce(
-      () => new Promise(() => { }) // Never resolves
+    fetch.mockImplementationOnce(
+      () =>
+        new Promise(() => {}) // Never resolves
     );
 
     render(
@@ -122,26 +117,20 @@ describe("<ActivityPanel />", () => {
       </MemoryRouter>
     );
 
-    // Wait for header
+    // Wait for the spinner to appear
     await waitFor(() => {
-      expect(screen.getByText("Activity Log")).toBeInTheDocument();
+      expect(screen.getByText(/Activity Events/)).toBeInTheDocument();
     });
 
-    // Check for spinner (Tailwind animate-spin inferred structure or just presence)
-    // Component has: <div className="animate-spin ...">
-    // Usually we can query by role but div is not role.
-    // We can rely on render() succeeding. Implicitly if it renders and header is there.
-    // But testing for spinner presence is better.
-    // Let's assume there's only one spinner.
-    // Or we can add data-testid to component if needed, but I cannot edit component easily now (I can but risky).
-    // I will check for container with "animate-spin" class via querySelector if testing-library fails.
-    const spinner = document.querySelector(".animate-spin");
+    // Check for the spinner by looking for the Bootstrap spinner class
+    const spinner = document.querySelector('.spinner-border');
     expect(spinner).toBeInTheDocument();
   });
 
   it("fetches and displays activities on mount", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: mockActivities,
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockActivities,
     });
 
     render(
@@ -157,14 +146,14 @@ describe("<ActivityPanel />", () => {
       ).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Total Events: 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Total: 2 events/)).toBeInTheDocument();
   });
 
   it("displays error message when fetch fails", async () => {
-    // Suppress console.error for this test as we expect an error to be logged
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-    adminService.getActivityEvents.mockRejectedValueOnce(new Error("Failed to fetch"));
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
 
     render(
       <MemoryRouter>
@@ -177,13 +166,12 @@ describe("<ActivityPanel />", () => {
         screen.getByText(/Failed to load activity events/i)
       ).toBeInTheDocument();
     });
-
-    consoleSpy.mockRestore();
   });
 
   it("displays 'No activity events found' when activities list is empty", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -198,8 +186,9 @@ describe("<ActivityPanel />", () => {
   });
 
   it("renders filter controls", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -222,8 +211,9 @@ describe("<ActivityPanel />", () => {
   it("applies type filter when selected", async () => {
     const user = userEvent.setup();
 
-    adminService.getActivityEvents.mockResolvedValue({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -240,18 +230,17 @@ describe("<ActivityPanel />", () => {
     await user.selectOptions(typeSelect, "Create");
 
     await waitFor(() => {
-      // Check last call arguments
-      const lastCall = adminService.getActivityEvents.mock.calls[adminService.getActivityEvents.mock.calls.length - 1];
-      // getActivityEvents(page, filters)
-      expect(lastCall[1]).toEqual({ type: "Create" });
+      const lastCall = fetch.mock.calls[fetch.mock.calls.length - 1];
+      expect(lastCall[0]).toContain("type=Create");
     }, { timeout: 3000 });
   });
 
   it("applies actor filter when entered", async () => {
     const user = userEvent.setup();
 
-    adminService.getActivityEvents.mockResolvedValue({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -268,16 +257,17 @@ describe("<ActivityPanel />", () => {
     await user.type(actorInput, "user-123");
 
     await waitFor(() => {
-      const lastCall = adminService.getActivityEvents.mock.calls[adminService.getActivityEvents.mock.calls.length - 1];
-      expect(lastCall[1]).toEqual({ actor_id: "user-123" });
+      const lastCall = fetch.mock.calls[fetch.mock.calls.length - 1];
+      expect(lastCall[0]).toContain("actor_id=user-123");
     }, { timeout: 3000 });
   });
 
   it("clears filters when Clear Filters button is clicked", async () => {
     const user = userEvent.setup();
 
-    adminService.getActivityEvents.mockResolvedValue({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -306,8 +296,9 @@ describe("<ActivityPanel />", () => {
   });
 
   it("renders pagination controls when activities are present", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: mockActivities, // mockActivities definition is in scope
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockActivities,
     });
 
     render(
@@ -328,8 +319,9 @@ describe("<ActivityPanel />", () => {
   });
 
   it("disables Previous button on first page", async () => {
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: mockActivities,
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockActivities,
     });
 
     render(
@@ -349,11 +341,12 @@ describe("<ActivityPanel />", () => {
   it("navigates to next page when Next button is clicked", async () => {
     const user = userEvent.setup();
 
-    adminService.getActivityEvents.mockResolvedValue({
-      data: {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
         items: mockActivities.items,
         totalItems: 30, // More than 15 items per page
-      },
+      }),
     });
 
     render(
@@ -377,8 +370,9 @@ describe("<ActivityPanel />", () => {
   it("calls logout when Log Out button is clicked", async () => {
     const user = userEvent.setup();
 
-    adminService.getActivityEvents.mockResolvedValueOnce({
-      data: { items: [], totalItems: 0 },
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
     });
 
     render(
@@ -388,20 +382,32 @@ describe("<ActivityPanel />", () => {
     );
 
     await waitFor(() => {
-      // Look for button or link? Component likely has a button if it uses `useAuth`.
-      // Previous test used getByRole("button", { name: /log out/i })
-      // If logout is in sidebar (which we determined is NOT rendered), then this test is invalid.
-      // But verify if ActivityPanel has a logout button?
-      // Step 866 (ActivityPanel.jsx) code shows NO logout button.
-      // So this test is invalid and should be removed.
+      expect(screen.getByRole("button", { name: /log out/i })).toBeInTheDocument();
     });
 
-    // Code below is what I am replacing. I will omit the test body or remove the test completely.
-    // However, replace_file_content must replace EXISTING content range.
-    // If I want to delete the test, I omit it from replacement content.
-    // But I must match TargetContent.
+    const logoutButton = screen.getByRole("button", { name: /log out/i });
+    await user.click(logoutButton);
+
+    expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 
-  // Removed "includes authorization header" test as it's not relevant with mocked service
+  it("includes authorization header in fetch request", async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ items: [], totalItems: 0 }),
+    });
 
+    render(
+      <MemoryRouter>
+        <ActivityPanel />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const fetchCall = fetch.mock.calls[0];
+    expect(fetchCall[1].headers.Authorization).toBe("Bearer fake-token");
+  });
 });
