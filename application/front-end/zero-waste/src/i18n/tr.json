@@ -59,7 +59,8 @@
     "enterActorID": "Aktör ID girin...",
     "clearFilters": "Filtreleri Temizle",
     "noActivities": "Aktivite olayı bulunamadı.",
-    "totalEvents": "Toplam Olay"
+    "totalEvents": "Toplam Olay",
+    "searchSummary": "Özet ara..."
   },
   "common": {
     "language": "Dil",
@@ -99,7 +100,8 @@
     "markAllRead": "Tümünü okundu işaretle",
     "noNotifications": "Bildirim yok",
     "preview": "Önizleme",
-    "verifying": "Doğrulanıyor..."
+    "verifying": "Doğrulanıyor...",
+    "noContent": "İçerik yok"
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",

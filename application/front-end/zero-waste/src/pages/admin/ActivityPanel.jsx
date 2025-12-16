@@ -3,6 +3,7 @@ import ActivityCard from "../../components/features/ActivityCard";
 import adminService from "../../services/adminService";
 import { useTheme } from "../../providers/ThemeContext";
 import { useLanguage } from "../../providers/LanguageContext";
+import { showToast } from "../../utils/toast";
 
 function ActivityPanel() {
   const { currentTheme } = useTheme();
@@ -11,63 +12,82 @@ function ActivityPanel() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
+  const itemsPerPage = 15;
 
   // Filters
   const [filterType, setFilterType] = useState("");
   const [filterActor, setFilterActor] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // New: Search by summary
+  
+  // Debounced filter values to prevent API spam
+  const [debouncedFilters, setDebouncedFilters] = useState({ 
+    type: "", 
+    actor: "", 
+    search: "" 
+  });
 
-  const getActivities = async (page = 1) => {
+  // 1. Debounce Effect: Update active filters after user stops typing for 500ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters({
+        type: filterType,
+        actor: filterActor,
+        search: searchTerm
+      });
+      setCurrentPage(1); // Reset to page 1 on filter change
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [filterType, filterActor, searchTerm]);
+
+  // 2. Fetch Data Effect: Triggers on Page change or Debounced Filter change
+  useEffect(() => {
+    getActivities(currentPage, debouncedFilters);
+  }, [currentPage, debouncedFilters]);
+
+  const getActivities = async (page, filters) => {
     setLoading(true);
     setError(null);
-    const itemsPerPage = 15;
 
     try {
-      const filters = {};
-      if (filterType) filters.type = filterType;
-      if (filterActor) filters.actor_id = filterActor;
+      // Prepare params for adminService
+      const queryParams = {};
+      if (filters.type) queryParams.type = filters.type;
+      if (filters.actor) queryParams.actor_id = filters.actor;
+      if (filters.search) queryParams.search = filters.search; // Supported by backend SearchFilter
 
-      const response = await adminService.getActivityEvents(page, filters);
+      const response = await adminService.getActivityEvents(page, queryParams);
+      
+      // Backend returns ActivityStreams 2.0 format: { items: [], totalItems: N }
       const data = response.data;
-
-      // ActivityStreams 2.0 format response
+      
       setActivities(data.items || []);
       setTotalItems(data.totalItems || 0);
 
-      // Check if there are more pages
+      // Calculate pagination state
       setHasNext(data.totalItems > page * itemsPerPage);
       setHasPrevious(page > 1);
-    } catch (error) {
-      console.error("Failed to fetch activity events:", error);
-      setError(t('admin.failedToLoadActivities', "Failed to load activity events. Please try again."));
+    } catch (err) {
+      console.error("Failed to fetch activity events:", err);
+      setError(t('admin.failedToLoadActivities', "Failed to load activity events."));
+      showToast(t('common.error', "An error occurred"), "error");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    getActivities(currentPage);
-  }, [currentPage, filterType, filterActor]); // Reloads when filters change
-
   const handleClearFilters = () => {
     setFilterType("");
     setFilterActor("");
+    setSearchTerm("");
+    setDebouncedFilters({ type: "", actor: "", search: "" });
     setCurrentPage(1);
-  };
-
-  const handleNextPage = () => {
-    if (hasNext) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (hasPrevious) {
-      setCurrentPage(prev => prev - 1);
-    }
   };
 
   return (
@@ -81,7 +101,7 @@ function ActivityPanel() {
         </p>
       </header>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <div
         className="mb-6 p-4 rounded-lg border"
         style={{
@@ -89,11 +109,36 @@ function ActivityPanel() {
           borderColor: currentTheme.border
         }}
       >
-        <h5 className="font-semibold mb-3" style={{ color: currentTheme.primaryText }}>{t('common.filters', 'Filters')}</h5>
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* Type Filter */}
+        <h5 className="font-semibold mb-3" style={{ color: currentTheme.primaryText }}>
+          {t('common.filters', 'Filters')}
+        </h5>
+        
+        <div className="grid gap-4 md:grid-cols-4">
+          
+          {/* Search Input (New) */}
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium mb-1 opacity-70">
+              {t('common.search', 'Search')}
+            </label>
+            <input
+              type="text"
+              className="w-full rounded-md border p-2 focus:ring-2 focus:ring-green-500 transition-colors"
+              style={{
+                backgroundColor: currentTheme.background,
+                color: currentTheme.text,
+                borderColor: currentTheme.border
+              }}
+              placeholder={t('admin.searchSummary', 'Search summary...')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Type Filter (Updated options to match backend) */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-70">{t('admin.filterType', 'Type')}</label>
+            <label className="block text-sm font-medium mb-1 opacity-70">
+              {t('admin.filterType', 'Type')}
+            </label>
             <select
               className="w-full rounded-md border p-2 focus:ring-2 focus:ring-green-500"
               style={{
@@ -102,26 +147,28 @@ function ActivityPanel() {
                 borderColor: currentTheme.border
               }}
               value={filterType}
-              onChange={(e) => {
-                setFilterType(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setFilterType(e.target.value)}
             >
               <option value="">{t('admin.allTypes', 'All Types')}</option>
-              <option value="Create">Create</option>
-              <option value="Update">Update</option>
-              <option value="Delete">Delete</option>
+              {/* Domain specific types from backend docs */}
+              <option value="create-waste">Create Waste</option>
+              <option value="create-post">Create Post</option>
+              <option value="create-challenge">Create Challenge</option>
+              <option value="create-tip">Create Tip</option>
+              <option value="like-post">Like Post</option>
+              <option value="join-challenge">Join Challenge</option>
+              <option value="delete-comment">Delete Comment</option>
+              {/* Fallback generic types */}
               <option value="Follow">Follow</option>
-              <option value="Like">Like</option>
               <option value="Announce">Announce</option>
-              <option value="Accept">Accept</option>
-              <option value="Reject">Reject</option>
             </select>
           </div>
 
           {/* Actor Filter */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-70">{t('admin.filterActorID', 'Actor ID')}</label>
+            <label className="block text-sm font-medium mb-1 opacity-70">
+              {t('admin.filterActorID', 'Actor ID')}
+            </label>
             <input
               type="text"
               className="w-full rounded-md border p-2 focus:ring-2 focus:ring-green-500"
@@ -130,7 +177,7 @@ function ActivityPanel() {
                 color: currentTheme.text,
                 borderColor: currentTheme.border
               }}
-              placeholder={t('admin.enterActorID', 'Enter actor ID...')}
+              placeholder={t('admin.enterActorID', 'username...')}
               value={filterActor}
               onChange={(e) => setFilterActor(e.target.value)}
             />
@@ -153,24 +200,25 @@ function ActivityPanel() {
         </div>
       </div>
 
-      {/* Error message */}
+      {/* Error State */}
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
           {error}
         </div>
       )}
 
-      {/* Loading spinner */}
+      {/* Loading State */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: currentTheme.secondary }}></div>
         </div>
       ) : (
         <>
-          {/* Activities list */}
-          <div className="flex flex-col items-center">
+          {/* List Content */}
+          <div className="flex flex-col gap-4">
             {activities.length === 0 ? (
-              <div className="p-8 text-center opacity-70 bg-gray-50 rounded-lg w-full" style={{ backgroundColor: currentTheme.hover }}>
+              <div className="p-8 text-center opacity-70 rounded-lg w-full border" 
+                   style={{ backgroundColor: currentTheme.hover, borderColor: currentTheme.border }}>
                 {t('admin.noActivities', 'No activity events found.')}
               </div>
             ) : (
@@ -183,22 +231,24 @@ function ActivityPanel() {
             )}
           </div>
 
-          {/* Pagination controls */}
+          {/* Pagination Controls */}
           {activities.length > 0 && (
             <div className="flex justify-center items-center gap-4 mt-8">
               <button
-                onClick={handlePreviousPage}
+                onClick={() => setCurrentPage(prev => prev - 1)}
                 disabled={!hasPrevious}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasPrevious ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                 style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
               >
                 {t('common.previous', 'Previous')}
               </button>
-              <span className="font-bold">
+              
+              <span className="font-bold opacity-80">
                 {t('common.page', 'Page')} {currentPage}
               </span>
+              
               <button
-                onClick={handleNextPage}
+                onClick={() => setCurrentPage(prev => prev + 1)}
                 disabled={!hasNext}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasNext ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                 style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
@@ -208,7 +258,7 @@ function ActivityPanel() {
             </div>
           )}
 
-          <div className="text-center mt-4 text-sm opacity-60">
+          <div className="text-center mt-4 text-xs opacity-50 uppercase tracking-wider">
             {t('admin.totalEvents', 'Total Events')}: {totalItems}
           </div>
         </>

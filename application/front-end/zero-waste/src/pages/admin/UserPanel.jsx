@@ -1,33 +1,79 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import UserCard from "../../components/features/UserCard";
+import adminService from "../../services/adminService";
 import { useTheme } from "../../providers/ThemeContext";
 import { useLanguage } from "../../providers/LanguageContext";
-import { useAdminReports } from "../../hooks/useAdminReports";
+import { showToast } from "../../utils/toast";
 
 function UserPanel() {
   const { currentTheme } = useTheme();
   const { t } = useLanguage();
 
-  const {
-    items: users,
-    loading,
-    error,
-    currentPage,
-    totalPages,
-    nextPage,
-    previousPage,
-    handleNextPage,
-    handlePreviousPage,
-    deleteItem
-  } = useAdminReports('users');
+  // State Management
+  const [userReports, setUserReports] = useState([]); // List of reports about users
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleDelete = async (user_id) => {
-    if (!window.confirm(t('admin.confirmBan', 'Are you sure you want to ban this user?'))) return;
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+
+  // Fetch Reports (Type = 'users')
+  const fetchReports = async (page) => {
+    setLoading(true);
+    setError(null);
     try {
-      await deleteItem(user_id, "ban_user");
-    } catch (e) {
-      alert(t('admin.banFailed', "Failed to ban user."));
+      // The model name for users is likely "users" or "user" based on your backend
+      // We pass 'users' as it matches the previous hook usage.
+      const response = await adminService.getReports(page, "users");
+      const data = response.data;
+
+      // Standard DRF Pagination: { count: N, next: url, previous: url, results: [] }
+      setUserReports(data.results || []);
+      setTotalCount(data.count || 0);
+      setHasNext(!!data.next);
+      setHasPrevious(!!data.previous);
+    } catch (err) {
+      console.error("Failed to fetch user reports:", err);
+      // It's possible the content type is 'user' (singular). 
+      // If 'users' fails 400, you might want to try 'user', but we stick to the provided code's convention.
+      setError(t('admin.failedToLoad', "Failed to load items."));
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Initial Load & Page Changes
+  useEffect(() => {
+    fetchReports(currentPage);
+  }, [currentPage]);
+
+  // Handle Moderation Action (Ban User)
+  const handleDelete = async (reportId) => {
+    if (!window.confirm(t('admin.confirmBan', 'Are you sure you want to ban this user?'))) return;
+
+    try {
+      // Backend expects "ban_user" action
+      await adminService.moderateReport(reportId, "ban_user");
+      showToast(t('common.saved', "Action completed successfully"), "success");
+      
+      // Refresh list after banning
+      fetchReports(currentPage);
+    } catch (e) {
+      console.error("Ban failed:", e);
+      showToast(t('admin.banFailed', "Failed to ban user."), "error");
+    }
+  };
+
+  // Pagination Handlers
+  const handleNextPage = () => {
+    if (hasNext) setCurrentPage((prev) => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    if (hasPrevious) setCurrentPage((prev) => prev - 1);
   };
 
   return (
@@ -56,47 +102,71 @@ function UserPanel() {
       ) : (
         <>
           {/* Users list */}
-          <div className="flex flex-col items-center">
-            {users.length === 0 ? (
-              <div className="p-8 text-center opacity-70 bg-gray-50 rounded-lg w-full" style={{ backgroundColor: currentTheme.hover }}>
+          <div className="flex flex-col items-center gap-6">
+            {userReports.length === 0 ? (
+              <div className="p-8 text-center opacity-70 bg-gray-50 rounded-lg w-full border" 
+                   style={{ backgroundColor: currentTheme.hover, borderColor: currentTheme.border }}>
                 {t('admin.noUsers', 'No reported users found.')}
               </div>
             ) : (
-              users.map((u) => (
-                <UserCard
-                  key={u.id}
-                  username={u.object_id || u.content?.username || "Unknown User"}
-                  flaggedPosts={u.flaggedPosts || 0}
-                  flaggedComments={u.flaggedComments || 0}
-                  onDelete={() => handleDelete(u.id)}
-                />
-              ))
+              userReports.map((report) => {
+                // report.content is the User object (if supported by backend serializer)
+                const userContent = report.content || {};
+                
+                // Fallback username logic
+                const displayUsername = userContent.username 
+                  || `User ID: ${report.object_id}`;
+
+                return (
+                  <UserCard
+                    key={report.id}
+                    // Mapping report details to UserCard props
+                    username={displayUsername}
+                    // Note: Backend ReportReadSerializer currently does not return flagged stats
+                    // We default these to 0 or N/A until backend supports aggregation
+                    flaggedPosts={0} 
+                    flaggedComments={0}
+                    // Reporting details
+                    reportReason={report.reason}
+                    // Action
+                    onDelete={() => handleDelete(report.id)}
+                  />
+                );
+              })
             )}
           </div>
 
           {/* Pagination controls */}
-          {users.length > 0 && (
+          {userReports.length > 0 && (
             <div className="flex justify-center items-center gap-4 mt-8">
               <button
                 onClick={handlePreviousPage}
-                disabled={!previousPage || currentPage === 1}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!previousPage || currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                disabled={!hasPrevious}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasPrevious ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                 style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
               >
                 {t('common.previous', 'Previous')}
               </button>
-              <span className="font-bold">
-                {t('common.page', 'Page')} {currentPage} {t('common.of', 'of')} {totalPages}
+              
+              <span className="font-bold opacity-80">
+                {t('common.page', 'Page')} {currentPage}
               </span>
+              
               <button
                 onClick={handleNextPage}
-                disabled={!nextPage || currentPage >= totalPages}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!nextPage || currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                disabled={!hasNext}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasNext ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                 style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
               >
                 {t('common.next', 'Next')}
               </button>
             </div>
+          )}
+
+          {totalCount > 0 && (
+             <div className="text-center mt-4 text-xs opacity-50 uppercase tracking-wider">
+               {t('common.total', 'Total')}: {totalCount}
+             </div>
           )}
         </>
       )}

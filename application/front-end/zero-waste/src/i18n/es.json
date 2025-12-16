@@ -65,7 +65,8 @@
     "markAllRead": "Marcar todo como leído",
     "noNotifications": "No hay notificaciones",
     "preview": "Vista Previa",
-    "verifying": "Verificando..."
+    "verifying": "Verificando...",
+    "noContent": "Sin contenido"
   },
   "admin": {
     "postModeration": "Moderación de Publicaciones",
@@ -99,7 +100,8 @@
     "enterActorID": "Ingrese el ID del actor...",
     "clearFilters": "Borrar Filtros",
     "noActivities": "No se encontraron eventos de actividad.",
-    "totalEvents": "Eventos Totales"
+    "totalEvents": "Eventos Totales",
+    "searchSummary": "Buscar resumen..."
   },
   "leaderboard": {
     "title": "🌿 Los 10 mejores campeones de cero residuos",

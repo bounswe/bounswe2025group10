@@ -76,7 +76,8 @@
     "markAllRead": "Tout marquer comme lu",
     "noNotifications": "Pas de notifications",
     "preview": "Aperçu",
-    "verifying": "Vérification..."
+    "verifying": "Vérification...",
+    "noContent": "Aucun contenu"
   },
   "admin": {
     "postModeration": "Modération des Publications",
@@ -110,7 +111,8 @@
     "enterActorID": "Entrez l'ID de l'acteur...",
     "clearFilters": "Effacer les Filtres",
     "noActivities": "Aucun événement d'activité trouvé.",
-    "totalEvents": "Total des Événements"
+    "totalEvents": "Total des Événements",
+    "searchSummary": "Rechercher un résumé..."
   },
   "leaderboard": {
     "title": "🌿 Top 10 des champions zéro déchet",

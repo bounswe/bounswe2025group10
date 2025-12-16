@@ -88,7 +88,8 @@
     "enterActorID": "Enter actor ID...",
     "clearFilters": "Clear Filters",
     "noActivities": "No activity events found.",
-    "totalEvents": "Total Events"
+    "totalEvents": "Total Events",
+    "searchSummary": "Search summary..."
   },
   "common": {
     "language": "Language",
@@ -131,7 +132,8 @@
     "readMore": "Read More",
     "showLess": "Show Less",
     "preview": "Preview",
-    "verifying": "Verifying..."
+    "verifying": "Verifying...",
+    "noContent": "No content"
   },
   "leaderboard": {
     "title": "🌿 Top 10 Zero Waste Champions",
