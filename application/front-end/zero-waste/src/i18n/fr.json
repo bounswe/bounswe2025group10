@@ -32,7 +32,8 @@
     "challengePage": "Modération des Défis",
     "commentPage": "Modération des Commentaires",
     "activityPage": "Journal d'Activité",
-    "preferences": "Confidentialité et Compte"
+    "preferences": "Confidentialité et Compte",
+    "noBio": "Cet utilisateur n'a pas de biographie publique."
   },
   "username": "Nom d'utilisateur",
   "password": "Mot de passe",
@@ -357,7 +358,12 @@
     "followed": "Suivi avec succès",
     "unfollowed": "Abonnement annulé avec succès",
     "noFollowing": "Vous ne suivez personne pour le moment.",
-    "noFollowers": "Pas encore d'abonnés."
+    "noFollowers": "Pas encore d'abonnés.",
+"bioPrivate": "La biographie de cet utilisateur est privée.",
+  "statsPrivate": "Les statistiques sont masquées par les paramètres de confidentialité.",
+  "impactStats": "Impact Environnemental",
+  "totalWaste": "CO2 Réduit",
+  "points": "Points"
   },
   "wasteHelper": {
     "title": "Ajouter un Déchet",
