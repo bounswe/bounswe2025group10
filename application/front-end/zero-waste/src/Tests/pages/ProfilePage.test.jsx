@@ -118,6 +118,8 @@ describe("<ProfilePage />", () => {
   it("renders without crashing", async () => {
     const { container } = render(<ProfilePage />);
     expect(container).toBeTruthy();
+    // Wait for initial data load to complete to avoid act warnings
+    await screen.findByRole("heading", { level: 1, name: "testuser" });
   });
 
   it("loads and displays profile information", async () => {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Badge, Row, Col } from "react-bootstrap";
+import { useTheme } from "../../providers/ThemeContext";
 
 /**
  * ActivityCard
@@ -9,31 +9,32 @@ import { Card, Badge, Row, Col } from "react-bootstrap";
  *  • activity: object (ActivityStreams 2.0 format)
  */
 
-const getActivityTypeColor = (type) => {
+const getActivityTypeColorClass = (type) => {
   const typeColors = {
-    Create: "success",
-    Update: "info",
-    Delete: "danger",
-    Follow: "primary",
-    Like: "warning",
-    Announce: "secondary",
+    Create: "bg-green-100 text-green-800",
+    Update: "bg-blue-100 text-blue-800",
+    Delete: "bg-red-100 text-red-800",
+    Follow: "bg-indigo-100 text-indigo-800",
+    Like: "bg-yellow-100 text-yellow-800",
+    Announce: "bg-gray-100 text-gray-800",
   };
-  return typeColors[type] || "secondary";
+  return typeColors[type] || "bg-gray-100 text-gray-800";
 };
 
-const getVisibilityBadge = (visibility) => {
+const getVisibilityBadgeClass = (visibility) => {
   const badges = {
-    PUBLIC: { variant: "success", text: "Public" },
-    UNLISTED: { variant: "info", text: "Unlisted" },
-    FOLLOWERS: { variant: "warning", text: "Followers" },
-    DIRECT: { variant: "secondary", text: "Direct" },
+    PUBLIC: { className: "bg-green-100 text-green-800", text: "Public" },
+    UNLISTED: { className: "bg-blue-100 text-blue-800", text: "Unlisted" },
+    FOLLOWERS: { className: "bg-yellow-100 text-yellow-800", text: "Followers" },
+    DIRECT: { className: "bg-gray-100 text-gray-800", text: "Direct" },
   };
-  return badges[visibility] || { variant: "secondary", text: visibility };
+  return badges[visibility] || { className: "bg-gray-100 text-gray-800", text: visibility };
 };
 
 export default function ActivityCard({ activity }) {
-  const visibilityBadge = getVisibilityBadge(activity.visibility);
-  const typeColor = getActivityTypeColor(activity.type);
+  const { currentTheme } = useTheme();
+  const visibilityBadge = getVisibilityBadgeClass(activity.visibility);
+  const typeColorClass = getActivityTypeColorClass(activity.type);
 
   // Format date
   const formattedDate = activity.published_at
@@ -41,71 +42,74 @@ export default function ActivityCard({ activity }) {
     : "Unknown date";
 
   return (
-    <Card
-      className="shadow-sm border-0 mb-3"
-      style={{ maxWidth: "800px", width: "100%" }}
+    <div
+      className="rounded-lg shadow-sm border mb-3 w-full max-w-4xl p-4"
+      style={{
+        backgroundColor: currentTheme.background,
+        borderColor: currentTheme.border
+      }}
     >
-      <Card.Body>
-        <Row className="align-items-start">
-          <Col>
-            {/* Header: Type and Visibility */}
-            <div className="d-flex gap-2 mb-2">
-              <Badge bg={typeColor}>{activity.type}</Badge>
-              <Badge bg={visibilityBadge.variant}>{visibilityBadge.text}</Badge>
-              {activity.community_id && (
-                <Badge bg="light" text="dark">
-                  Community: {activity.community_id}
-                </Badge>
-              )}
-            </div>
+      <div className="flex flex-col">
+        {/* Header: Type and Visibility */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeColorClass}`}>
+            {activity.type}
+          </span>
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${visibilityBadge.className}`}>
+            {visibilityBadge.text}
+          </span>
+          {activity.community_id && (
+            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800">
+              Community: {activity.community_id}
+            </span>
+          )}
+        </div>
 
-            {/* Summary */}
-            {activity.summary && (
-              <Card.Text className="mb-2 fw-semibold">{activity.summary}</Card.Text>
-            )}
+        {/* Summary */}
+        {activity.summary && (
+          <div className="font-semibold mb-2" style={{ color: currentTheme.primaryText }}>{activity.summary}</div>
+        )}
 
-            {/* Actor and Object info */}
-            <div className="small text-muted">
-              <div>
-                <strong>Actor:</strong>{" "}
-                <code>{activity.actor_id || activity.as2_json?.actor || "N/A"}</code>
-              </div>
-              <div>
-                <strong>Object:</strong>{" "}
-                <code>
-                  {activity.object_type || activity.as2_json?.object?.type || "N/A"} #{" "}
-                  {activity.object_id || activity.as2_json?.object?.id || "N/A"}
-                </code>
-              </div>
-              <div>
-                <strong>Published:</strong> {formattedDate}
-              </div>
-              <div>
-                <strong>Event ID:</strong> {activity.id}
-              </div>
-            </div>
+        {/* Actor and Object info */}
+        <div className="text-sm opacity-80" style={{ color: currentTheme.text }}>
+          <div className="mb-1">
+            <strong className="font-semibold">Actor:</strong>{" "}
+            <code className="bg-gray-100 dark:bg-gray-800 rounded px-1">{activity.actor_id || activity.as2_json?.actor || "N/A"}</code>
+          </div>
+          <div className="mb-1">
+            <strong className="font-semibold">Object:</strong>{" "}
+            <code className="bg-gray-100 dark:bg-gray-800 rounded px-1">
+              {activity.object_type || activity.as2_json?.object?.type || "N/A"} #{" "}
+              {activity.object_id || activity.as2_json?.object?.id || "N/A"}
+            </code>
+          </div>
+          <div className="mb-1">
+            <strong className="font-semibold">Published:</strong> {formattedDate}
+          </div>
+          <div>
+            <strong className="font-semibold">Event ID:</strong> {activity.id}
+          </div>
+        </div>
 
-            {/* AS2 JSON preview (optional, for debugging) */}
-            {activity.as2_json && Object.keys(activity.as2_json).length > 0 && (
-              <details className="mt-2">
-                <summary className="small text-muted" style={{ cursor: "pointer" }}>
-                  View AS2 JSON
-                </summary>
-                <pre
-                  className="bg-light p-2 rounded mt-2 small"
-                  style={{
-                    maxHeight: "200px",
-                    overflow: "auto",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  {JSON.stringify(activity.as2_json, null, 2)}
-                </pre>
-              </details>
-            )}
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+        {/* AS2 JSON preview (optional, for debugging) */}
+        {activity.as2_json && Object.keys(activity.as2_json).length > 0 && (
+          <details className="mt-3 group">
+            <summary className="text-xs opacity-60 cursor-pointer hover:opacity-100" style={{ color: currentTheme.text }}>
+              View AS2 JSON
+            </summary>
+            <pre
+              className="p-3 rounded mt-2 text-xs overflow-auto max-h-[200px]"
+              style={{
+                backgroundColor: currentTheme.hover,
+                color: currentTheme.text
+              }}
+            >
+              {JSON.stringify(activity.as2_json, null, 2)}
+            </pre>
+          </details>
+        )}
+      </div>
+    </div>
   );
 }
+
