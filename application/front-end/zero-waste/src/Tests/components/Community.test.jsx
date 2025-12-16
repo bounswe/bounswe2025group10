@@ -149,4 +149,25 @@ describe("<Community />", () => {
     expect(mockFetchSavedPosts).toHaveBeenCalled();
   });
 
+  it("updates file input state when file is selected", async () => {
+    renderPage();
+
+    // Open the Create Post modal
+    const createBtn = screen.getByRole("button", { name: /create post/i });
+    fireEvent.click(createBtn);
+
+    const file = new File(["(⌐□_□)"], "cool-image.png", { type: "image/png" });
+
+    // Use data-testid for hidden file input
+    const input = screen.getByTestId("file-upload");
+
+    Object.defineProperty(input, 'files', {
+      value: [file],
+    });
+
+    fireEvent.change(input);
+
+    expect(screen.getByText("cool-image.png")).toBeInTheDocument();
+  });
+
 });

@@ -33,8 +33,6 @@ function ActivityPanel() {
       const response = await adminService.getActivityEvents(page, filters);
       const data = response.data;
 
-      console.log("Activity events data:", data);
-
       // ActivityStreams 2.0 format response
       setActivities(data.items || []);
       setTotalItems(data.totalItems || 0);
