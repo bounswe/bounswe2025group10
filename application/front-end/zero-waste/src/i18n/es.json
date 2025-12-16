@@ -265,7 +265,12 @@
     "errorJoining": "Error al unirse al desafío",
     "provideReasonDescription": "Por favor proporcione tanto la razón como la descripción",
     "reportedSuccess": "Desafío reportado exitosamente",
-    "errorReporting": "Error al reportar desafío"
+    "errorReporting": "Error al reportar desafío",
+    "unit": "Unidad"
+  },
+  "units": {
+    "grams": "gramos",
+    "kilograms": "kilogramos"
   },
   "achievements": {
     "title": "Logros",

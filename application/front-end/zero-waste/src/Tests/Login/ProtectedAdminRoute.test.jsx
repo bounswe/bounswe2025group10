@@ -30,7 +30,7 @@ describe("ProtectedAdminRoute — minimal logic test", () => {
     });
 
     const { container } = render(<ProtectedAdminRoute />);
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByText("navigate-/login")).toBeInTheDocument();
   });
 
   it("renders Outlet when authenticated + admin", () => {

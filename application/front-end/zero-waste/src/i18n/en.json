@@ -267,7 +267,12 @@
     "errorJoining": "Error joining challenge",
     "provideReasonDescription": "Please provide both reason and description",
     "reportedSuccess": "Challenge reported successfully",
-    "errorReporting": "Error reporting challenge"
+    "errorReporting": "Error reporting challenge",
+    "unit": "Unit"
+  },
+  "units": {
+    "grams": "grams",
+    "kilograms": "kilograms"
   },
   "achievements": {
     "title": "Achievements",

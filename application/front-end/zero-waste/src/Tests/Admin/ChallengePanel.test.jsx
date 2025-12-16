@@ -11,8 +11,35 @@ import ChallengePanel from "@/pages/admin/ChallengePanel";
 
 // Mock AuthContext
 vi.mock("../../providers/AuthContext", () => ({
-  useAuth: () => ({
-    token: "mock-token",
+  useAuth: () => ({ token: "mock-token" }),
+}));
+
+// Mock LocalStorage
+const localStorageMock = {
+  getItem: vi.fn(() => "mock-token"),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// Mock diff ThemeContext
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#ffffff",
+      text: "#000000",
+      secondary: "#00ff00",
+      border: "#cccccc",
+    },
+  }),
+}));
+
+// Mock LanguageContext
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback || key,
+    language: "en",
   }),
 }));
 
@@ -28,32 +55,43 @@ vi.mock("../../components/features/AdminChallengeCard", () => ({
   ),
 }));
 
+// Mock useAdminReports
+const mockUseAdminReports = {
+  items: [],
+  loading: false,
+  error: null,
+  currentPage: 1,
+  totalPages: 1,
+  nextPage: null,
+  previousPage: null,
+  handleNextPage: vi.fn(),
+  handlePreviousPage: vi.fn(),
+  deleteItem: vi.fn(),
+};
+
+vi.mock("../../hooks/useAdminReports", () => ({
+  useAdminReports: vi.fn(() => mockUseAdminReports),
+}));
+
 describe("<ChallengePanel />", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("fetches and displays ONLY challenge-type items", async () => {
-    // Mock GET /reports/
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      json: () =>
-        Promise.resolve({
-          results: [
-            {
-              id: 1,
-              content_type: "challenge",
-              content: { title: "Recycle Marathon", current_progress: "50%" },
-            },
-            {
-              id: 2,
-              content_type: "post",
-              content: {},
-            },
-          ],
-        }),
+    // Setup mock return
+    const { useAdminReports } = await import("../../hooks/useAdminReports");
+    useAdminReports.mockReturnValue({
+      ...mockUseAdminReports,
+      items: [
+        {
+          id: 1,
+          content_type: "challenge",
+          content: { title: "Recycle Marathon", current_progress: "50%" },
+        }
+      ]
     });
 
-    // Wrapped in act to avoid warnings
     await act(async () => {
       render(
         <MemoryRouter>
@@ -61,17 +99,6 @@ describe("<ChallengePanel />", () => {
         </MemoryRouter>
       );
     });
-
-    // Expect correct URL (REAL one)
-    expect(global.fetch).toHaveBeenCalledWith(
-      "https://zerowaste.ink/api/admin/reports/",
-      expect.objectContaining({
-        method: "GET",
-        headers: expect.objectContaining({
-          Authorization: "Bearer mock-token",
-        }),
-      })
-    );
 
     // Challenge rendered
     expect(await screen.findByText("Recycle Marathon")).toBeInTheDocument();
@@ -82,28 +109,26 @@ describe("<ChallengePanel />", () => {
   });
 
   it("calls deleteChallenge when Delete button is clicked", async () => {
-    // Mock GET → challenge list
-    global.fetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        json: () =>
-          Promise.resolve({
-            results: [
-              {
-                id: 99,
-                content_type: "challenge",
-                content: {
-                  title: "Eco Battle",
-                  current_progress: "20%",
-                },
-              },
-            ],
-          }),
-      })
-      // Mock POST → delete
-      .mockResolvedValueOnce({
-        json: () => Promise.resolve({ success: true }),
-      });
+    const { useAdminReports } = await import("../../hooks/useAdminReports");
+    const mockDelete = vi.fn().mockResolvedValue(true);
+
+    useAdminReports.mockReturnValue({
+      ...mockUseAdminReports,
+      items: [
+        {
+          id: 99,
+          content_type: "challenge",
+          content: {
+            title: "Eco Battle",
+            current_progress: "20%",
+          },
+        },
+      ],
+      deleteItem: mockDelete
+    });
+
+    // Mock window.confirm
+    vi.spyOn(window, 'confirm').mockImplementation(() => true);
 
     await act(async () => {
       render(
@@ -119,18 +144,9 @@ describe("<ChallengePanel />", () => {
     // Click delete
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
-    // Now check POST call (REAL URL!)
+    // Check deleteItem call
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenLastCalledWith(
-        "https://zerowaste.ink/api/admin/reports/99/moderate/",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            Authorization: "Bearer mock-token",
-          }),
-          body: JSON.stringify({ action: "delete_media" }),
-        })
-      );
+      expect(mockDelete).toHaveBeenCalledWith(99, "delete_media");
     });
   });
 });

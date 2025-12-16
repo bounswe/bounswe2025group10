@@ -625,6 +625,7 @@ export default function Community() {
                   <input
                     type="file"
                     accept="image/*"
+                    data-testid="file-upload"
                     ref={fileInputRef}
                     onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
                     className="hidden"
