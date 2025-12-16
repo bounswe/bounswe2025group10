@@ -284,6 +284,30 @@
     "noAchievements": "No achievements earned yet.",
     "earnedAt": "Earned at"
   },
+  "challenge": {
+    "title": "Challenges"
+  },
+  "badge": {
+    "title": "Badges",
+    "noBadges": "No badges earned yet. Keep recycling to earn badges!",
+    "earnedAt": "Earned",
+    "nextBadge": "Progress to next badge",
+    "plastic": "Plastic Recycler",
+    "paper": "Paper Recycler",
+    "glass": "Glass Recycler",
+    "metal": "Metal Recycler",
+    "electronic": "E-Waste Recycler",
+    "oil": "Oil & Fats Recycler",
+    "organic": "Organic Recycler",
+    "total": "Waste Warrior",
+    "contributions": "Contributor",
+    "likes": "Popular",
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "platinum": "Platinum",
+    "diamond": "Diamond"
+  },
   "themes": {
     "light": "Light",
     "dark": "Dark",
@@ -355,12 +379,12 @@
     "unfollowed": "Unfollowed successfully",
     "noFollowing": "You are not following anyone yet.",
     "noFollowers": "No followers yet.",
-"bioPrivate": "This user's bio is private.",
-  "statsPrivate": "Statistics are hidden by privacy settings.",
-  "impactStats": "Environmental Impact",
-  "totalWaste": "CO2 Reduced",
-  "points": "Points",
-  "noBio": "This user does not have a public bio."
+    "bioPrivate": "This user's bio is private.",
+    "statsPrivate": "Statistics are hidden by privacy settings.",
+    "impactStats": "Environmental Impact",
+    "totalWaste": "CO2 Reduced",
+    "points": "Points",
+    "noBio": "This user does not have a public bio."
   },
   "wasteHelper": {
     "title": "Add Waste",
