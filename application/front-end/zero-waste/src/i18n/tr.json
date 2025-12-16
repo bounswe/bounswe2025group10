@@ -385,7 +385,9 @@
       "bananaPeel": "Muz Kabuğu",
       "appleCore": "Elma Çöpü",
       "foodScraps": "Yemek Artığı"
-    }
+    },
+    "successMessage": "Atık başarıyla eklendi! 🌱",
+    "errorMessage": "Atık eklenemedi. Lütfen tekrar deneyin."
   },
   "recyclingCenters": {
     "title": "Geri Dönüşüm Merkezleri",
@@ -512,11 +514,11 @@
     "followersOnly": "Sadece Takipçiler",
     "private": "Gizli",
     "copy": "Kopyala",
-"tokenCopied": "Kurtarma kodu kopyalandı!",
-"deletionRequestedTitle": "Silme Talebi Alındı",
-"deactivationMessage": "Hesabınız devre dışı bırakıldı. Şimdi çıkış yapılacaktır.",
-"saveTokenLabel": "BU KURTARMA KODUNU KAYDEDİN:",
-"tokenInstructions": "Eğer silme işlemini iptal etmek ve önümüzdeki 30 gün içinde hesabınızı kurtarmak isterseniz bu koda ihtiyacınız olacak.",
-"confirmLogout": "Kaydettim, Çıkış Yap"
+    "tokenCopied": "Kurtarma kodu kopyalandı!",
+    "deletionRequestedTitle": "Silme Talebi Alındı",
+    "deactivationMessage": "Hesabınız devre dışı bırakıldı. Şimdi çıkış yapılacaktır.",
+    "saveTokenLabel": "BU KURTARMA KODUNU KAYDEDİN:",
+    "tokenInstructions": "Eğer silme işlemini iptal etmek ve önümüzdeki 30 gün içinde hesabınızı kurtarmak isterseniz bu koda ihtiyacınız olacak.",
+    "confirmLogout": "Kaydettim, Çıkış Yap"
   }
 }

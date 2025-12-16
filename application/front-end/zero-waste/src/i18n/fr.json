@@ -393,7 +393,9 @@
       "bananaPeel": "Peau de Banane",
       "appleCore": "Trognon de Pomme",
       "foodScraps": "Restes de Nourriture"
-    }
+    },
+    "successMessage": "Déchet ajouté avec succès ! 🌱",
+    "errorMessage": "Échec de l'ajout du déchet. Veuillez réessayer."
   },
   "recyclingCenters": {
     "title": "Centres de Recyclage",
@@ -520,11 +522,11 @@
     "followersOnly": "Abonnés uniquement",
     "private": "Privé",
     "copy": "Copier",
-"tokenCopied": "Jeton de récupération copié !",
-"deletionRequestedTitle": "Suppression Demandée",
-"deactivationMessage": "Votre compte a été désactivé. Vous allez être déconnecté maintenant.",
-"saveTokenLabel": "SAUVEGARDEZ CE JETON :",
-"tokenInstructions": "Si vous souhaitez annuler la suppression et récupérer votre compte dans les 30 jours, vous aurez besoin de ce jeton.",
-"confirmLogout": "Je l'ai sauvegardé, déconnectez-moi"
+    "tokenCopied": "Jeton de récupération copié !",
+    "deletionRequestedTitle": "Suppression Demandée",
+    "deactivationMessage": "Votre compte a été désactivé. Vous allez être déconnecté maintenant.",
+    "saveTokenLabel": "SAUVEGARDEZ CE JETON :",
+    "tokenInstructions": "Si vous souhaitez annuler la suppression et récupérer votre compte dans les 30 jours, vous aurez besoin de ce jeton.",
+    "confirmLogout": "Je l'ai sauvegardé, déconnectez-moi"
   }
 }
