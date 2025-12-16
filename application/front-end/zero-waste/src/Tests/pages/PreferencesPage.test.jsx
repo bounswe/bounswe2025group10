@@ -4,15 +4,17 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import SettingsPage from "@/pages/settings/SettingsPage"; 
 
-// 1. Import actual modules so we can control them in the tests
+// 1. FIX: Import PreferencesPage instead of SettingsPage
+import PreferencesPage from "@/pages/settings/PreferencesPage"; 
+
+// Import actual modules so we can control them in the tests
 import { useAuth } from "../../providers/AuthContext";
 import { showToast } from "../../utils/toast";
 import { settingsService } from "../../services/settingsService";
 
 // ─────────────────────────────────────────────
-// MOCKS (Defined safely to avoid hoisting errors)
+// MOCKS
 // ─────────────────────────────────────────────
 
 vi.mock("../../providers/AuthContext", () => ({
@@ -41,10 +43,13 @@ vi.mock("../../providers/ThemeContext", () => ({
       border: "#ddd",
       text: "#000",
       secondary: "#0f0",
+      surface: "#f9f9f9", 
     },
+    theme: 'light'
   }),
 }));
 
+// Mock Language to return the fallback text (which matches your test assertions)
 vi.mock("../../providers/LanguageContext", () => ({
   useLanguage: () => ({
     t: (key, fallback) => fallback || key,
@@ -58,8 +63,8 @@ vi.mock("../../components/layout/Navbar", () => ({
 vi.mock("framer-motion", () => ({
   motion: {
     main: ({ children }) => <main>{children}</main>,
-    div: ({ children, onClick, className }) => (
-      <div onClick={onClick} className={className} data-testid="motion-div">
+    div: ({ children, onClick, className, style }) => (
+      <div onClick={onClick} className={className} style={style} data-testid="motion-div">
         {children}
       </div>
     ),
@@ -104,9 +109,10 @@ beforeEach(() => {
 // ─────────────────────────────────────────────
 // TESTS
 // ─────────────────────────────────────────────
-describe("<SettingsPage />", () => {
+describe("<PreferencesPage />", () => {
   it("renders without crashing and loads initial settings", async () => {
-    render(<SettingsPage />);
+    // FIX: Render PreferencesPage
+    render(<PreferencesPage />);
 
     // Wait for loading to finish
     const title = await screen.findByRole("heading", { level: 1, name: "Settings" });
@@ -121,7 +127,8 @@ describe("<SettingsPage />", () => {
   it("updates privacy settings when dropdown changes", async () => {
     settingsService.updatePrivacySettings.mockResolvedValue({});
 
-    render(<SettingsPage />);
+    // Render PreferencesPage
+    render(<PreferencesPage />);
     await screen.findByRole("heading", { level: 1, name: "Settings" });
 
     const selects = screen.getAllByRole("combobox");
@@ -142,7 +149,8 @@ describe("<SettingsPage />", () => {
   it("toggles anonymity and shows identifier", async () => {
     settingsService.updatePrivacySettings.mockResolvedValue({});
 
-    render(<SettingsPage />);
+    // Render PreferencesPage
+    render(<PreferencesPage />);
     await screen.findByRole("heading", { level: 1, name: "Settings" });
 
     // Find the toggle button. It has no text, so we filter for buttons without text content.
@@ -175,7 +183,8 @@ describe("<SettingsPage />", () => {
     const logoutSpy = vi.fn();
     useAuth.mockReturnValue({ token: "test-token", logout: logoutSpy });
 
-    render(<SettingsPage />);
+    // Render PreferencesPage
+    render(<PreferencesPage />);
     await screen.findByRole("heading", { level: 1, name: "Settings" });
 
     // 2. Click "Delete My Account"
@@ -220,7 +229,8 @@ describe("<SettingsPage />", () => {
 
     settingsService.cancelDeletion.mockResolvedValue({});
 
-    render(<SettingsPage />);
+    // FIX: Render PreferencesPage
+    render(<PreferencesPage />);
     
     // Wait for load
     await screen.findByRole("heading", { level: 1, name: "Settings" });
