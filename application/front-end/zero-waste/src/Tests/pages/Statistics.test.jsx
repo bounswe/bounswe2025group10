@@ -10,7 +10,7 @@ import Statistics from "@/pages/Statistics.jsx";
 // Mock providers
 // ─────────────────────────────────────────────
 vi.mock("../../providers/AuthContext", () => ({
-  useAuth: () => ({ token: "test-token" }),
+  useAuth: () => ({ token: "test-token", username: "testuser" }),
 }));
 
 vi.mock("../../providers/LanguageContext", () => ({
@@ -52,10 +52,13 @@ vi.mock("../../services/wasteService", () => ({
   },
 }));
 
-const getCommunityStatsMock = vi.fn();
-vi.mock("../../services/communityService", () => ({
+const getSystemStatisticsMock = vi.fn();
+const getUserStatisticsMock = vi.fn();
+
+vi.mock("../../services/statisticsService", () => ({
   default: {
-    getCommunityStats: (...args) => getCommunityStatsMock(...args),
+    getSystemStatistics: (...args) => getSystemStatisticsMock(...args),
+    getUserStatistics: (...args) => getUserStatisticsMock(...args),
   },
 }));
 
@@ -96,10 +99,15 @@ vi.mock("framer-motion", () => ({
 // ─────────────────────────────────────────────
 // Test Data
 // ─────────────────────────────────────────────
-const mockCommunityStats = {
-  totalPosts: 150,
-  totalTips: 45,
-  activeChallenges: 5,
+const mockSystemStats = {
+  total_post_count: 150,
+  total_tip_count: 45,
+  total_active_challenges: 5,
+  total_co2: 7500, // 7.50 kg
+};
+
+const mockUserStats = {
+  total_co2: 3750, // 3.75 kg
 };
 
 const mockWasteData = [
@@ -130,7 +138,8 @@ beforeEach(() => {
 describe("<Statistics />", () => {
   it("renders loading state initially", () => {
     getWasteDataMock.mockReturnValue(new Promise(() => { }));
-    getCommunityStatsMock.mockReturnValue(new Promise(() => { }));
+    getSystemStatisticsMock.mockReturnValue(new Promise(() => { }));
+    getUserStatisticsMock.mockReturnValue(new Promise(() => { }));
 
     render(<Statistics />);
 
@@ -138,7 +147,8 @@ describe("<Statistics />", () => {
   });
 
   it("renders empty state when no waste data exists", async () => {
-    getCommunityStatsMock.mockResolvedValue({ data: mockCommunityStats });
+    getSystemStatisticsMock.mockResolvedValue({ data: mockSystemStats });
+    getUserStatisticsMock.mockResolvedValue({ data: mockUserStats });
     getWasteDataMock.mockResolvedValue({ data: [] });
 
     render(<Statistics />);
@@ -158,7 +168,8 @@ describe("<Statistics />", () => {
   });
 
   it("renders charts and summary when waste data exists", async () => {
-    getCommunityStatsMock.mockResolvedValue({ data: mockCommunityStats });
+    getSystemStatisticsMock.mockResolvedValue({ data: mockSystemStats });
+    getUserStatisticsMock.mockResolvedValue({ data: mockUserStats });
     getWasteDataMock.mockResolvedValue({ data: mockWasteData });
 
     render(<Statistics />);
@@ -169,14 +180,11 @@ describe("<Statistics />", () => {
 
     // Check for Section Headers
     expect(screen.getByText("Your Waste Progress")).toBeInTheDocument();
-    // Recycling History section seems to be removed from the component
-    // expect(screen.getByText("Recycling History")).toBeInTheDocument();
     expect(screen.getByText("Waste by Type")).toBeInTheDocument();
     expect(screen.getByText("Waste Distribution")).toBeInTheDocument();
     expect(screen.getByText("Summary")).toBeInTheDocument();
 
     // Check that Recharts components were rendered
-    // expect(screen.getByTestId("area-chart")).toBeInTheDocument();
     expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
 
     expect(screen.getAllByTestId("bar-chart")).toHaveLength(2);
@@ -195,7 +203,8 @@ describe("<Statistics />", () => {
   });
 
   it("calculates and displays environmental impact correctly", async () => {
-    getCommunityStatsMock.mockResolvedValue({ data: mockCommunityStats });
+    getSystemStatisticsMock.mockResolvedValue({ data: mockSystemStats });
+    getUserStatisticsMock.mockResolvedValue({ data: mockUserStats });
     getWasteDataMock.mockResolvedValue({ data: mockWasteData });
 
     render(<Statistics />);
@@ -206,11 +215,13 @@ describe("<Statistics />", () => {
 
     expect(screen.getByText("Environmental Impact")).toBeInTheDocument();
     expect(screen.getByText("3.75 kg")).toBeInTheDocument();
-    expect(screen.getByText("7.50 kWh")).toBeInTheDocument();
+    // Component renders system CO2 in kg, not kWh
+    expect(screen.getByText("7.50 kg")).toBeInTheDocument();
   });
 
   it("renders community statistics correctly", async () => {
-    getCommunityStatsMock.mockResolvedValue({ data: mockCommunityStats });
+    getSystemStatisticsMock.mockResolvedValue({ data: mockSystemStats });
+    getUserStatisticsMock.mockResolvedValue({ data: mockUserStats });
     getWasteDataMock.mockResolvedValue({ data: [] });
 
     render(<Statistics />);
@@ -221,15 +232,16 @@ describe("<Statistics />", () => {
 
     expect(screen.getByText("Community Statistics")).toBeInTheDocument();
 
-    expect(screen.getByText("150")).toBeInTheDocument();
-    expect(screen.getByText("45")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("150")).toBeInTheDocument(); // total posts
+    expect(screen.getByText("45")).toBeInTheDocument(); // total tips
+    expect(screen.getByText("5")).toBeInTheDocument(); // active challenges
   });
 
   it("handles API errors gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
-    getCommunityStatsMock.mockRejectedValue(new Error("Community Error"));
+    getSystemStatisticsMock.mockRejectedValue(new Error("System Stats Error"));
+    getUserStatisticsMock.mockRejectedValue(new Error("User Stats Error"));
     getWasteDataMock.mockRejectedValue(new Error("Waste Error"));
 
     render(<Statistics />);

@@ -56,7 +56,7 @@ describe("Activities Component", () => {
     vi.clearAllMocks();
   });
 
-  it("should render the component with header", () => {
+  it("should render the component with header", async () => {
     // Mock empty response
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -69,16 +69,18 @@ describe("Activities Component", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Activity Feed/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Your activities and activities from people you follow/i)
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Activity Feed/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Your activities and activities from people you follow/i)
+      ).toBeInTheDocument();
+    });
   });
 
   it("should show loading state while fetching activities", () => {
     // Mock pending promise
     global.fetch.mockImplementationOnce(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => { }) // Never resolves
     );
 
     render(
@@ -125,6 +127,8 @@ describe("Activities Component", () => {
   });
 
   it("should display error message when fetch fails", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
+
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -142,6 +146,8 @@ describe("Activities Component", () => {
         screen.getByText(/Failed to load activity events/i)
       ).toBeInTheDocument();
     });
+
+    consoleSpy.mockRestore();
   });
 
   it("should display 'No activities found' when there are no activities", async () => {

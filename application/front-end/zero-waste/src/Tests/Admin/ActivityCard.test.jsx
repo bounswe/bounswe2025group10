@@ -20,6 +20,14 @@ vi.mock("../../providers/ThemeContext", () => ({
   }),
 }));
 
+// Mock LanguageContext
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback || key,
+    language: "en",
+  }),
+}));
+
 describe("<ActivityCard />", () => {
   const mockActivity = {
     id: "123",
@@ -102,11 +110,16 @@ describe("<ActivityCard />", () => {
   it("renders different activity types with correct colors", () => {
     const activityTypes = ["Create", "Update", "Delete", "Follow", "Like"];
 
+    const labelMap = {
+      Follow: "Follow User",
+      Like: "Like Post",
+    };
+
     activityTypes.forEach((type) => {
       const { container } = render(
         <ActivityCard activity={{ ...mockActivity, type }} />
       );
-      expect(screen.getByText(type)).toBeInTheDocument();
+      expect(screen.getByText(labelMap[type] || type)).toBeInTheDocument();
     });
   });
 

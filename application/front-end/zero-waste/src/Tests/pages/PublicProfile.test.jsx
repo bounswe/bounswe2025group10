@@ -62,6 +62,8 @@ vi.mock("../../services/profileService", () => ({
     getFollowStatus: vi.fn(),
     followUser: vi.fn(),
     unfollowUser: vi.fn(),
+    getUserBio: vi.fn(),
+    getUserWasteStats: vi.fn(),
   },
 }));
 
@@ -138,6 +140,14 @@ describe("<PublicProfile />", () => {
     });
     profileService.followUser.mockResolvedValue({});
     profileService.unfollowUser.mockResolvedValue({});
+    profileService.getUserBio.mockResolvedValue({
+      bio: "This is a test bio",
+      user_id: 123,
+    });
+    profileService.getUserWasteStats.mockResolvedValue({
+      points: 100,
+      total_waste: 50.5,
+    });
   });
 
   afterEach(() => {

@@ -6,7 +6,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import RecoveryPage from "../../pages/auth/RecoveryPage"; 
+import RecoveryPage from "../../pages/auth/RecoveryPage";
 
 // 1. Import the actual modules so we can control the mocks in the tests
 import { settingsService } from "../../services/settingsService";
@@ -24,6 +24,34 @@ vi.mock("../../utils/toast.js", () => ({
   showToast: vi.fn(),
 }));
 
+// ----------- MOCK ThemeContext -----------
+vi.mock("../../providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#fff",
+      text: "#000",
+      primary: "#00f",
+      secondary: "#0f0",
+      border: "#ccc",
+    },
+  }),
+}));
+
+// ----------- MOCK LanguageContext -----------
+vi.mock("../../providers/LanguageContext", () => ({
+  useLanguage: () => ({
+    t: (key, fallback) => fallback || key,
+    language: "en",
+  }),
+}));
+
+// ----------- MOCK FontSizeContext -----------
+vi.mock("../../providers/FontSizeContext", () => ({
+  useFontSize: () => ({
+    fontSize: 16,
+  }),
+}));
+
 // ----------- MOCK react-router navigate -----------
 const navigateMock = vi.fn();
 
@@ -34,6 +62,11 @@ vi.mock("react-router-dom", async () => {
     useNavigate: () => navigateMock,
   };
 });
+
+// ----------- MOCK LandingNavbar -----------
+vi.mock("../../components/layout/LandingNavbar", () => ({
+  default: ({ children }) => <div>{children}</div>,
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -56,7 +89,7 @@ describe("Recovery Page", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByLabelText("Recovery Token")).toBeInTheDocument();
-    
+
     // Check for button specifically
     const submitBtn = screen.getByRole("button", { name: /Recover Account/i });
     expect(submitBtn).toBeInTheDocument();
@@ -116,6 +149,7 @@ describe("Recovery Page", () => {
   });
 
   it("when service fails → shows error toast", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
     const cancelMock = settingsService.cancelDeletionByToken;
     cancelMock.mockRejectedValue(new Error("Network Error"));
 
@@ -137,6 +171,8 @@ describe("Recovery Page", () => {
         "error"
       )
     );
+
+    consoleSpy.mockRestore();
   });
 
   it("navigates to login when success button is clicked", async () => {
