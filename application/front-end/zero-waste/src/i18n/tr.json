@@ -354,7 +354,8 @@
   "statsPrivate": "İstatistikler gizlilik ayarları nedeniyle gizli.",
   "impactStats": "Çevresel Etki",
   "totalWaste": "Azaltılan CO2",
-  "points": "Puanlar"
+  "points": "Puanlar",
+  "noBio": "Bu kullanıcının herkese açık bir biyografisi yok."
   },
   "wasteHelper": {
     "title": "Atık Ekle",
