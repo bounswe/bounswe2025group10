@@ -1,240 +1,167 @@
 import React, { useState, useEffect } from "react";
-import { Nav, Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import { useAuth } from "../../providers/AuthContext";
 import CommentCard from "../../components/features/CommentCard";
+import adminService from "../../services/adminService";
+import { useTheme } from "../../providers/ThemeContext";
+import { useLanguage } from "../../providers/LanguageContext";
+import { showToast } from "../../utils/toast";
 
-function CommentPanel({ children }) {
-  const { token, logout } = useAuth();
-  const apiUrl = import.meta.env.VITE_API_URL;
+function CommentPanel() {
+  const { currentTheme } = useTheme();
+  const { t } = useLanguage();
 
-  const [comments, setComments] = useState([]);
+  // State Management
+  const [comments, setComments] = useState([]); // These are Report objects containing comment content
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [nextPage, setNextPage] = useState(null);
-  const [previousPage, setPreviousPage] = useState(null);
 
-  const getComments = async (page = 1) => {
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
+
+  // Fetch Reports (Type = 'comment')
+  const fetchReports = async (page) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/?page=${page}&type=comments`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      // Fetch reports specifically for 'comment' type
+      const response = await adminService.getReports(page, "comment");
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Admin reports data:", data);
-
-      // Data is already filtered by backend
+      // Standard DRF Pagination: { count: N, next: url, previous: url, results: [] }
       setComments(data.results || []);
-
-      // Set pagination info
-      setNextPage(data.next);
-      setPreviousPage(data.previous);
-
-      // Calculate total pages
-      if (data.count) {
-        setTotalPages(Math.ceil(data.count / 10));
-      }
-    } catch (error) {
-      console.error("Failed to fetch admin reports:", error);
-      setError("Failed to load comments. Please try again.");
+      setTotalCount(data.count || 0);
+      setHasNext(!!data.next);
+      setHasPrevious(!!data.previous);
+    } catch (err) {
+      console.error("Failed to fetch comment reports:", err);
+      setError(t('admin.failedToLoad', "Failed to load items."));
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial Load & Page Changes
   useEffect(() => {
-    getComments(currentPage);
+    fetchReports(currentPage);
   }, [currentPage]);
 
-  const deleteComment = async (comment_id) => {
+  // Handle Moderation Action (Delete Comment)
+  const handleDelete = async (reportId) => {
+    if (!window.confirm(t('admin.confirmDeleteComment', 'Are you sure you want to delete this comment?'))) return;
+
     try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/${comment_id}/moderate/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "delete_media" })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Delete response:", data);
-
-      // Refresh the list after deletion
-      getComments(currentPage);
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      alert("Failed to delete comment. Please try again.");
+      // Backend expects "delete_media" action
+      await adminService.moderateReport(reportId, "delete_media");
+      showToast(t('common.saved', "Action completed successfully"), "success");
+      
+      // Refresh list after deletion
+      fetchReports(currentPage);
+    } catch (e) {
+      console.error("Delete failed:", e);
+      showToast(t('admin.deleteCommentFailed', "Failed to delete comment."), "error");
     }
   };
 
+  // Pagination Handlers
   const handleNextPage = () => {
-    if (nextPage && currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
+    if (hasNext) setCurrentPage((prev) => prev + 1);
   };
 
   const handlePreviousPage = () => {
-    if (previousPage && currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
+    if (hasPrevious) setCurrentPage((prev) => prev - 1);
   };
 
   return (
-    <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
-      <Row>
-        {/* Sidebar */}
-        <Col
-          xs={12}
-          md={3}
-          className="d-flex flex-column justify-content-between p-4 text-white"
-          style={{ backgroundColor: "#2e7d32", minHeight: "100vh" }}
-        >
-          <div>
-            <h4 className="mb-4 fw-bold border-bottom pb-2">🌿 Admin Panel</h4>
-            <Nav variant="pills" className="flex-column gap-2">
-              <Nav.Link
-                as={Link}
-                to="/adminPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Post Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/challengePage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Challenge Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/userPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                User Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/commentPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Comment Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/activityPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Activities
-              </Nav.Link>
-            </Nav>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6" style={{ color: currentTheme.text }}>
+      <header className="mb-6 border-b pb-4" style={{ borderColor: currentTheme.border }}>
+        <h1 className="text-2xl font-bold" style={{ color: currentTheme.text }}>
+          {t('admin.commentModeration', 'Comment Moderation')}
+        </h1>
+        <p className="mt-2 text-sm opacity-70">
+          {t('admin.manageComments', 'Review and manage reported comments.')}
+        </p>
+      </header>
 
-          <div className="mt-auto">
-            <Button
-              variant="light"
-              className="w-100 mb-3"
-              onClick={logout}
-            >
-              Log Out
-            </Button>
-            <footer className="text-white-50 small">
-              <div>Zero Waste Admin © 2025</div>
-            </footer>
-          </div>
-        </Col>
+      {/* Error message */}
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+          {error}
+        </div>
+      )}
 
-        {/* Main content area */}
-        <Col xs={12} md={9} className="p-5">
-          <div className="mb-4">
-            <h2 className="text-success fw-bold">📋 Comments</h2>
-            <hr />
-          </div>
-
-          {/* Error message */}
-          {error && (
-            <Alert variant="danger" className="mb-4">
-              {error}
-            </Alert>
-          )}
-
-          {/* Loading spinner */}
-          {loading ? (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "300px" }}>
-              <Spinner animation="border" variant="success" />
-            </div>
-          ) : (
-            <>
-              {/* Comments list */}
-              <div className="d-flex flex-column align-items-center">
-                {comments.length === 0 ? (
-                  <Alert variant="info">No reported comments found.</Alert>
-                ) : (
-                  comments.map((c) => (
-                    <CommentCard
-                      key={c.id}
-                      commentId={c.id}
-                      username={c.author_id}
-                      content={c.content?.content || "No content"}
-                      reason={c.reason}
-                      description={c.description}
-                      onDelete={() => deleteComment(c.id)}
-                    />
-                  ))
-                )}
+      {/* Loading spinner */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: currentTheme.secondary }}></div>
+        </div>
+      ) : (
+        <>
+          {/* Comments list */}
+          <div className="flex flex-col items-center gap-6">
+            {comments.length === 0 ? (
+              <div className="p-8 text-center opacity-70 bg-gray-50 rounded-lg w-full border" 
+                   style={{ backgroundColor: currentTheme.hover, borderColor: currentTheme.border }}>
+                {t('admin.noComments', 'No reported comments found.')}
               </div>
+            ) : (
+              comments.map((report) => {
+                // The report object contains the nested content object (the comment)
+                const commentContent = report.content || {};
 
-              {/* Pagination controls */}
-              {comments.length > 0 && (
-                <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
-                  <Button
-                    variant="success"
-                    onClick={handlePreviousPage}
-                    disabled={!previousPage || currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <span className="fw-bold">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="success"
-                    onClick={handleNextPage}
-                    disabled={!nextPage || currentPage >= totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
+                return (
+                  <CommentCard
+                    key={report.id}
+                    commentId={report.id} // Pass Report ID for deletion action
+                    // Map CommentPreviewSerializer fields to props
+                    username={commentContent.author_id || "Unknown"}
+                    content={commentContent.content || t('common.noContent', "No content")}
+                    // Map Report fields
+                    reason={report.reason}
+                    description={report.description}
+                    onDelete={() => handleDelete(report.id)}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Pagination controls */}
+          {comments.length > 0 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                onClick={handlePreviousPage}
+                disabled={!hasPrevious}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasPrevious ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
+              >
+                {t('common.previous', 'Previous')}
+              </button>
+              
+              <span className="font-bold opacity-80">
+                {t('common.page', 'Page')} {currentPage}
+              </span>
+              
+              <button
+                onClick={handleNextPage}
+                disabled={!hasNext}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasNext ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
+              >
+                {t('common.next', 'Next')}
+              </button>
+            </div>
           )}
 
-          {children}
-        </Col>
-      </Row>
-    </Container>
+          {totalCount > 0 && (
+             <div className="text-center mt-4 text-xs opacity-50 uppercase tracking-wider">
+               {t('common.total', 'Total')}: {totalCount}
+             </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

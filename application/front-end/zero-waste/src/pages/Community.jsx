@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../providers/AuthContext";
 import { useTheme } from "../providers/ThemeContext";
 import { useLanguage } from "../providers/LanguageContext";
@@ -61,8 +60,11 @@ export default function Community() {
   const [commentReportReason, setCommentReportReason] = useState("");
   const [commentReportDescription, setCommentReportDescription] = useState("");
   const [commentSortOrder, setCommentSortOrder] = useState("newest");
+  const [isPaginating, setIsPaginating] = useState(false);
   const [shouldScrollToTop, setShouldScrollToTop] = useState(false);
+  const [processingPosts, setProcessingPosts] = useState(new Set());
   const postsContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fetch posts on mount
   useEffect(() => {
@@ -79,44 +81,60 @@ export default function Community() {
 
   // Pagination handlers
   const handleNextPage = async () => {
-    if (postsResponse?.next) {
+    const nextUrl = postsResponse?.pagination?.next || postsResponse?.next;
+    if (nextUrl) {
+      setIsPaginating(true);
       try {
-        const data = await postsService.getPostsFromUrl(postsResponse.next, token, language, pageSize);
+        const data = await postsService.getPostsFromUrl(nextUrl, token, language, pageSize);
         setPostsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
         showToast(t('common.error', 'An error occurred'), "error");
+      } finally {
+        setIsPaginating(false);
       }
     }
   };
 
   const handlePreviousPage = async () => {
-    if (postsResponse?.previous) {
+    const prevUrl = postsResponse?.pagination?.previous || postsResponse?.previous;
+    if (prevUrl) {
+      setIsPaginating(true);
       try {
-        const data = await postsService.getPostsFromUrl(postsResponse.previous, token, language, pageSize);
+        const data = await postsService.getPostsFromUrl(prevUrl, token, language, pageSize);
         setPostsResponse(data);
         setShouldScrollToTop(true);
       } catch (error) {
         showToast(t('common.error', 'An error occurred'), "error");
+      } finally {
+        setIsPaginating(false);
       }
     }
   };
 
   // Calculate current page number from pagination URLs
   const getCurrentPage = () => {
-    if (postsResponse?.previous) {
-      const prevUrl = new URL(postsResponse.previous, window.location.origin);
-      const prevPage = parseInt(prevUrl.searchParams.get('page') || '1');
+    const prevUrl = postsResponse?.pagination?.previous || postsResponse?.previous;
+    const nextUrl = postsResponse?.pagination?.next || postsResponse?.next;
+
+    if (prevUrl) {
+      const urlObj = new URL(prevUrl, window.location.origin);
+      const prevPage = parseInt(urlObj.searchParams.get('page') || '1');
       return prevPage + 1;
-    } else if (postsResponse?.next) {
+    } else if (nextUrl) {
       return 1;
     }
+    // If we have posts but no next/prev, we might be on page 1 of 1, or just page 1
+    // For safety, assume 1 if we can't determine otherwise
     return 1;
   };
 
   const getTotalPages = () => {
-    if (postsResponse?.count && pageSize) {
-      return Math.ceil(postsResponse.count / pageSize);
+    // Check both nested and flat structure
+    const count = postsResponse?.pagination?.count ?? postsResponse?.count;
+
+    if (count && pageSize) {
+      return Math.ceil(count / pageSize);
     }
     return 1;
   };
@@ -141,38 +159,70 @@ export default function Community() {
   };
 
   const handleLike = async (postId, isLiked) => {
+    if (processingPosts.has(postId)) return;
+    setProcessingPosts(prev => new Set(prev).add(postId));
     try {
       await toggleLike(postId, isLiked);
       showToast(isLiked ? t('community.unliked', 'Unliked') : t('community.liked', 'Liked!'), "success");
     } catch (error) {
       console.error("Error updating like:", error);
+    } finally {
+      setProcessingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
     }
   };
 
   const handleDislike = async (postId, isDisliked) => {
+    if (processingPosts.has(postId)) return;
+    setProcessingPosts(prev => new Set(prev).add(postId));
     try {
       await toggleDislike(postId, isDisliked);
       showToast(isDisliked ? t('community.undisliked', 'Undisliked') : t('community.disliked', 'Disliked'), "success");
     } catch (error) {
       console.error("Error updating dislike:", error);
+    } finally {
+      setProcessingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
     }
   };
 
   const handleSavePost = async (postId) => {
+    if (processingPosts.has(postId)) return;
+    setProcessingPosts(prev => new Set(prev).add(postId));
     try {
       await savePost(postId);
       showToast(t('community.postSaved', 'Post saved!'), "success");
     } catch (error) {
       console.error("Error saving post:", error);
+    } finally {
+      setProcessingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
     }
   };
 
   const handleUnsavePost = async (postId) => {
+    if (processingPosts.has(postId)) return;
+    setProcessingPosts(prev => new Set(prev).add(postId));
     try {
       await unsavePost(postId);
       showToast(t('community.postUnsaved', 'Post unsaved!'), "success");
     } catch (error) {
       console.error("Error unsaving post:", error);
+    } finally {
+      setProcessingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
     }
   };
 
@@ -240,89 +290,108 @@ export default function Community() {
   }, [posts, sortOption]);
 
   return (
-    <Navbar active="community">
-      <motion.main
-        ref={postsContainerRef}
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <h1
-            className="text-2xl sm:text-3xl font-bold"
-            style={{ color: currentTheme.text }}
-          >
-            {t('community.title', 'Community')}
-          </h1>
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <label
-                className="text-sm font-medium"
-                style={{ color: currentTheme.text }}
-              >
-                {t('common.itemsPerPage', 'Items per page')}:
-              </label>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="rounded-lg px-3 py-1.5 text-sm border"
-                style={{
-                  backgroundColor: currentTheme.background,
-                  color: currentTheme.text,
-                  borderColor: currentTheme.border
-                }}
-              >
-                <option value={3}>3</option>
-                <option value={6}>6</option>
-                <option value={9}>9</option>
-                <option value={12}>12</option>
-                <option value={15}>15</option>
-                <option value={18}>18</option>
-                <option value={21}>21</option>
-                <option value={24}>24</option>
-              </select>
-            </div>
-            <button
-              onClick={() => {
-                setShowingSaved(!showingSaved);
-                if (!showingSaved) fetchSavedPosts();
-              }}
-              className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
+    <motion.main
+      ref={postsContainerRef}
+      className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1
+          className="text-2xl sm:text-3xl font-bold"
+          style={{ color: currentTheme.text }}
+        >
+          {t('community.title', 'Community')}
+        </h1>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <label
+              className="text-sm font-medium"
+              style={{ color: currentTheme.text }}
+            >
+              {t('common.itemsPerPage', 'Items per page')}:
+            </label>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="rounded-lg px-3 py-1.5 text-sm border"
               style={{
-                borderColor: currentTheme.border,
+                backgroundColor: currentTheme.background,
                 color: currentTheme.text,
-                backgroundColor: showingSaved ? currentTheme.secondary + '15' : 'transparent'
+                borderColor: currentTheme.border
               }}
             >
-              {showingSaved ? t('community.showAll', 'Show All Posts') : t('community.showSaved', 'Show Saved Posts')}
-            </button>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
-              style={{
-                backgroundColor: currentTheme.secondary,
-                color: currentTheme.background
-              }}
-            >
-              {t('community.createPost', 'Create Post')}
-            </button>
+              <option value={3}>3</option>
+              <option value={6}>6</option>
+              <option value={9}>9</option>
+              <option value={12}>12</option>
+              <option value={15}>15</option>
+              <option value={18}>18</option>
+              <option value={21}>21</option>
+              <option value={24}>24</option>
+            </select>
           </div>
-        </header>
+          <button
+            onClick={() => {
+              setShowingSaved(!showingSaved);
+              if (!showingSaved) fetchSavedPosts();
+            }}
+            className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
+            style={{
+              borderColor: currentTheme.border,
+              color: currentTheme.text,
+              backgroundColor: showingSaved ? currentTheme.secondary + '15' : 'transparent'
+            }}
+          >
+            {showingSaved ? t('community.showAll', 'Show All Posts') : t('community.showSaved', 'Show Saved Posts')}
+          </button>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90"
+            style={{
+              backgroundColor: currentTheme.secondary,
+              color: currentTheme.background
+            }}
+          >
+            {t('community.createPost', 'Create Post')}
+          </button>
+        </div>
+      </header>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
-              {t('community.loadingPosts', 'Loading posts...')}
-            </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+            {t('community.loadingPosts', 'Loading posts...')}
           </div>
-        ) : (showingSaved ? (savedPosts || []) : sortedPosts).length === 0 ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
-              {showingSaved ? t('community.noSavedPosts', 'No saved posts yet.') : t('community.noPosts', 'No posts yet. Be the first to share!')}
-            </div>
+        </div>
+      ) : (showingSaved ? (savedPosts || []) : sortedPosts).length === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-lg opacity-70" style={{ color: currentTheme.text }}>
+            {showingSaved ? t('community.noSavedPosts', 'No saved posts yet.') : t('community.noPosts', 'No posts yet. Be the first to share!')}
           </div>
-        ) : (
-          <section className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        </div>
+      ) : (
+        <div className="relative">
+          {/* Pagination Loading Overlay */}
+          {isPaginating && (
+            <div
+              className="absolute inset-0 z-10 rounded-xl"
+              style={{
+                backgroundColor: currentTheme.background,
+                opacity: 0.7,
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)'
+              }}
+            />
+          )}
+          <section
+            className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            style={{
+              filter: isPaginating ? 'blur(4px)' : 'none',
+              pointerEvents: isPaginating ? 'none' : 'auto',
+              transition: 'filter 0.2s ease'
+            }}
+          >
             {(showingSaved ? (savedPosts || []) : sortedPosts).map((post) => (
               <motion.article
                 key={post.id}
@@ -406,7 +475,8 @@ export default function Community() {
                   >
                     <button
                       onClick={() => handleLike(post.id, post.is_user_liked)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                      disabled={processingPosts.has(post.id)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{
                         backgroundColor: post.is_user_liked ? currentTheme.secondary + '15' : 'transparent',
                         color: post.is_user_liked ? currentTheme.secondary : currentTheme.text,
@@ -419,7 +489,8 @@ export default function Community() {
 
                     <button
                       onClick={() => handleDislike(post.id, post.is_user_disliked)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105"
+                      disabled={processingPosts.has(post.id)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all duration-150 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{
                         backgroundColor: post.is_user_disliked ? currentTheme.secondary + '15' : 'transparent',
                         color: post.is_user_disliked ? currentTheme.secondary : currentTheme.text,
@@ -435,7 +506,8 @@ export default function Community() {
                       {savedPostIds.has(post.id) ? (
                         <button
                           onClick={() => handleUnsavePost(post.id)}
-                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110"
+                          disabled={processingPosts.has(post.id)}
+                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                           style={{
                             color: currentTheme.secondary,
                             backgroundColor: currentTheme.secondary + '15'
@@ -447,7 +519,8 @@ export default function Community() {
                       ) : (
                         <button
                           onClick={() => handleSavePost(post.id)}
-                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110 opacity-50 hover:opacity-100"
+                          disabled={processingPosts.has(post.id)}
+                          className="p-1.5 rounded-lg transition-all duration-150 hover:scale-110 opacity-50 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                           style={{ color: currentTheme.text }}
                           title={t('community.save', 'Save')}
                         >
@@ -499,349 +572,363 @@ export default function Community() {
               </motion.article>
             ))}
           </section>
-        )}
+        </div>
+      )}
 
-        <AnimatePresence>
-          {showCreateForm && (
+      <AnimatePresence>
+        {showCreateForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="w-full max-w-md rounded-lg border p-6"
+              style={{
+                backgroundColor: currentTheme.background,
+                borderColor: currentTheme.border
+              }}
             >
-              <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-md rounded-lg border p-6"
-                style={{
-                  backgroundColor: currentTheme.background,
-                  borderColor: currentTheme.border
-                }}
-              >
-                <h2 className="text-lg font-semibold mb-2" style={{ color: currentTheme.text }}>
-                  {t('community.createPost', 'Create Post')}
-                </h2>
-                <p className="text-sm mb-4" style={{ color: currentTheme.text, opacity: 0.7 }}>
-                  {t('community.shareThoughts', 'Share your thoughts or experiences with the community.')}
-                </p>
+              <h2 className="text-lg font-semibold mb-2" style={{ color: currentTheme.text }}>
+                {t('community.createPost', 'Create Post')}
+              </h2>
+              <p className="text-sm mb-4" style={{ color: currentTheme.text, opacity: 0.7 }}>
+                {t('community.shareThoughts', 'Share your thoughts or experiences with the community.')}
+              </p>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
-                      {t('community.description', 'Description')}
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder={t('community.writeSomething', 'Write something...')}
-                      value={newPost.description}
-                      onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
-                      className="w-full resize-none rounded-lg border px-3 py-2 text-sm"
-                      style={{
-                        backgroundColor: currentTheme.background,
-                        borderColor: currentTheme.border,
-                        color: currentTheme.text
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
-                      {t('community.uploadImage', 'Upload Image (optional)')}
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                      style={{
-                        backgroundColor: currentTheme.background,
-                        borderColor: currentTheme.border,
-                        color: currentTheme.text
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    onClick={() => setShowCreateForm(false)}
-                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                    {t('community.description', 'Description')}
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder={t('community.writeSomething', 'Write something...')}
+                    value={newPost.description}
+                    onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
+                    className="w-full resize-none rounded-lg border px-3 py-2 text-sm"
                     style={{
+                      backgroundColor: currentTheme.background,
                       borderColor: currentTheme.border,
                       color: currentTheme.text
                     }}
-                  >
-                    {t('common.cancel', 'Cancel')}
-                  </button>
-                  <button
-                    onClick={handleCreatePost}
-                    disabled={isCreating}
-                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: currentTheme.secondary,
-                      color: currentTheme.background
-                    }}
-                  >
-                    {isCreating ? t('common.creating', 'Creating...') : t('community.create', 'Create')}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Report Modal */}
-        <AnimatePresence>
-          {reportingId !== null && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}>
-                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportPost', 'Report Post')}</h2>
-                <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.reportDescription', "Let us know what's wrong with this post.")}</p>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
-                  <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}>
-                    <option value="">{t('community.selectReason', 'Select a reason')}</option>
-                    <option value="SPAM">{t('community.spam', 'Spam')}</option>
-                    <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
-                    <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
-                    <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
-                    <option value="OTHER">{t('community.other', 'Other')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
-                  <textarea rows={5} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder={t('community.explainBriefly', 'Please explain briefly…')} className="w-full resize-none rounded-xl border px-4 py-3" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }} />
-                </div>
-
-                <div className="flex justify-end gap-3 mt-6">
-                  <button onClick={closeModals} className="rounded-lg border px-4 py-2 text-sm hover:opacity-80" style={{ borderColor: currentTheme.border, color: currentTheme.text }}>
-                    {t('common.cancel', 'Cancel')}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!reason || !reportDescription.trim()) return;
-                      await handleReportPost();
-                      closeModals();
-                    }}
-                    disabled={!reason || !reportDescription.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
-                  >
-                    {t('common.submit', 'Submit')}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Comments Modal */}
-        <AnimatePresence>
-          {viewingCommentsPostId !== null && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            >
-              <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-xl space-y-4 rounded-2xl p-6 shadow-lg border max-h-[90vh] overflow-y-auto"
-                style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
-              >
-                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.allComments', 'All Comments')}</h2>
-                <div className="flex justify-end">
-                  <select
-                    value={commentSortOrder}
-                    onChange={(e) => setCommentSortOrder(e.target.value)}
-                    className="mb-2 rounded border px-2 py-1 text-sm"
-                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
-                  >
-                    <option value="newest">{t('community.newestFirst', 'Newest First')}</option>
-                    <option value="oldest">{t('community.oldestFirst', 'Oldest First')}</option>
-                  </select>
-                </div>
-                {postComments[viewingCommentsPostId]?.length > 0 ? (
-                  <div className="space-y-4 text-sm" style={{ color: currentTheme.text }}>
-                    {(postComments[viewingCommentsPostId] || [])
-                      .sort((a, b) =>
-                        commentSortOrder === "newest"
-                          ? new Date(b.date) - new Date(a.date)
-                          : new Date(a.date) - new Date(b.date)
-                      )
-                      .map((comment) => (
-                        <div key={comment.id} className="relative rounded-md border px-3 py-2" style={{ borderColor: currentTheme.border }}>
-                          <div className="flex items-center justify-between pr-6">
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={
-                                  comment.author_profile_image?.startsWith("http")
-                                    ? comment.author_profile_image
-                                    : `${API_BASE}${comment.author_profile_image || DEFAULT_PROFILE_IMAGE}`
-                                }
-                                alt={comment.author_username}
-                                onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
-                                className="h-6 w-6 rounded-full object-cover border"
-                                style={{ borderColor: currentTheme.border }}
-                              />
-                              <a
-                                href={`/profile/${comment.author_username}`}
-                                className="text-sm font-medium hover:underline"
-                                style={{ color: currentTheme.text }}
-                              >
-                                {comment.author_username}
-                              </a>
-                            </div>
-                            <span className="text-xs opacity-50" style={{ color: currentTheme.text }}>{dayjs(comment.date).fromNow()}</span>
-                          </div>
-                          <div>{comment.content}</div>
-                          <button
-                            onClick={() => {
-                              setReportingCommentId(comment.id);
-                              setCommentReportReason("");
-                              setCommentReportDescription("");
-                            }}
-                            className="absolute top-2 right-2 text-xs text-red-500 hover:underline"
-                            title="Report this comment"
-                          >
-                            &#9888;
-                          </button>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.noComments', 'No comments yet.')}</p>
-                )}
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={() => setViewingCommentsPostId(null)}
-                    className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
-                    style={{ borderColor: currentTheme.border, color: currentTheme.text }}
-                  >
-                    {t('common.close', 'Close')}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Comment Report Modal */}
-        <AnimatePresence>
-          {reportingCommentId !== null && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            >
-              <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 40, opacity: 0 }}
-                className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border"
-                style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
-              >
-                <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportComment', 'Report Comment')}</h2>
-                <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>
-                  {t('community.reportCommentDescription', "Let us know what's wrong with this comment.")}
-                </p>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
-                  <select
-                    value={commentReportReason}
-                    onChange={(e) => setCommentReportReason(e.target.value)}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
-                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
-                  >
-                    <option value="">{t('community.selectReason', 'Select a reason')}</option>
-                    <option value="SPAM">{t('community.spam', 'Spam')}</option>
-                    <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
-                    <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
-                    <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
-                    <option value="OTHER">{t('community.other', 'Other')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
-                  <textarea
-                    rows={4}
-                    value={commentReportDescription}
-                    onChange={(e) => setCommentReportDescription(e.target.value)}
-                    placeholder={t('community.explainBriefly', 'Please explain briefly…')}
-                    className="w-full resize-none rounded-xl border px-4 py-3"
-                    style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
                   />
                 </div>
-
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    onClick={() => setReportingCommentId(null)}
-                    className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
-                    style={{ borderColor: currentTheme.border, color: currentTheme.text }}
-                  >
-                    {t('common.cancel', 'Cancel')}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!commentReportReason || !commentReportDescription.trim()) return;
-                      await handleReportComment();
-                      setReportingCommentId(null);
-                    }}
-                    disabled={!commentReportReason || !commentReportDescription.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
-                  >
-                    {t('common.submit', 'Submit')}
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>
+                    {t('community.uploadImage', 'Upload Image (optional)')}
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    data-testid="file-upload"
+                    ref={fileInputRef}
+                    onChange={(e) => setNewPost({ ...newPost, image: e.target.files[0] })}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      style={{
+                        backgroundColor: currentTheme.hover,
+                        color: currentTheme.text,
+                        borderColor: currentTheme.border
+                      }}
+                    >
+                      {t('community.chooseFile', 'Choose File')}
+                    </button>
+                    <span className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+                      {newPost.image ? newPost.image.name : t('community.noFileSelected', 'No file selected')}
+                    </span>
+                  </div>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
 
-        {/* Pagination Controls - Only show for regular posts, not saved posts */}
-        {!isLoading && !showingSaved && posts.length > 0 && (
-          <div className="flex justify-center items-center gap-4 mt-8 mb-4">
-            <button
-              onClick={handlePreviousPage}
-              disabled={!postsResponse?.previous}
-              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-              style={{
-                backgroundColor: currentTheme.secondary,
-                color: currentTheme.background
-              }}
-            >
-              ← {t('common.previous', 'Previous')}
-            </button>
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
-                {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
-              </span>
-              <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
-                {postsResponse?.count ? `${t('common.total', 'Total')}: ${postsResponse.count}` : ''}
-              </span>
-            </div>
-            <button
-              onClick={handleNextPage}
-              disabled={!postsResponse?.next}
-              className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-              style={{
-                backgroundColor: currentTheme.secondary,
-                color: currentTheme.background
-              }}
-            >
-              {t('common.next', 'Next')} →
-            </button>
-          </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                  style={{
+                    borderColor: currentTheme.border,
+                    color: currentTheme.text
+                  }}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  onClick={handleCreatePost}
+                  disabled={isCreating}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: currentTheme.secondary,
+                    color: currentTheme.background
+                  }}
+                >
+                  {isCreating ? t('common.creating', 'Creating...') : t('community.create', 'Create')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </motion.main>
-    </Navbar>
+      </AnimatePresence>
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {reportingId !== null && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }} className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}>
+              <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportPost', 'Report Post')}</h2>
+              <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.reportDescription', "Let us know what's wrong with this post.")}</p>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
+                <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}>
+                  <option value="">{t('community.selectReason', 'Select a reason')}</option>
+                  <option value="SPAM">{t('community.spam', 'Spam')}</option>
+                  <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
+                  <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
+                  <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
+                  <option value="OTHER">{t('community.other', 'Other')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
+                <textarea rows={5} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder={t('community.explainBriefly', 'Please explain briefly…')} className="w-full resize-none rounded-xl border px-4 py-3" style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }} />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={closeModals} className="rounded-lg border px-4 py-2 text-sm hover:opacity-80" style={{ borderColor: currentTheme.border, color: currentTheme.text }}>
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!reason || !reportDescription.trim()) return;
+                    await handleReportPost();
+                    closeModals();
+                  }}
+                  disabled={!reason || !reportDescription.trim()}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
+                >
+                  {t('common.submit', 'Submit')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Comments Modal */}
+      <AnimatePresence>
+        {viewingCommentsPostId !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="w-full max-w-xl space-y-4 rounded-2xl p-6 shadow-lg border max-h-[90vh] overflow-y-auto"
+              style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
+            >
+              <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.allComments', 'All Comments')}</h2>
+              <div className="flex justify-end">
+                <select
+                  value={commentSortOrder}
+                  onChange={(e) => setCommentSortOrder(e.target.value)}
+                  className="mb-2 rounded border px-2 py-1 text-sm"
+                  style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
+                >
+                  <option value="newest">{t('community.newestFirst', 'Newest First')}</option>
+                  <option value="oldest">{t('community.oldestFirst', 'Oldest First')}</option>
+                </select>
+              </div>
+              {postComments[viewingCommentsPostId]?.length > 0 ? (
+                <div className="space-y-4 text-sm" style={{ color: currentTheme.text }}>
+                  {(postComments[viewingCommentsPostId] || [])
+                    .sort((a, b) =>
+                      commentSortOrder === "newest"
+                        ? new Date(b.date) - new Date(a.date)
+                        : new Date(a.date) - new Date(b.date)
+                    )
+                    .map((comment) => (
+                      <div key={comment.id} className="relative rounded-md border px-3 py-2" style={{ borderColor: currentTheme.border }}>
+                        <div className="flex items-center justify-between pr-6">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={
+                                comment.author_profile_image?.startsWith("http")
+                                  ? comment.author_profile_image
+                                  : `${API_BASE}${comment.author_profile_image || DEFAULT_PROFILE_IMAGE}`
+                              }
+                              alt={comment.author_username}
+                              onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
+                              className="h-6 w-6 rounded-full object-cover border"
+                              style={{ borderColor: currentTheme.border }}
+                            />
+                            <a
+                              href={`/profile/${comment.author_username}`}
+                              className="text-sm font-medium hover:underline"
+                              style={{ color: currentTheme.text }}
+                            >
+                              {comment.author_username}
+                            </a>
+                          </div>
+                          <span className="text-xs opacity-50" style={{ color: currentTheme.text }}>{dayjs(comment.date).fromNow()}</span>
+                        </div>
+                        <div>{comment.content}</div>
+                        <button
+                          onClick={() => {
+                            setReportingCommentId(comment.id);
+                            setCommentReportReason("");
+                            setCommentReportDescription("");
+                          }}
+                          className="absolute top-2 right-2 text-xs text-red-500 hover:underline"
+                          title="Report this comment"
+                        >
+                          &#9888;
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>{t('community.noComments', 'No comments yet.')}</p>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setViewingCommentsPostId(null)}
+                  className="rounded-lg border px-4 py-2 text-sm font-medium hover:opacity-80"
+                  style={{ borderColor: currentTheme.border, color: currentTheme.text }}
+                >
+                  {t('common.close', 'Close')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Comment Report Modal */}
+      <AnimatePresence>
+        {reportingCommentId !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-lg border"
+              style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border }}
+            >
+              <h2 className="text-lg font-semibold" style={{ color: currentTheme.text }}>{t('community.reportComment', 'Report Comment')}</h2>
+              <p className="text-sm opacity-70" style={{ color: currentTheme.text }}>
+                {t('community.reportCommentDescription', "Let us know what's wrong with this comment.")}
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.reason', 'Reason')}</label>
+                <select
+                  value={commentReportReason}
+                  onChange={(e) => setCommentReportReason(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
+                >
+                  <option value="">{t('community.selectReason', 'Select a reason')}</option>
+                  <option value="SPAM">{t('community.spam', 'Spam')}</option>
+                  <option value="INAPPROPRIATE">{t('community.inappropriate', 'Inappropriate')}</option>
+                  <option value="HARASSMENT">{t('community.harassment', 'Harassment')}</option>
+                  <option value="MISLEADING">{t('community.misleading', 'Misleading or Fake')}</option>
+                  <option value="OTHER">{t('community.other', 'Other')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: currentTheme.text }}>{t('community.description', 'Description')}</label>
+                <textarea
+                  rows={4}
+                  value={commentReportDescription}
+                  onChange={(e) => setCommentReportDescription(e.target.value)}
+                  placeholder={t('community.explainBriefly', 'Please explain briefly…')}
+                  className="w-full resize-none rounded-xl border px-4 py-3"
+                  style={{ backgroundColor: currentTheme.background, borderColor: currentTheme.border, color: currentTheme.text }}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setReportingCommentId(null)}
+                  className="rounded-lg border px-4 py-2 text-sm hover:opacity-80"
+                  style={{ borderColor: currentTheme.border, color: currentTheme.text }}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!commentReportReason || !commentReportDescription.trim()) return;
+                    await handleReportComment();
+                    setReportingCommentId(null);
+                  }}
+                  disabled={!commentReportReason || !commentReportDescription.trim()}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: currentTheme.secondary, color: currentTheme.background }}
+                >
+                  {t('common.submit', 'Submit')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pagination Controls - Only show for regular posts, not saved posts */}
+      {!isLoading && !showingSaved && posts.length > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-8 mb-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={!(postsResponse?.pagination?.previous || postsResponse?.previous) || isPaginating}
+            className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+            style={{
+              backgroundColor: currentTheme.secondary,
+              color: currentTheme.background
+            }}
+          >
+            ← {t('common.previous', 'Previous')}
+          </button>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm font-medium" style={{ color: currentTheme.text }}>
+              {t('common.page', 'Page')} {getCurrentPage()} / {getTotalPages()}
+            </span>
+            <span className="text-xs opacity-70" style={{ color: currentTheme.text }}>
+              {(postsResponse?.pagination?.count || postsResponse?.count) ? `${t('common.total', 'Total')}: ${postsResponse?.pagination?.count || postsResponse?.count}` : ''}
+            </span>
+          </div>
+          <button
+            onClick={handleNextPage}
+            disabled={!(postsResponse?.pagination?.next || postsResponse?.next) || isPaginating}
+            className="px-6 py-2 rounded-lg font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+            style={{
+              backgroundColor: currentTheme.secondary,
+              color: currentTheme.background
+            }}
+          >
+            {t('common.next', 'Next')} →
+          </button>
+        </div>
+      )}
+    </motion.main>
   );
 }

@@ -14,6 +14,25 @@ export const profileService = {
     return response;
   },
 
+  // Get user waste statistics (Subject to privacy settings)
+  getUserWasteStats: async (username, token = null) => {
+    const headers = {};
+    // Token is optional for public stats, but required if the privacy is set to "followers"
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/profile/${username}/waste-stats/`, {
+      headers
+    });
+    
+    if (!response.ok) {
+        // Handle 404 or other errors gracefully
+        return null;
+    }
+    return await response.json();
+  },
+
   // Get current user profile (bio)
   getProfile: async (username, token) => {
     const response = await fetch(`${API_BASE_URL}/api/profile/${username}/bio/`, {
@@ -128,7 +147,7 @@ export const profileService = {
     return await response.json();
   },
 
-  // NEW: Get list of users following a profile
+  // Get list of users following a profile
   getFollowers: async (username, token) => {
     const response = await fetch(`${API_BASE_URL}/api/profile/${username}/followers/`, {
       headers: {
@@ -143,7 +162,7 @@ export const profileService = {
     return await response.json();
   },
 
-  // NEW: Get list of users a profile is following
+  // Get list of users a profile is following
   getFollowing: async (username, token) => {
     const response = await fetch(`${API_BASE_URL}/api/profile/${username}/following/`, {
       headers: {

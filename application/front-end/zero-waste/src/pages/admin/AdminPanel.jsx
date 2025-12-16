@@ -1,258 +1,176 @@
-/**
- * AdminPanel.jsx  –  Post Moderation Panel with Pagination
- * ---------------------------------------------------
- * Shows a green-themed sidebar and reported posts with pagination.
- */
-
 import React, { useState, useEffect } from "react";
-import { Nav, Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import { useAuth } from "../../providers/AuthContext";
 import PostCard from "../../components/features/PostCard";
+import adminService from "../../services/adminService";
+import { useTheme } from "../../providers/ThemeContext";
+import { useLanguage } from "../../providers/LanguageContext";
+import { showToast } from "../../utils/toast";
 
-function AdminPanel({ children }) {
-  const { logout } = useAuth();
-  const token = localStorage.getItem("accessToken");
-  const apiUrl = import.meta.env.VITE_API_URL;
+function AdminPanel() {
+  const apiUrl = import.meta.env.VITE_API_URL || ""; // Fallback to empty string if undefined
+  const { currentTheme } = useTheme();
+  const { t } = useLanguage();
 
-  const [posts, setPosts] = useState([]);
+  // State Management
+  const [posts, setPosts] = useState([]); // These are actually "Report" objects containing post content
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [nextPage, setNextPage] = useState(null);
-  const [previousPage, setPreviousPage] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
-  const getPosts = async (page = 1) => {
+  // Fetch Reports (Type = 'post')
+  const fetchReports = async (page) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/?page=${page}&type=posts`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      // Fetch reports specifically for 'post' type
+      const response = await adminService.getReports(page, "post");
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Admin reports data:", data);
-
-      // Data is already filtered by backend
+      // Standard DRF Pagination: { count: N, next: url, previous: url, results: [] }
       setPosts(data.results || []);
-
-      // Set pagination info
-      setNextPage(data.next);
-      setPreviousPage(data.previous);
-
-      // Calculate total pages (assuming 10 items per page from backend)
-      if (data.count) {
-        setTotalPages(Math.ceil(data.count / 10));
-      }
-    } catch (error) {
-      console.error("Failed to fetch admin reports:", error);
-      setError("Failed to load posts. Please try again.");
+      setTotalCount(data.count || 0);
+      setHasNext(!!data.next);
+      setHasPrevious(!!data.previous);
+    } catch (err) {
+      console.error("Failed to fetch reports:", err);
+      setError(t('admin.failedToLoad', "Failed to load items."));
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial Load & Page Changes
   useEffect(() => {
-    getPosts(currentPage);
+    fetchReports(currentPage);
   }, [currentPage]);
 
-  const deletePost = async (post_id) => {
+  // Handle Moderation Action (Delete Post)
+  const handleDelete = async (reportId) => {
+    if (!window.confirm(t('admin.confirmDelete', 'Are you sure you want to delete this post?'))) return;
+
     try {
-      const response = await fetch(`${apiUrl}/api/admin/reports/${post_id}/moderate/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "delete_media" })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Delete response:", data);
-
-      // Refresh the list after deletion
-      getPosts(currentPage);
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      alert("Failed to delete post. Please try again.");
+      // Backend expects "delete_media" action
+      await adminService.moderateReport(reportId, "delete_media");
+      showToast(t('common.saved', "Action completed successfully"), "success");
+      
+      // Refresh list after deletion
+      fetchReports(currentPage);
+    } catch (e) {
+      console.error("Delete failed:", e);
+      showToast(t('admin.deleteFailed', "Failed to delete post."), "error");
     }
   };
 
+  // Handle Pagination Controls
   const handleNextPage = () => {
-    if (nextPage && currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
+    if (hasNext) setCurrentPage((prev) => prev + 1);
   };
 
   const handlePreviousPage = () => {
-    if (previousPage && currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
+    if (hasPrevious) setCurrentPage((prev) => prev - 1);
   };
 
-  /* ─────────────────────────────────────────────────────────── */
-
   return (
-    <Container fluid style={{ backgroundColor: "#f4fdf4", minHeight: "100vh" }}>
-      <Row>
-        {/* Sidebar */}
-        <Col
-          xs={12}
-          md={3}
-          className="d-flex flex-column justify-content-between p-4 text-white"
-          style={{ backgroundColor: "#2e7d32", minHeight: "100vh" }}
-        >
-          <div>
-            <h4 className="mb-4 fw-bold border-bottom pb-2">🌿 Admin Panel</h4>
-            <Nav variant="pills" className="flex-column gap-2">
-              <Nav.Link
-                as={Link}
-                to="/adminPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Post Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/challengePage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Challenge Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/userPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                User Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/commentPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Comment Moderation
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/activityPage"
-                className="text-white"
-                style={{ backgroundColor: "#388e3c" }}
-              >
-                Activities
-              </Nav.Link>
-            </Nav>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6" style={{ color: currentTheme.text }}>
+      <header className="mb-6 border-b pb-4" style={{ borderColor: currentTheme.border }}>
+        <h1 className="text-2xl font-bold" style={{ color: currentTheme.text }}>
+          {t('admin.postModeration', 'Board Post Moderation')}
+        </h1>
+        <p className="mt-2 text-sm opacity-70">
+          {t('admin.managePosts', 'Review and manage reported posts.')}
+        </p>
+      </header>
 
-          <div className="mt-auto">
-            <Button
-              variant="light"
-              className="w-100 mb-3"
-              onClick={logout}
-            >
-              Log Out
-            </Button>
-            <footer className="text-white-50 small">
-              <div>Zero Waste Admin © 2025</div>
-            </footer>
-          </div>
-        </Col>
+      {/* Error message */}
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+          {error}
+        </div>
+      )}
 
-        {/* Main content area */}
-        <Col xs={12} md={9} className="p-5">
-          <div className="mb-4">
-            <h2 className="text-success fw-bold">📋 Posts</h2>
-            <hr />
-          </div>
-
-          {/* Error message */}
-          {error && (
-            <Alert variant="danger" className="mb-4">
-              {error}
-            </Alert>
-          )}
-
-          {/* Loading spinner */}
-          {loading ? (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "300px" }}>
-              <Spinner animation="border" variant="success" />
-            </div>
-          ) : (
-            <>
-              {/* Posts list */}
-              <div className="d-flex flex-column align-items-center">
-                {posts.length === 0 ? (
-                  <Alert variant="info">No reported posts found.</Alert>
-                ) : (
-                  posts.map((post) => {
-                    // Construct full image URL if it's a relative path
-                    let imageUrl = post.content?.image;
-                    if (imageUrl && !imageUrl.startsWith('http')) {
-                      imageUrl = `${apiUrl}${imageUrl}`;
-                    }
-
-                    return (
-                      <PostCard
-                        key={post.id}
-                        image={imageUrl || "https://via.placeholder.com/400x300?text=No+Image"}
-                        title="Reported Post"
-                        description={post.content?.text ?? "No content"}
-                        reportReason={post.reason}
-                        reportDescription={post.description}
-                        onDelete={() => deletePost(post.id)}
-                      />
-                    );
-                  })
-                )}
+      {/* Loading spinner */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: currentTheme.secondary }}></div>
+        </div>
+      ) : (
+        <>
+          {/* Posts list */}
+          <div className="flex flex-col items-center gap-6">
+            {posts.length === 0 ? (
+              <div className="p-8 text-center opacity-70 bg-gray-50 rounded-lg w-full border" 
+                   style={{ backgroundColor: currentTheme.hover, borderColor: currentTheme.border }}>
+                {t('admin.noPosts', 'No reported posts found.')}
               </div>
+            ) : (
+              posts.map((report) => {
+                // The report object contains the nested content object
+                const postContent = report.content || {}; 
+                
+                // Construct full image URL if it's a relative path
+                let imageUrl = postContent.image;
+                if (imageUrl && !imageUrl.startsWith('http')) {
+                  imageUrl = `${apiUrl}${imageUrl}`;
+                }
 
-              {/* Pagination controls */}
-              {posts.length > 0 && (
-                <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
-                  <Button
-                    variant="success"
-                    onClick={handlePreviousPage}
-                    disabled={!previousPage || currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <span className="fw-bold">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="success"
-                    onClick={handleNextPage}
-                    disabled={!nextPage || currentPage >= totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
+                return (
+                  <PostCard
+                    key={report.id}
+                    // PostCard usually expects simple props; mapping report data to them:
+                    image={imageUrl || "https://via.placeholder.com/400x300?text=No+Image"}
+                    title={t('admin.reportedPost', "Reported Post")}
+                    // The description of the card is the Post's text
+                    description={postContent.text ?? t('common.noContent', "No content")}
+                    // We pass the REPORT'S reason/description, not the post's
+                    reportReason={report.reason}
+                    reportDescription={report.description}
+                    // Pass the REPORT ID to delete, because moderateReport endpoint acts on the report ID
+                    onDelete={() => handleDelete(report.id)}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Pagination controls */}
+          {posts.length > 0 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                onClick={handlePreviousPage}
+                disabled={!hasPrevious}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasPrevious ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
+              >
+                {t('common.previous', 'Previous')}
+              </button>
+              
+              <span className="font-bold opacity-80">
+                {t('common.page', 'Page')} {currentPage}
+              </span>
+              
+              <button
+                onClick={handleNextPage}
+                disabled={!hasNext}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${!hasNext ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                style={{ backgroundColor: currentTheme.secondary, color: '#fff' }}
+              >
+                {t('common.next', 'Next')}
+              </button>
+            </div>
           )}
-
-          {/* Nested children (if any) */}
-          {children}
-        </Col>
-      </Row>
-    </Container>
+          
+          {totalCount > 0 && (
+             <div className="text-center mt-4 text-xs opacity-50 uppercase tracking-wider">
+               {t('common.total', 'Total')}: {totalCount}
+             </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

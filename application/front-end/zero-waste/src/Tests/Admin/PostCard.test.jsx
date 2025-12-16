@@ -3,10 +3,22 @@
  */
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import PostCard from  "@/components/features/PostCard"; 
+import PostCard from "@/components/features/PostCard";
+
+// Mock ThemeContext
+vi.mock("@/providers/ThemeContext", () => ({
+  useTheme: () => ({
+    currentTheme: {
+      background: "#ffffff",
+      text: "#000000",
+      secondary: "#00ff00",
+      border: "#cccccc",
+    },
+  }),
+}));
 describe("<PostCard />", () => {
   const mockProps = {
     image: "https://picsum.photos/600/300",
