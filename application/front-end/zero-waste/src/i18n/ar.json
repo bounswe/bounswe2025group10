@@ -19,6 +19,7 @@
     "tips": "نصائح",
     "achievements": "الإنجازات",
     "leaderboard": "قائمة المتصدرين",
+    "activities": "الأنشطة",
     "profile": "الملف الشخصي",
     "login": "تسجيل الدخول",
     "signup": "إنشاء حساب",
@@ -498,6 +499,33 @@
         "title": "المجتمع",
         "desc": "تواصل مع الآخرين، وشارك النصائح، وشارك في التحديات البيئية."
       }
+    }
+  },
+  "activities": {
+    "title": "موجز النشاط",
+    "subtitle": "أنشطتك وأنشطة الأشخاص الذين تتابعهم",
+    "totalEvents": "إجمالي الأحداث",
+    "filterType": "نوع النشاط",
+    "allTypes": "جميع الأنواع",
+    "clearFilters": "مسح المرشحات",
+    "noActivities": "لم يتم العثور على أنشطة.",
+    "loadingActivities": "جارٍ تحميل الأنشطة...",
+    "failedToLoad": "فشل تحميل أحداث النشاط. يرجى المحاولة مرة أخرى.",
+    "activityTypes": {
+      "createWaste": "إنشاء نفاية",
+      "updateWaste": "تحديث نفاية",
+      "deleteWaste": "حذف نفاية",
+      "createPost": "إنشاء منشور",
+      "updatePost": "تحديث منشور",
+      "deletePost": "حذف منشور",
+      "createComment": "إنشاء تعليق",
+      "updateComment": "تحديث تعليق",
+      "deleteComment": "حذف تعليق",
+      "likePost": "إعجاب بمنشور",
+      "followUser": "متابعة مستخدم",
+      "unfollowUser": "إلغاء متابعة مستخدم",
+      "joinCommunity": "الانضمام إلى المجتمع",
+      "leaveCommunity": "مغادرة المجتمع"
     }
   },
   "preferences": {

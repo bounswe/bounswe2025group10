@@ -19,6 +19,7 @@
     "tips": "Conseils",
     "achievements": "Réalisations",
     "leaderboard": "Classement",
+    "activities": "Activités",
     "profile": "Profil",
     "login": "Se Connecter",
     "signup": "S'inscrire",
@@ -497,6 +498,33 @@
         "title": "Communauté",
         "desc": "Connectez-vous avec les autres, partagez des conseils et participez à des éco-défis."
       }
+    }
+  },
+  "activities": {
+    "title": "Fil d'Activité",
+    "subtitle": "Vos activités et les activités des personnes que vous suivez",
+    "totalEvents": "Total des événements",
+    "filterType": "Type d'Activité",
+    "allTypes": "Tous les Types",
+    "clearFilters": "Effacer les Filtres",
+    "noActivities": "Aucune activité trouvée.",
+    "loadingActivities": "Chargement des activités...",
+    "failedToLoad": "Échec du chargement des événements d'activité. Veuillez réessayer.",
+    "activityTypes": {
+      "createWaste": "Créer Déchet",
+      "updateWaste": "Mettre à Jour Déchet",
+      "deleteWaste": "Supprimer Déchet",
+      "createPost": "Créer Publication",
+      "updatePost": "Mettre à Jour Publication",
+      "deletePost": "Supprimer Publication",
+      "createComment": "Créer Commentaire",
+      "updateComment": "Mettre à Jour Commentaire",
+      "deleteComment": "Supprimer Commentaire",
+      "likePost": "Aimer Publication",
+      "followUser": "Suivre Utilisateur",
+      "unfollowUser": "Ne Plus Suivre Utilisateur",
+      "joinCommunity": "Rejoindre Communauté",
+      "leaveCommunity": "Quitter Communauté"
     }
   },
   "preferences": {

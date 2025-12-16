@@ -9,6 +9,7 @@
     "tips": "Tips",
     "achievements": "Achievements",
     "leaderboard": "Leaderboard",
+    "activities": "Activities",
     "profile": "Profile",
     "login": "Login",
     "signup": "Sign Up",
@@ -488,6 +489,33 @@
         "title": "Community",
         "desc": "Connect with others, share tips, and participate in eco-challenges."
       }
+    }
+  },
+  "activities": {
+    "title": "Activity Feed",
+    "subtitle": "Your activities and activities from people you follow",
+    "totalEvents": "Total events",
+    "filterType": "Activity Type",
+    "allTypes": "All Types",
+    "clearFilters": "Clear Filters",
+    "noActivities": "No activities found.",
+    "loadingActivities": "Loading activities...",
+    "failedToLoad": "Failed to load activity events. Please try again.",
+    "activityTypes": {
+      "createWaste": "Create Waste",
+      "updateWaste": "Update Waste",
+      "deleteWaste": "Delete Waste",
+      "createPost": "Create Post",
+      "updatePost": "Update Post",
+      "deletePost": "Delete Post",
+      "createComment": "Create Comment",
+      "updateComment": "Update Comment",
+      "deleteComment": "Delete Comment",
+      "likePost": "Like Post",
+      "followUser": "Follow User",
+      "unfollowUser": "Unfollow User",
+      "joinCommunity": "Join Community",
+      "leaveCommunity": "Leave Community"
     }
   },
   "preferences": {

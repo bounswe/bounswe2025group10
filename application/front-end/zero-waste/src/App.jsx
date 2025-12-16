@@ -11,10 +11,10 @@ import ChallengePanel from "./pages/admin/ChallengePanel";
 import CommentPanel from "./pages/admin/CommentPanel";
 import UserPanel from "./pages/admin/UserPanel";
 import ActivityPanel from "./pages/admin/ActivityPanel";
-import AdminLayout from './components/layout/AdminLayout';
-import ProtectedAdminRoute from "./routes/ProtectedAdminRoute"
+import AdminLayout from "./components/layout/AdminLayout";
+import ProtectedAdminRoute from "./routes/ProtectedAdminRoute";
 import Challenges from "./pages/Challenges.jsx";
-import Profile from "./pages/profile/ProfilePage.jsx"
+import Profile from "./pages/profile/ProfilePage.jsx";
 import Community from "./pages/Community.jsx";
 import Tips from "./pages/Tips.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
@@ -26,21 +26,17 @@ import Statistics from "./pages/Statistics.jsx";
 import Settings from "./pages/Settings.jsx";
 import RecoveryPage from "./pages/auth/RecoveryPage.jsx";
 import PreferencesPage from "./pages/settings/PreferencesPage.jsx";
-
-
+import Activities from "./pages/Activities.jsx";
 
 export default function App() {
   return (
-
-
     <Routes>
       {/* Public Routes (Redirect to MainPage/Admin if logged in) */}
       <Route element={<PublicRoute />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-              <Route path="/recover" element={<RecoveryPage />} />
-
+        <Route path="/recover" element={<RecoveryPage />} />
       </Route>
 
       {/* Protected User Routes */}
@@ -55,11 +51,11 @@ export default function App() {
           <Route path="/recycling-centers" element={<RecyclingCenters />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/invite" element={<Invite />} />
+          <Route path="/activities" element={<Activities />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:username" element={<PublicProfile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/preferences" element={<PreferencesPage />} />
-
         </Route>
       </Route>
 
@@ -80,5 +76,4 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
-
 }

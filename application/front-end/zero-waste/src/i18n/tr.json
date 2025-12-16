@@ -9,6 +9,7 @@
     "tips": "İpuçları",
     "achievements": "Başarılar",
     "leaderboard": "Sıralama",
+    "activities": "Aktiviteler",
     "profile": "Profil",
     "login": "Giriş Yap",
     "signup": "Kayıt Ol",
@@ -489,6 +490,33 @@
         "title": "Topluluk",
         "desc": "Başkalarıyla bağlantı kurun, ipuçları paylaşın ve eko-meydan okumalara katılın."
       }
+    }
+  },
+  "activities": {
+    "title": "Aktivite Akışı",
+    "subtitle": "Sizin aktiviteleriniz ve takip ettiğiniz kişilerin aktiviteleri",
+    "totalEvents": "Toplam etkinlik",
+    "filterType": "Aktivite Türü",
+    "allTypes": "Tüm Türler",
+    "clearFilters": "Filtreleri Temizle",
+    "noActivities": "Aktivite bulunamadı.",
+    "loadingActivities": "Aktiviteler yükleniyor...",
+    "failedToLoad": "Aktivite olayları yüklenemedi. Lütfen tekrar deneyin.",
+    "activityTypes": {
+      "createWaste": "Atık Oluştur",
+      "updateWaste": "Atık Güncelle",
+      "deleteWaste": "Atık Sil",
+      "createPost": "Gönderi Oluştur",
+      "updatePost": "Gönderi Güncelle",
+      "deletePost": "Gönderi Sil",
+      "createComment": "Yorum Oluştur",
+      "updateComment": "Yorum Güncelle",
+      "deleteComment": "Yorum Sil",
+      "likePost": "Gönderiyi Beğen",
+      "followUser": "Kullanıcıyı Takip Et",
+      "unfollowUser": "Takibi Bırak",
+      "joinCommunity": "Topluluğa Katıl",
+      "leaveCommunity": "Topluluktan Ayrıl"
     }
   },
   "preferences": {
