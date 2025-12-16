@@ -383,7 +383,9 @@
       "bananaPeel": "Cáscara de Plátano",
       "appleCore": "Corazón de Manzana",
       "foodScraps": "Restos de Comida"
-    }
+    },
+    "successMessage": "¡Residuo añadido con éxito! 🌱",
+    "errorMessage": "Error al añadir residuo. Por favor, inténtelo de nuevo."
   },
   "recyclingCenters": {
     "title": "Centros de Reciclaje",
@@ -510,11 +512,11 @@
     "followersOnly": "Solo Seguidores",
     "private": "Privado",
     "copy": "Copiar",
-"tokenCopied": "¡Token de recuperación copiado!",
-"deletionRequestedTitle": "Eliminación Solicitada",
-"deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
-"saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
-"tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
-"confirmLogout": "Lo he guardado, cerrar sesión"
+    "tokenCopied": "¡Token de recuperación copiado!",
+    "deletionRequestedTitle": "Eliminación Solicitada",
+    "deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
+    "saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
+    "tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
+    "confirmLogout": "Lo he guardado, cerrar sesión"
   }
 }
