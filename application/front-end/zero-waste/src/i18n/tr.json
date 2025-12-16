@@ -285,6 +285,30 @@
     "noAchievements": "Henüz kazanılmış başarı yok.",
     "earnedAt": "Kazanıldı"
   },
+  "challenge": {
+    "title": "Görevler"
+  },
+  "badge": {
+    "title": "Rozetler",
+    "noBadges": "Henüz rozet kazanılmadı. Geri dönüşüm yaparak rozet kazanın!",
+    "earnedAt": "Kazanıldı",
+    "nextBadge": "Sıradaki rozete ilerleme",
+    "plastic": "Plastik Geri Dönüşümcüsü",
+    "paper": "Kağıt Geri Dönüşümcüsü",
+    "glass": "Cam Geri Dönüşümcüsü",
+    "metal": "Metal Geri Dönüşümcüsü",
+    "electronic": "Elektronik Atık Geri Dönüşümcüsü",
+    "oil": "Yağ ve Katı Yağ Geri Dönüşümcüsü",
+    "organic": "Organik Atık Geri Dönüşümcüsü",
+    "total": "Atık Savaşçısı",
+    "contributions": "Katkı Sağlayan",
+    "likes": "Popüler",
+    "bronze": "Bronz",
+    "silver": "Gümüş",
+    "gold": "Altın",
+    "platinum": "Platin",
+    "diamond": "Elmas"
+  },
   "themes": {
     "light": "Açık",
     "dark": "Koyu",
@@ -356,12 +380,12 @@
     "unfollowed": "Takip başarıyla bırakıldı",
     "noFollowing": "Henüz kimseyi takip etmiyorsunuz.",
     "noFollowers": "Henüz takipçi yok.",
-"bioPrivate": "Bu kullanıcının biyografisi gizli.",
-  "statsPrivate": "İstatistikler gizlilik ayarları nedeniyle gizli.",
-  "impactStats": "Çevresel Etki",
-  "totalWaste": "Azaltılan CO2",
-  "points": "Puanlar",
-  "noBio": "Bu kullanıcının herkese açık bir biyografisi yok."
+    "bioPrivate": "Bu kullanıcının biyografisi gizli.",
+    "statsPrivate": "İstatistikler gizlilik ayarları nedeniyle gizli.",
+    "impactStats": "Çevresel Etki",
+    "totalWaste": "Azaltılan CO2",
+    "points": "Puanlar",
+    "noBio": "Bu kullanıcının herkese açık bir biyografisi yok."
   },
   "wasteHelper": {
     "title": "Atık Ekle",

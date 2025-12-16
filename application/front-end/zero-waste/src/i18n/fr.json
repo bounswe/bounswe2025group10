@@ -295,6 +295,30 @@
     "noAchievements": "Aucune réalisation obtenue pour le moment.",
     "earnedAt": "Obtenue le"
   },
+  "challenge": {
+    "title": "Défis"
+  },
+  "badge": {
+    "title": "Badges",
+    "noBadges": "Aucun badge obtenu pour le moment. Continuez à recycler pour gagner des badges !",
+    "earnedAt": "Obtenu",
+    "nextBadge": "Progression vers le prochain badge",
+    "plastic": "Recycleur de Plastique",
+    "paper": "Recycleur de Papier",
+    "glass": "Recycleur de Verre",
+    "metal": "Recycleur de Métal",
+    "electronic": "Recycleur de Déchets Électroniques",
+    "oil": "Recycleur d'Huiles et Graisses",
+    "organic": "Recycleur de Déchets Organiques",
+    "total": "Guerrier des Déchets",
+    "contributions": "Contributeur",
+    "likes": "Populaire",
+    "bronze": "Bronze",
+    "silver": "Argent",
+    "gold": "Or",
+    "platinum": "Platine",
+    "diamond": "Diamant"
+  },
   "themes": {
     "light": "Clair",
     "dark": "Sombre",
@@ -365,11 +389,11 @@
     "unfollowed": "Abonnement annulé avec succès",
     "noFollowing": "Vous ne suivez personne pour le moment.",
     "noFollowers": "Pas encore d'abonnés.",
-"bioPrivate": "La biographie de cet utilisateur est privée.",
-  "statsPrivate": "Les statistiques sont masquées par les paramètres de confidentialité.",
-  "impactStats": "Impact Environnemental",
-  "totalWaste": "CO2 Réduit",
-  "points": "Points"
+    "bioPrivate": "La biographie de cet utilisateur est privée.",
+    "statsPrivate": "Les statistiques sont masquées par les paramètres de confidentialité.",
+    "impactStats": "Impact Environnemental",
+    "totalWaste": "CO2 Réduit",
+    "points": "Points"
   },
   "wasteHelper": {
     "title": "Ajouter un Déchet",

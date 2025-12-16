@@ -4,116 +4,239 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Achievements from "../../pages/Achievements.jsx";
 
 // ---- MOCKS ----
 
 vi.mock("../../providers/AuthContext", () => ({
-    useAuth: () => ({ token: "test-token" }),
+  useAuth: () => ({ token: "test-token" }),
 }));
 
 // Mock LocalStorage
 const localStorageMock = {
-    getItem: vi.fn(() => "test-token"),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+  getItem: vi.fn(() => "test-token"),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
 };
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+Object.defineProperty(window, "localStorage", { value: localStorageMock });
 
 vi.mock("../../providers/ThemeContext", () => ({
-    useTheme: () => ({
-        currentTheme: {
-            background: "#fff",
-            text: "#000",
-            secondary: "#0f0",
-            border: "#ccc",
-        },
-    }),
+  useTheme: () => ({
+    currentTheme: {
+      background: "#fff",
+      text: "#000",
+      primary: "#0f0",
+      secondary: "#0f0",
+      border: "#ccc",
+      hover: "#f0f0f0",
+    },
+  }),
 }));
 
 vi.mock("../../providers/LanguageContext", () => ({
-    useLanguage: () => ({
-        t: (key) => key,
-        language: "en",
-    }),
+  useLanguage: () => ({
+    t: (key, defaultValue) => defaultValue || key,
+    language: "en",
+  }),
 }));
 
 vi.mock("../../providers/FontSizeContext", () => ({
-    useFontSize: () => ({ fontSize: "medium" }),
+  useFontSize: () => ({ fontSize: "medium" }),
 }));
+
+// Mock achievements data
+const mockAchievementsData = [
+  {
+    id: 1,
+    achievement: {
+      title: "First Post",
+      description: "Created first post",
+      icon: "img.png",
+    },
+    earned_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    achievement: {
+      title: "Recycling Hero",
+      description: "Recycled 100kg",
+      icon: null,
+    },
+    earned_at: new Date().toISOString(),
+  },
+];
+
+// Mock badges data
+const mockBadgesData = {
+  total_badges: 2,
+  badges_by_category: {
+    PLASTIC: [
+      {
+        id: 1,
+        category: "PLASTIC",
+        level: 1,
+        criteria_value: 1000,
+        earned_at: new Date().toISOString(),
+      },
+    ],
+    ELECTRONIC: [
+      {
+        id: 2,
+        category: "ELECTRONIC",
+        level: 1,
+        criteria_value: 500,
+        earned_at: new Date().toISOString(),
+      },
+    ],
+  },
+  progress: {
+    PLASTIC: {
+      current_value: 1500,
+      required_value: 5000,
+      percentage: 30,
+      next_badge: { id: 3, category: "PLASTIC", level: 2 },
+      all_earned: false,
+    },
+  },
+};
 
 // Mock achievementsService
 vi.mock("../../services/achievementsService", () => ({
-    achievementsService: {
-        getAchievements: vi.fn(() => Promise.resolve({
-            id: 1,
-            achievement: { title: "First Post", description: "First post desc", icon: "img.png" },
-            earned_at: new Date().toISOString()
-        }))
-        // The component expects an array, but wait. Check usage.
-        // In Achievements.jsx:
-        // const { data: achievements } = useApi(() => ...getAchievements(token), { initialData: [] })
-        // If usage is: achievements.map(...)
-        // The service usually returns the data.
-        // Let's verify service return structure.
-        // achievementsService.js likely returns response.data or similar.
-        // Assuming it returns an array of objects.
-    }
+  achievementsService: {
+    getAchievements: vi.fn(() => Promise.resolve(mockAchievementsData)),
+  },
+}));
+
+// Mock badgesService
+vi.mock("../../services/badgesService", () => ({
+  badgesService: {
+    getUserBadgeSummary: vi.fn(() => Promise.resolve(mockBadgesData)),
+  },
 }));
 
 // Mock Navbar
 vi.mock("../../components/layout/Navbar", () => ({
-    default: ({ children }) => <div>{children}</div>
+  default: ({ children }) => <div>{children}</div>,
 }));
 
-// We need to return an array for getAchievements based on component mapping:
-// { id, achievement, earned_at }
-const mockAchievementsData = [
-    {
-        id: 1,
-        achievement: { title: "First Post", description: "Created first post", icon: "img.png" },
-        earned_at: new Date().toISOString()
-    }
-];
-
-// Update the mock implementation
 import { achievementsService } from "../../services/achievementsService";
-achievementsService.getAchievements.mockResolvedValue(mockAchievementsData);
+import { badgesService } from "../../services/badgesService";
 
 describe("<Achievements />", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        achievementsService.getAchievements.mockResolvedValue(mockAchievementsData);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    achievementsService.getAchievements.mockResolvedValue(mockAchievementsData);
+    badgesService.getUserBadgeSummary.mockResolvedValue(mockBadgesData);
+  });
+
+  it("renders the page title", async () => {
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Achievements & Badges/i)).toBeInTheDocument();
+  });
+
+  it("displays Challenges and Badges tabs", async () => {
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Challenges \(2\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Badges \(2\)/i)).toBeInTheDocument();
+    });
+  });
+
+  it("displays achievements in the Challenges tab by default", async () => {
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("First Post")).toBeInTheDocument();
+      expect(screen.getByText("Recycling Hero")).toBeInTheDocument();
+    });
+  });
+
+  it("switches to Badges tab when clicked", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText("First Post")).toBeInTheDocument();
     });
 
-    it("renders the Achievements page title", async () => {
-        render(
-            <MemoryRouter>
-                <Achievements />
-            </MemoryRouter>
-        );
+    // Click on Badges tab
+    const badgesTab = screen.getByText(/Badges \(2\)/i);
+    await user.click(badgesTab);
 
-        expect(screen.getByText("achievements.title")).toBeInTheDocument();
+    // Check that badges are displayed
+    await waitFor(() => {
+      expect(screen.getByText("Plastic Recycler")).toBeInTheDocument();
+      expect(screen.getByText("E-Waste Recycler")).toBeInTheDocument();
+    });
+  });
 
-        // Wait for data to load to prevent act(...) warning
-        await waitFor(() => {
-            expect(screen.getAllByText(/First Post/i).length).toBeGreaterThan(0);
-        });
+  it("displays badge progress information", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    // Wait for data to load and click Badges tab
+    await waitFor(() => {
+      expect(screen.getByText(/Badges \(2\)/i)).toBeInTheDocument();
     });
 
-    it("displays achievements after loading", async () => {
-        render(
-            <MemoryRouter>
-                <Achievements />
-            </MemoryRouter>
-        );
+    const badgesTab = screen.getByText(/Badges \(2\)/i);
+    await user.click(badgesTab);
 
-        await waitFor(() => {
-            // Check for the achievement title
-            const elements = screen.getAllByText(/First Post/i);
-            expect(elements.length).toBeGreaterThan(0);
-        });
+    // Check for progress information
+    await waitFor(() => {
+      expect(screen.getByText(/Progress to next badge/i)).toBeInTheDocument();
+      expect(screen.getByText(/30\.0%/i)).toBeInTheDocument();
     });
+  });
+
+  it("shows loading state initially", () => {
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+  });
+
+  it("displays earned date for achievements", async () => {
+    render(
+      <MemoryRouter>
+        <Achievements />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      const earnedTexts = screen.getAllByText(/Earned/i);
+      expect(earnedTexts.length).toBeGreaterThan(0);
+    });
+  });
 });

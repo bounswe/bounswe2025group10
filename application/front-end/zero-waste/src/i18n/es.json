@@ -285,6 +285,30 @@
     "noAchievements": "Aún no se han obtenido logros.",
     "earnedAt": "Obtenido el"
   },
+  "challenge": {
+    "title": "Desafíos"
+  },
+  "badge": {
+    "title": "Insignias",
+    "noBadges": "Aún no se han obtenido insignias. ¡Sigue reciclando para ganar insignias!",
+    "earnedAt": "Obtenida",
+    "nextBadge": "Progreso hacia la siguiente insignia",
+    "plastic": "Reciclador de Plástico",
+    "paper": "Reciclador de Papel",
+    "glass": "Reciclador de Vidrio",
+    "metal": "Reciclador de Metal",
+    "electronic": "Reciclador de Residuos Electrónicos",
+    "oil": "Reciclador de Aceites y Grasas",
+    "organic": "Reciclador de Residuos Orgánicos",
+    "total": "Guerrero de Residuos",
+    "contributions": "Contribuidor",
+    "likes": "Popular",
+    "bronze": "Bronce",
+    "silver": "Plata",
+    "gold": "Oro",
+    "platinum": "Platino",
+    "diamond": "Diamante"
+  },
   "themes": {
     "light": "Claro",
     "dark": "Oscuro",
@@ -353,13 +377,13 @@
     "followed": "Seguido exitosamente",
     "unfollowed": "Dejado de seguir exitosamente",
     "noFollowing": "Aún no sigues a nadie.",
-    "noFollowers": "Aún no hay seguidores.", 
-"bioPrivate": "La biografía de este usuario es privada.",
-  "statsPrivate": "Las estadísticas están ocultas por la configuración de privacidad.",
-  "impactStats": "Impacto Ambiental",
-  "totalWaste": "CO2 Reducido",
-  "points": "Puntos",
-  "noBio": "Este usuario no tiene una biografía pública."
+    "noFollowers": "Aún no hay seguidores.",
+    "bioPrivate": "La biografía de este usuario es privada.",
+    "statsPrivate": "Las estadísticas están ocultas por la configuración de privacidad.",
+    "impactStats": "Impacto Ambiental",
+    "totalWaste": "CO2 Reducido",
+    "points": "Puntos",
+    "noBio": "Este usuario no tiene una biografía pública."
   },
   "wasteHelper": {
     "title": "Agregar Residuo",
