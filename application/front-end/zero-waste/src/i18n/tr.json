@@ -21,7 +21,8 @@
     "userPage": "Kullanıcı Moderasyonu",
     "challengePage": "Meydan Okuma Moderasyonu",
     "commentPage": "Yorum Moderasyonu",
-    "activityPage": "Aktivite Günlüğü"
+    "activityPage": "Aktivite Günlüğü",
+    "preferences": "Gizlilik ve Hesap"
   },
   "username": "Kullanıcı Adı",
   "password": "Şifre",
@@ -97,7 +98,8 @@
     "notifications": "Bildirimler",
     "markAllRead": "Tümünü okundu işaretle",
     "noNotifications": "Bildirim yok",
-    "preview": "Önizleme"
+    "preview": "Önizleme",
+    "verifying": "Doğrulanıyor..."
   },
   "leaderboard": {
     "title": "🌿 İlk 10 Sıfır Atık Şampiyonu",
@@ -252,7 +254,23 @@
     "signupFailed": "Kayıt başarısız",
     "loggingIn": "Giriş yapılıyor...",
     "haveAccount": "Zaten hesabınız var mı?",
-    "noAccount": "Hesabınız yok mu?"
+    "noAccount": "Hesabınız yok mu?",
+    "recoverAcount": "Silinen hesabı kurtar?",
+    "recoverTitle": "Hesabı Kurtar",
+    "recoverSubtitle": "Sıfır atık yolculuğunuza geri dönün ♻️",
+    "recoverSuccess": "Hesap başarıyla geri yüklendi!",
+    "recoverError": "Geçersiz kod veya ağ hatası.",
+    "reactivatedTitle": "Hesap Yeniden Etkinleştirildi!",
+    "reactivatedDesc": "Hesabınız tamamen geri yüklendi. Artık normal şekilde giriş yapabilirsiniz.",
+    "deletedTitle": "Hesap Kalıcı Olarak Silindi",
+    "deletedDesc": "30 günlük bekleme süresi doldu. Bu hesap kurtarılamaz.",
+    "recoverInstructions": "Süreci durdurmak ve hesabınızı yeniden etkinleştirmek için silme talebinde bulunduğunuzda kaydettiğiniz kurtarma kodunu girin.",
+    "recoveryToken": "Kurtarma Kodu",
+    "tokenPlaceholder": "Kodu buraya yapıştırın...",
+    "recoverBtn": "Hesabı Kurtar",
+    "cancelReturn": "İptal et ve Girişe dön",
+    "createNewAccount": "Yeni Hesap Oluştur",
+    "goToLogin": "Giriş Yapmaya Git"
   },
   "achievements": {
     "title": "Başarılar",
@@ -459,5 +477,46 @@
         "desc": "Başkalarıyla bağlantı kurun, ipuçları paylaşın ve eko-meydan okumalara katılın."
       }
     }
+  },
+  "preferences": {
+    "title": "Ayarlar",
+    "saved": "Ayarlar güncellendi",
+    "privacy": "Gizlilik ve Görünürlük",
+    "privacySectionDesc": "Profil detaylarınızı kimlerin görebileceğini kontrol edin.",
+    "profileVisibility": "Profil Görünürlüğü",
+    "profileDesc": "Profil detaylarınızı kimler görebilir?",
+    "wasteStatsVisibility": "İstatistik Görünürlüğü",
+    "wasteStatsDesc": "Atık istatistiklerinizi kimler görebilir?",
+    "emailVisibility": "E-posta Görünürlüğü",
+    "emailDesc": "E-posta adresinizi kimler görebilir?",
+    "anonymity": "Anonimlik",
+    "anonymitySectionDesc": "Kimliğinizi takipçiniz olmayan kullanıcılardan gizleyin.",
+    "anonymousMode": "Anonim Mod",
+    "anonDesc": "Gerçek adınızı ve fotoğrafınızı takipçi olmayanlardan gizleyin.",
+    "anonNotice": "Şu anda yabancılara",
+    "toStrangers": "olarak görünüyorsunuz.",
+    "dangerZone": "Tehlikeli Bölge",
+    "deleteSectionDesc": "Profilinizi, gönderilerinizi ve verilerinizi kalıcı olarak silin. Bu işlem bekleme süresinden sonra geri alınamaz.",
+    "deletionScheduled": "Silme İşlemi Planlandı",
+    "deletionDateInfo": "Hesabınızın kalıcı olarak silinmesi planlandı:",
+    "deleteRequested": "Hesap silme işlemi planlandı",
+    "deleteCancelled": "Silme işlemi iptal edildi",
+    "cancelDeletion": "Silmeyi İptal Et",
+    "deleteAccount": "Hesabı Sil",
+    "deleteBtn": "Hesabımı Sil",
+    "confirmDelete": "Emin misiniz?",
+    "deleteWarning": "Bu işlem 14 günlük bir bekleme süresi başlatacaktır. Bu süre içinde giriş yapmaz veya iptal etmezseniz verileriniz kalıcı olarak silinecektir.",
+    "confirmBtn": "Evet, Hesabı Sil",
+    "processing": "İşleniyor...",
+    "public": "Herkese Açık",
+    "followersOnly": "Sadece Takipçiler",
+    "private": "Gizli",
+    "copy": "Kopyala",
+"tokenCopied": "Kurtarma kodu kopyalandı!",
+"deletionRequestedTitle": "Silme Talebi Alındı",
+"deactivationMessage": "Hesabınız devre dışı bırakıldı. Şimdi çıkış yapılacaktır.",
+"saveTokenLabel": "BU KURTARMA KODUNU KAYDEDİN:",
+"tokenInstructions": "Eğer silme işlemini iptal etmek ve önümüzdeki 30 gün içinde hesabınızı kurtarmak isterseniz bu koda ihtiyacınız olacak.",
+"confirmLogout": "Kaydettim, Çıkış Yap"
   }
 }

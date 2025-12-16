@@ -31,7 +31,9 @@
     "userPage": "إدارة المستخدمين",
     "challengePage": "إدارة التحديات",
     "commentPage": "إدارة التعليقات",
-    "activityPage": "سجل النشاط"
+    "activityPage": "سجل النشاط",
+    "preferences": "الخصوصية والحساب"
+
   },
   "username": "اسم المستخدم",
   "password": "كلمة المرور",
@@ -73,7 +75,8 @@
     "notifications": "إشعارات",
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات",
-    "preview": "معاينة"
+    "preview": "معاينة",
+    "verifying": "جارٍ التحقق..."
   },
   "admin": {
     "postModeration": "إدارة المنشورات",
@@ -261,7 +264,23 @@
     "signupFailed": "فشل التسجيل",
     "loggingIn": "جارٍ تسجيل الدخول...",
     "haveAccount": "هل لديك حساب بالفعل؟",
-    "noAccount": "ليس لديك حساب؟"
+    "noAccount": "ليس لديك حساب؟", 
+    "recoverAcount": "استعادة الحساب المحذوف؟",
+    "recoverTitle": "استعادة الحساب",
+    "recoverSubtitle": "استعد رحلتك في صفر نفايات ♻️",
+    "recoverSuccess": "تمت استعادة الحساب بنجاح!",
+    "recoverError": "رمز غير صالح أو خطأ في الشبكة.",
+    "reactivatedTitle": "تم إعادة تنشيط الحساب!",
+    "reactivatedDesc": "تمت استعادة حسابك بالكامل. يمكنك الآن تسجيل الدخول بشكل طبيعي.",
+    "deletedTitle": "تم حذف الحساب نهائياً",
+    "deletedDesc": "انتهت فترة السماح البالغة 30 يوماً. لا يمكن استعادة هذا الحساب.",
+    "recoverInstructions": "أدخل رمز الاسترداد الذي حفظته عند طلب الحذف لإيقاف العملية وإعادة تنشيط حسابك.",
+    "recoveryToken": "رمز الاسترداد",
+    "tokenPlaceholder": "الصق الرمز هنا...",
+    "recoverBtn": "استعادة الحساب",
+    "cancelReturn": "إلغاء والعودة لتسجيل الدخول",
+    "createNewAccount": "إنشاء حساب جديد",
+    "goToLogin": "الذهاب لتسجيل الدخول"
   },
   "achievements": {
     "title": "الإنجازات",
@@ -468,5 +487,46 @@
         "desc": "تواصل مع الآخرين، وشارك النصائح، وشارك في التحديات البيئية."
       }
     }
+  },
+  "preferences": {
+    "title": "الإعدادات",
+    "saved": "تم تحديث الإعدادات",
+    "privacy": "الخصوصية والرؤية",
+    "privacySectionDesc": "تحكم في من يمكنه رؤية تفاصيل ملفك الشخصي.",
+    "profileVisibility": "رؤية الملف الشخصي",
+    "profileDesc": "من يمكنه رؤية تفاصيل ملفك الشخصي الكاملة؟",
+    "wasteStatsVisibility": "رؤية الإحصائيات",
+    "wasteStatsDesc": "من يمكنه رؤية إحصائيات النفايات الخاصة بك؟",
+    "emailVisibility": "رؤية البريد الإلكتروني",
+    "emailDesc": "من يمكنه رؤية بريدك الإلكتروني؟",
+    "anonymity": "إخفاء الهوية",
+    "anonymitySectionDesc": "أخفِ هويتك عن المستخدمين الذين لا يتابعونك.",
+    "anonymousMode": "الوضع المجهول",
+    "anonDesc": "إخفاء اسمك الحقيقي وصورتك عن غير المتابعين.",
+    "anonNotice": "تظهر حاليًا باسم",
+    "toStrangers": "للغرباء.",
+    "dangerZone": "منطقة الخطر",
+    "deleteSectionDesc": "احذف ملفك الشخصي ومنشوراتك وبياناتك نهائيًا. هذا الإجراء لا رجعة فيه بعد فترة السماح.",
+    "deletionScheduled": "الحذف مجدول",
+    "deletionDateInfo": "تمت جدولة حسابك للحذف النهائي:",
+    "deleteRequested": "تمت جدولة حذف الحساب",
+    "deleteCancelled": "تم إلغاء الحذف",
+    "cancelDeletion": "إلغاء الحذف",
+    "deleteAccount": "حذف الحساب",
+    "deleteBtn": "حذف حسابي",
+    "confirmDelete": "هل أنت متأكد؟",
+    "deleteWarning": "سيبدأ هذا فترة سماح مدتها 14 يومًا. إذا لم تقم بتسجيل الدخول أو الإلغاء خلال هذا الوقت، فسيتم فقد بياناتك نهائيًا.",
+    "confirmBtn": "نعم، احذف الحساب",
+    "processing": "جارٍ المعالجة...",
+    "public": "عام",
+    "followersOnly": "المتابعين فقط",
+    "private": "خاص",
+    "copy": "نسخ",
+"tokenCopied": "تم نسخ رمز الاسترداد!",
+"deletionRequestedTitle": "تم طلب الحذف",
+"deactivationMessage": "تم إلغاء تنشيط حسابك. سيتم تسجيل خروجك الآن.",
+"saveTokenLabel": "احفظ رمز الاسترداد هذا:",
+"tokenInstructions": "إذا كنت ترغب في إلغاء الحذف واستعادة حسابك خلال الـ 30 يومًا القادمة، ستحتاج إلى هذا الرمز.",
+"confirmLogout": "لقد حفظته، سجل خروجي"
   }
 }

@@ -21,7 +21,8 @@
     "userPage": "User Moderation",
     "challengePage": "Challenge Moderation",
     "commentPage": "Comment Moderation",
-    "activityPage": "Activity Log"
+    "activityPage": "Activity Log",
+        "preferences": "Privacy & Account"
   },
   "username": "Username",
   "password": "Password",
@@ -37,7 +38,23 @@
     "signupFailed": "Sign up failed",
     "loggingIn": "Logging in...",
     "haveAccount": "Already have an account?",
-    "noAccount": "Don't have an account?"
+    "noAccount": "Don't have an account?",
+    "recoverAcount": "Recover deleted account?",
+    "recoverTitle": "Recover Account",
+    "recoverSubtitle": "Restore your zero-waste journey ♻️",
+    "recoverSuccess": "Account restored successfully!",
+    "recoverError": "Invalid token or network error.",
+    "reactivatedTitle": "Account Reactivated!",
+    "reactivatedDesc": "Your account has been fully restored. You can now log in normally.",
+    "deletedTitle": "Account Permanently Deleted",
+    "deletedDesc": "The 30-day grace period has expired. This account cannot be recovered.",
+    "recoverInstructions": "Enter the recovery token you saved when you requested deletion to stop the process and reactivate your account.",
+    "recoveryToken": "Recovery Token",
+    "tokenPlaceholder": "Paste token here...",
+    "recoverBtn": "Recover Account",
+    "cancelReturn": "Cancel and return to Login",
+    "createNewAccount": "Create New Account",
+    "goToLogin": "Go to Login"
   },
   "admin": {
     "postModeration": "Board Post Moderation",
@@ -113,7 +130,8 @@
     "noNotifications": "No notifications",
     "readMore": "Read More",
     "showLess": "Show Less",
-    "preview": "Preview"
+    "preview": "Preview",
+    "verifying": "Verifying..."
   },
   "leaderboard": {
     "title": "🌿 Top 10 Zero Waste Champions",
@@ -461,5 +479,46 @@
         "desc": "Connect with others, share tips, and participate in eco-challenges."
       }
     }
+  },
+  "preferences": {
+    "title": "Settings",
+    "saved": "Settings updated",
+    "privacy": "Privacy & Visibility",
+    "privacySectionDesc": "Control who can see your profile details.",
+    "profileVisibility": "Profile Visibility",
+    "profileDesc": "Who can view your full profile details?",
+    "wasteStatsVisibility": "Statistics Visibility",
+    "wasteStatsDesc": "Who can see your waste statistics?",
+    "emailVisibility": "Email Visibility",
+    "emailDesc": "Who can see your email address?",
+    "anonymity": "Anonymity",
+    "anonymitySectionDesc": "Hide your identity from users who are not your followers.",
+    "anonymousMode": "Anonymous Mode",
+    "anonDesc": "Hide your real name and photo from non-followers.",
+    "anonNotice": "You are currently displayed as",
+    "toStrangers": "to strangers.",
+    "dangerZone": "Danger Zone",
+    "deleteSectionDesc": "Permanently remove your profile, posts, and data. This action is irreversible after the grace period.",
+    "deletionScheduled": "Deletion Scheduled",
+    "deletionDateInfo": "Your account is scheduled for permanent deletion",
+    "deleteRequested": "Account deletion scheduled",
+    "deleteCancelled": "Deletion cancelled",
+    "cancelDeletion": "Cancel Deletion",
+    "deleteAccount": "Delete Account",
+    "deleteBtn": "Delete My Account",
+    "confirmDelete": "Are you sure?",
+    "deleteWarning": "This will start a 14-day grace period. If you do not log in or cancel during this time, your data will be permanently lost.",
+    "confirmBtn": "Yes, Delete Account",
+    "processing": "Processing...",
+    "public": "Public",
+    "followersOnly": "Followers Only",
+    "private": "Private",
+    "copy": "Copy",
+"tokenCopied": "Recovery token copied!",
+"deletionRequestedTitle": "Deletion Requested",
+"deactivationMessage": "Your account has been deactivated. You will be logged out now.",
+"saveTokenLabel": "SAVE THIS RECOVERY TOKEN:",
+"tokenInstructions": "If you want to cancel the deletion and recover your account within the next 30 days, you will need this token.",
+"confirmLogout": "I have saved it, Log me out"
   }
 }

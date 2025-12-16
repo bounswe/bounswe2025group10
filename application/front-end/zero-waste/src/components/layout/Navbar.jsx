@@ -226,15 +226,27 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
                   style={{ color: currentTheme.primaryText, textDecoration: 'none' }}
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  {t("nav.profile")}
+                  👤 {t("nav.profile")}
                 </Link>
+
+                {/* --- ADDED: Preferences Link --- */}
+                <Link
+                  to="/preferences"
+                  className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
+                  style={{ color: currentTheme.primaryText, textDecoration: 'none' }}
+                  onClick={() => setShowProfileMenu(false)}
+                >
+                  🛡️ {t("nav.preferences", "Privacy & Account")}
+                </Link>
+                {/* ------------------------------- */}
+
                 <Link
                   to="/invite"
                   className="block px-3 py-2 rounded hover:opacity-80 transition-opacity no-underline"
                   style={{ color: currentTheme.primaryText, textDecoration: "none" }}
                   onClick={() => setShowProfileMenu(false)}
                 >
-                  {t("nav.inviteFriend")}
+                  ✉️ {t("nav.inviteFriend")}
                 </Link>
 
                 <hr className="my-2" style={{ borderColor: currentTheme.border }} />
@@ -246,7 +258,7 @@ export default function Navbar({ active = "home", children, fullWidth = false, n
                     logout();
                   }}
                 >
-                  {t("common.logout")}
+                  🚪 {t("common.logout")}
                 </button>
               </div>
             )}

@@ -21,7 +21,8 @@
     "userPage": "Moderación de Usuarios",
     "challengePage": "Moderación de Desafíos",
     "commentPage": "Moderación de Comentarios",
-    "activityPage": "Registro de Actividad"
+    "activityPage": "Registro de Actividad",
+    "preferences": "Privacidad y Cuenta"
   },
   "username": "Nombre de usuario",
   "password": "Contraseña",
@@ -63,7 +64,8 @@
     "notifications": "Notificaciones",
     "markAllRead": "Marcar todo como leído",
     "noNotifications": "No hay notificaciones",
-    "preview": "Vista Previa"
+    "preview": "Vista Previa",
+    "verifying": "Verificando..."
   },
   "admin": {
     "postModeration": "Moderación de Publicaciones",
@@ -121,7 +123,23 @@
     "signupFailed": "Registro fallido",
     "loggingIn": "Iniciando sesión...",
     "haveAccount": "¿Ya tienes una cuenta?",
-    "noAccount": "¿No tienes una cuenta?"
+    "noAccount": "¿No tienes una cuenta?",
+    "recoverAcount": "¿Recuperar cuenta eliminada?",
+    "recoverTitle": "Recuperar Cuenta",
+    "recoverSubtitle": "Restaura tu viaje de cero residuos ♻️",
+    "recoverSuccess": "¡Cuenta restaurada exitosamente!",
+    "recoverError": "Token inválido o error de red.",
+    "reactivatedTitle": "¡Cuenta Reactivada!",
+    "reactivatedDesc": "Tu cuenta ha sido restaurada completamente. Ahora puedes iniciar sesión normalmente.",
+    "deletedTitle": "Cuenta Eliminada Permanentemente",
+    "deletedDesc": "El período de gracia de 30 días ha expirado. Esta cuenta no se puede recuperar.",
+    "recoverInstructions": "Ingresa el token de recuperación que guardaste al solicitar la eliminación para detener el proceso y reactivar tu cuenta.",
+    "recoveryToken": "Token de Recuperación",
+    "tokenPlaceholder": "Pega el token aquí...",
+    "recoverBtn": "Recuperar Cuenta",
+    "cancelReturn": "Cancelar y volver a Iniciar Sesión",
+    "createNewAccount": "Crear Nueva Cuenta",
+    "goToLogin": "Ir a Iniciar Sesión"
   },
   "community": {
     "title": "Comunidad",
@@ -457,5 +475,46 @@
         "desc": "Conéctate con otros, comparte consejos y participa en eco-desafíos."
       }
     }
+  },
+  "preferences": {
+    "title": "Configuración",
+    "saved": "Configuración actualizada",
+    "privacy": "Privacidad y Visibilidad",
+    "privacySectionDesc": "Controla quién puede ver los detalles de tu perfil.",
+    "profileVisibility": "Visibilidad del Perfil",
+    "profileDesc": "¿Quién puede ver los detalles completos de tu perfil?",
+    "wasteStatsVisibility": "Visibilidad de Estadísticas",
+    "wasteStatsDesc": "¿Quién puede ver tus estadísticas de residuos?",
+    "emailVisibility": "Visibilidad del Correo",
+    "emailDesc": "¿Quién puede ver tu correo electrónico?",
+    "anonymity": "Anonimato",
+    "anonymitySectionDesc": "Oculta tu identidad a los usuarios que no te siguen.",
+    "anonymousMode": "Modo Anónimo",
+    "anonDesc": "Oculta tu nombre real y foto a quienes no te siguen.",
+    "anonNotice": "Actualmente te muestras como",
+    "toStrangers": "a los extraños.",
+    "dangerZone": "Zona de Peligro",
+    "deleteSectionDesc": "Elimina permanentemente tu perfil, publicaciones y datos. Esta acción es irreversible después del período de gracia.",
+    "deletionScheduled": "Eliminación Programada",
+    "deletionDateInfo": "Tu cuenta está programada para eliminación permanente:",
+    "deleteRequested": "Eliminación de cuenta programada",
+    "deleteCancelled": "Eliminación cancelada",
+    "cancelDeletion": "Cancelar Eliminación",
+    "deleteAccount": "Eliminar Cuenta",
+    "deleteBtn": "Eliminar Mi Cuenta",
+    "confirmDelete": "¿Estás seguro?",
+    "deleteWarning": "Esto iniciará un período de gracia de 14 días. Si no inicias sesión o cancelas durante este tiempo, tus datos se perderán permanentemente.",
+    "confirmBtn": "Sí, Eliminar Cuenta",
+    "processing": "Procesando...",
+    "public": "Público",
+    "followersOnly": "Solo Seguidores",
+    "private": "Privado",
+    "copy": "Copiar",
+"tokenCopied": "¡Token de recuperación copiado!",
+"deletionRequestedTitle": "Eliminación Solicitada",
+"deactivationMessage": "Tu cuenta ha sido desactivada. Se cerrará tu sesión ahora.",
+"saveTokenLabel": "GUARDA ESTE TOKEN DE RECUPERACIÓN:",
+"tokenInstructions": "Si deseas cancelar la eliminación y recuperar tu cuenta dentro de los próximos 30 días, necesitarás este token.",
+"confirmLogout": "Lo he guardado, cerrar sesión"
   }
 }

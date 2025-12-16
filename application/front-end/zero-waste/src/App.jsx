@@ -24,6 +24,9 @@ import RecyclingCenters from "./pages/RecyclingCenters.jsx";
 import Invite from "./pages/Invite.jsx";
 import Statistics from "./pages/Statistics.jsx";
 import Settings from "./pages/Settings.jsx";
+import RecoveryPage from "./pages/auth/RecoveryPage.jsx";
+import PreferencesPage from "./pages/settings/PreferencesPage.jsx";
+
 
 
 export default function App() {
@@ -36,6 +39,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+              <Route path="/recover" element={<RecoveryPage />} />
+
       </Route>
 
       {/* Protected User Routes */}
@@ -53,6 +58,8 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:username" element={<PublicProfile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
+
         </Route>
       </Route>
 

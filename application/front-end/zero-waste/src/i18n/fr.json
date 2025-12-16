@@ -31,7 +31,8 @@
     "userPage": "Modération des Utilisateurs",
     "challengePage": "Modération des Défis",
     "commentPage": "Modération des Commentaires",
-    "activityPage": "Journal d'Activité"
+    "activityPage": "Journal d'Activité",
+    "preferences": "Confidentialité et Compte"
   },
   "username": "Nom d'utilisateur",
   "password": "Mot de passe",
@@ -73,7 +74,8 @@
     "notifications": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "noNotifications": "Pas de notifications",
-    "preview": "Aperçu"
+    "preview": "Aperçu",
+    "verifying": "Vérification..."
   },
   "admin": {
     "postModeration": "Modération des Publications",
@@ -261,7 +263,23 @@
     "signupFailed": "Échec de l'inscription",
     "loggingIn": "Connexion en cours...",
     "haveAccount": "Vous avez déjà un compte ?",
-    "noAccount": "Vous n'avez pas de compte ?"
+    "noAccount": "Vous n'avez pas de compte ?",
+    "recoverAcount": "Récupérer un compte supprimé ?",
+    "recoverTitle": "Récupérer le compte",
+    "recoverSubtitle": "Restaurez votre voyage zéro déchet ♻️",
+    "recoverSuccess": "Compte restauré avec succès !",
+    "recoverError": "Jeton invalide ou erreur réseau.",
+    "reactivatedTitle": "Compte réactivé !",
+    "reactivatedDesc": "Votre compte a été entièrement restauré. Vous pouvez maintenant vous connecter normalement.",
+    "deletedTitle": "Compte supprimé définitivement",
+    "deletedDesc": "La période de grâce de 30 jours a expiré. Ce compte ne peut pas être récupéré.",
+    "recoverInstructions": "Entrez le jeton de récupération que vous avez enregistré lors de la demande de suppression pour arrêter le processus et réactiver votre compte.",
+    "recoveryToken": "Jeton de récupération",
+    "tokenPlaceholder": "Collez le jeton ici...",
+    "recoverBtn": "Récupérer le compte",
+    "cancelReturn": "Annuler et retourner à la connexion",
+    "createNewAccount": "Créer un nouveau compte",
+    "goToLogin": "Aller à la connexion"
   },
   "achievements": {
     "title": "Réalisations",
@@ -467,5 +485,46 @@
         "desc": "Connectez-vous avec les autres, partagez des conseils et participez à des éco-défis."
       }
     }
+  },
+  "preferences": {
+    "title": "Paramètres",
+    "saved": "Paramètres mis à jour",
+    "privacy": "Confidentialité et Visibilité",
+    "privacySectionDesc": "Contrôlez qui peut voir les détails de votre profil.",
+    "profileVisibility": "Visibilité du Profil",
+    "profileDesc": "Qui peut voir les détails complets de votre profil ?",
+    "wasteStatsVisibility": "Visibilité des Statistiques",
+    "wasteStatsDesc": "Qui peut voir vos statistiques de déchets ?",
+    "emailVisibility": "Visibilité de l'Email",
+    "emailDesc": "Qui peut voir votre adresse e-mail ?",
+    "anonymity": "Anonymat",
+    "anonymitySectionDesc": "Masquez votre identité aux utilisateurs qui ne vous suivent pas.",
+    "anonymousMode": "Mode Anonyme",
+    "anonDesc": "Masquer votre vrai nom et votre photo aux non-abonnés.",
+    "anonNotice": "Vous êtes actuellement affiché en tant que",
+    "toStrangers": "aux inconnus.",
+    "dangerZone": "Zone de Danger",
+    "deleteSectionDesc": "Supprimez définitivement votre profil, vos publications et vos données. Cette action est irréversible après la période de grâce.",
+    "deletionScheduled": "Suppression Programmée",
+    "deletionDateInfo": "La suppression définitive de votre compte est prévue :",
+    "deleteRequested": "Suppression du compte programmée",
+    "deleteCancelled": "Suppression annulée",
+    "cancelDeletion": "Annuler la Suppression",
+    "deleteAccount": "Supprimer le Compte",
+    "deleteBtn": "Supprimer Mon Compte",
+    "confirmDelete": "Êtes-vous sûr ?",
+    "deleteWarning": "Cela lancera une période de grâce de 14 jours. Si vous ne vous connectez pas ou n'annulez pas pendant cette période, vos données seront définitivement perdues.",
+    "confirmBtn": "Oui, Supprimer le Compte",
+    "processing": "Traitement en cours...",
+    "public": "Public",
+    "followersOnly": "Abonnés uniquement",
+    "private": "Privé",
+    "copy": "Copier",
+"tokenCopied": "Jeton de récupération copié !",
+"deletionRequestedTitle": "Suppression Demandée",
+"deactivationMessage": "Votre compte a été désactivé. Vous allez être déconnecté maintenant.",
+"saveTokenLabel": "SAUVEGARDEZ CE JETON :",
+"tokenInstructions": "Si vous souhaitez annuler la suppression et récupérer votre compte dans les 30 jours, vous aurez besoin de ce jeton.",
+"confirmLogout": "Je l'ai sauvegardé, déconnectez-moi"
   }
 }

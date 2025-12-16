@@ -159,6 +159,16 @@ export default function LoginPage() {
           </form>
 
           <div className="text-center mt-6">
+             {/* Account Recovery Link */}
+             <Link
+              to="/recover"
+                className="font-semibold hover:underline"
+              style={{ color: currentTheme.secondary }}
+            >
+              {t("auth.recoverAcount", "Recover deleted account?")}
+            </Link>
+
+            {/* Sign Up Link */}
             <p className="text-sm" style={{ color: currentTheme.text }}>
               {t("auth.noAccount", "Don't have an account?")}{" "}
               <Link
