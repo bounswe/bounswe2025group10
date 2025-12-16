@@ -199,8 +199,11 @@ function Activities() {
           <h5 className="card-title mb-3">Filters</h5>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label">Activity Type</label>
+              <label htmlFor="activity-type-filter" className="form-label">
+                Activity Type
+              </label>
               <select
+                id="activity-type-filter"
                 className="form-select"
                 value={filterType}
                 onChange={(e) => {
