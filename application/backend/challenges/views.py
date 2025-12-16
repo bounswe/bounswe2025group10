@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from django.contrib.auth import get_user_model
 from django.db.models import Q, F
 from .models import Challenge, UserChallenge
 from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
@@ -265,3 +266,45 @@ class ChallengeEnrolledView(generics.ListAPIView):
         user = self.request.user
         return UserChallenge.objects.filter(user=user)
 
+
+User = get_user_model()
+
+
+@extend_schema(
+    summary="Get a user's enrolled challenges",
+    description="Retrieve all challenges that the specified user is enrolled in.",
+    responses={
+        200: OpenApiResponse(
+            response=ChallengeParticipationSerializer(many=True),
+            description="Enrolled challenges retrieved successfully",
+            examples=[
+                OpenApiExample(
+                    'Success Response',
+                    value=[
+                        {'challenge': 5, 'joined_date': '2025-11-20T10:00:00Z'},
+                        {'challenge': 8, 'joined_date': '2025-11-21T14:30:00Z'},
+                    ],
+                )
+            ],
+        ),
+        404: OpenApiResponse(description="User not found"),
+    },
+    tags=['Challenges']
+)
+class ChallengeUserEnrolledView(generics.ListAPIView):
+    serializer_class = ChallengeParticipationSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        username = self.kwargs.get("username")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return UserChallenge.objects.none()
+        return UserChallenge.objects.filter(user=user)
+
+    def list(self, request, *args, **kwargs):
+        username = kwargs.get("username")
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return super().list(request, *args, **kwargs)
