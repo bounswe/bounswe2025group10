@@ -307,6 +307,84 @@ def get_user_wastes(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@extend_schema(
+    summary="Get user's waste records (privacy-aware)",
+    description=(
+        "Retrieve a user's waste records grouped by waste type. "
+        "If the user's waste stats are hidden by privacy settings (or anonymization), returns `visible=false` and `data=null`."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user whose waste records to retrieve'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="User waste records retrieved successfully",
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'username': {'type': 'string'},
+                    'visible': {'type': 'boolean'},
+                    'data': {'type': 'array', 'nullable': True},
+                }
+            },
+        ),
+        404: OpenApiResponse(description="User not found"),
+    },
+    tags=['Waste Management']
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_wastes_by_username(request, username):
+    try:
+        user = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_view_waste_stats(request.user, user):
+        return Response(
+            {
+                'message': 'User waste records retrieved successfully',
+                'username': user.username,
+                'visible': False,
+                'data': None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    try:
+        waste_types = Waste.objects.all()
+        response_data = []
+
+        for waste_type in waste_types:
+            wastes = UserWastes.objects.filter(user=user, waste=waste_type)
+            total_amount = wastes.aggregate(total=Sum('amount'))['total'] or 0
+            waste_records = UserWasteSerializer(wastes, many=True).data
+            response_data.append({
+                'waste_type': waste_type.type,
+                'total_amount': total_amount,
+                'records': waste_records
+            })
+
+        return Response(
+            {
+                'message': 'User waste records retrieved successfully',
+                'username': user.username,
+                'visible': True,
+                'data': response_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @extend_schema(
     summary="Get top users leaderboard",
     description="Retrieve top 10 users with highest waste contributions (points and CO2 emissions). Users whose waste stats are not visible to the requester (per their privacy settings or anonymization) are omitted. If authenticated, also returns current user's stats and ranking.",

@@ -107,6 +107,8 @@ urlpatterns = [
     
     # GET: Retrieve all posts created by the currently authenticated user
     path("api/posts/user/", post_views.get_user_posts, name="get_user_posts"),
+    # GET: Retrieve posts liked/disliked by a specific user
+    path("api/posts/user/<str:username>/reactions/", post_views.get_user_post_reactions, name="get_user_post_reactions"),
       # POST: Like a specific post (adds user's like reaction or removes it if already liked)
     path("api/posts/<int:post_id>/like/", post_views.like_post, name="like_post"),
     
@@ -148,6 +150,8 @@ urlpatterns = [
     
     # GET: Retrieve all waste entries logged by the current user
     path("api/waste/get/", waste_views.get_user_wastes, name="get_user_wastes"),
+    # GET: Retrieve a user's waste entries (privacy-aware)
+    path("api/waste/user/<str:username>/", waste_views.get_user_wastes_by_username, name="get_user_wastes_by_username"),
 
       # POST: Report suspicious waste item with description and image
     path("api/waste/report_suspicious/", waste_views.create_suspicious_waste, name="create_suspicious_waste"),

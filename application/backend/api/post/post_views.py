@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
 from .post_serializer import PostSerializer
-from ..models import Posts, Comments, PostLikes, SavedPosts
+from ..models import Posts, Comments, PostLikes, SavedPosts, Users
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from ..comment.comment_serializer import CommentSerializer
@@ -781,6 +781,71 @@ def get_user_reaction(request, post_id):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@extend_schema(
+    summary="Get a user's post reactions",
+    description="Retrieve the list of posts that the given user has liked/disliked, ordered by most recent reaction.",
+    parameters=[
+        OpenApiParameter(
+            name='username',
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='Username of the user whose post reactions to retrieve'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'data': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'reaction_type': {'type': 'string', 'enum': ['LIKE', 'DISLIKE']},
+                                'date': {'type': 'string', 'format': 'date-time'},
+                                'post': {'type': 'object'},
+                            }
+                        }
+                    }
+                }
+            },
+            description="User post reactions retrieved successfully",
+        ),
+        404: OpenApiResponse(description="User not found"),
+    },
+    tags=['Posts']
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_post_reactions(request, username):
+    try:
+        user = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    reactions = (
+        PostLikes.objects.filter(user=user)
+        .select_related("post")
+        .order_by("-date")
+    )
+
+    data = []
+    for reaction in reactions:
+        data.append({
+            "reaction_type": reaction.reaction_type,
+            "date": reaction.date,
+            "post": PostSerializer(reaction.post, context={'request': request}).data,
+        })
+
+    return Response(
+        {'message': 'User post reactions retrieved successfully', 'data': data},
+        status=status.HTTP_200_OK
+    )
 
 @extend_schema(
     summary="Save a post",
